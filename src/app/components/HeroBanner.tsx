@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 
-interface HeroBannerProps {
-  onNavigate: (page: string) => void;
-}
-
-export const HeroBanner: React.FC<HeroBannerProps> = ({ onNavigate }) => {
+export const HeroBanner: React.FC = () => {
+  const navigate = useNavigate();
   const { banners } = useApp();
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -65,7 +63,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ onNavigate }) => {
               >
                 {banners[currentSlide].title}
               </motion.h2>
-              
+
               <motion.p
                 initial={{ y: 50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
@@ -84,16 +82,16 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ onNavigate }) => {
                 <motion.button
                   whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(251, 191, 36, 0.5)' }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => onNavigate(banners[currentSlide].link)}
+                  onClick={() => navigate(banners[currentSlide].link)}
                   className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium rounded-full hover:from-amber-600 hover:to-orange-700 transition-all"
                 >
                   Xem chi tiết
                 </motion.button>
-                
+
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => onNavigate('products')}
+                  onClick={() => navigate('/products')}
                   className="px-8 py-4 border-2 border-white/30 text-white font-medium rounded-full hover:bg-white/10 backdrop-blur-sm transition-all"
                 >
                   Mua ngay
@@ -114,7 +112,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ onNavigate }) => {
         >
           <ChevronLeft className="w-6 h-6" />
         </motion.button>
-        
+
         <motion.button
           whileHover={{ scale: 1.1, x: 5 }}
           whileTap={{ scale: 0.9 }}
@@ -132,11 +130,10 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ onNavigate }) => {
             key={index}
             onClick={() => setCurrentSlide(index)}
             whileHover={{ scale: 1.2 }}
-            className={`h-1 rounded-full transition-all ${
-              index === currentSlide
+            className={`h-1 rounded-full transition-all ${index === currentSlide
                 ? 'w-12 bg-gradient-to-r from-amber-500 to-orange-600'
                 : 'w-8 bg-white/30 hover:bg-white/50'
-            }`}
+              }`}
           />
         ))}
       </div>

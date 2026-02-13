@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShoppingCart, User, LogOut, Settings, Menu, X, Star, Gift } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { useCartStore } from '../../features/cart/store/cartStore';
 
-interface HeaderProps {
-  onNavigate: (page: string) => void;
-}
-
-export const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
-  const { user, setUser, cart, currentPage, setIsCartOpen } = useApp();
+export const Header: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, setUser, cart } = useApp();
+  const setIsCartOpen = useCartStore((state) => state.setIsOpen);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -17,7 +18,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
+
       if (currentScrollY < 100) {
         setIsVisible(true);
       } else if (currentScrollY > lastScrollY) {
@@ -25,7 +26,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
       } else {
         setIsVisible(true);
       }
-      
+
       setLastScrollY(currentScrollY);
     };
 
@@ -36,13 +37,13 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const navItems = [
-    { label: 'Trang chủ', page: 'home' },
-    { label: 'Sản phẩm', page: 'products' },
-    { label: 'Danh mục', page: 'categories' },
-    { label: 'Khuyến mãi', page: 'promo' },
-    { label: 'Sự kiện', page: 'events' },
-    { label: 'Đổi quà', page: 'rewards' },
-    { label: 'Blog', page: 'blog' }
+    { label: 'Trang chủ', path: '/' },
+    { label: 'Sản phẩm', path: '/products' },
+    { label: 'Danh mục', path: '/categories' },
+    { label: 'Khuyến mãi', path: '/promo' },
+    { label: 'Sự kiện', path: '/events' },
+    { label: 'Đổi quà', path: '/rewards' },
+    { label: 'Blog', path: '/blog' }
   ];
 
   const handleLogout = () => {
@@ -63,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
           <motion.div
             whileHover={{ scale: 1.05 }}
             className="cursor-pointer"
-            onClick={() => onNavigate('home')}
+            onClick={() => navigate('/')}
           >
             <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 bg-clip-text text-transparent">
               Guitar NOVA
@@ -74,15 +75,14 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
           <nav className="hidden lg:flex items-center gap-8">
             {navItems.map((item) => (
               <motion.button
-                key={item.page}
-                onClick={() => onNavigate(item.page)}
-                className={`relative text-sm font-medium transition-colors ${
-                  currentPage === item.page ? 'text-amber-400' : 'text-white/80 hover:text-white'
-                }`}
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className={`relative text-sm font-medium transition-colors ${location.pathname === item.path ? 'text-amber-400' : 'text-white/80 hover:text-white'
+                  }`}
                 whileHover={{ y: -2 }}
               >
                 {item.label}
-                {currentPage === item.page && (
+                {location.pathname === item.path && (
                   <motion.div
                     layoutId="activeNav"
                     className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-amber-400 to-orange-500"
@@ -141,7 +141,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                         <div className="p-2">
                           <button
                             onClick={() => {
-                              onNavigate('rewards');
+                              navigate('/rewards');
                               setIsUserMenuOpen(false);
                             }}
                             className="w-full flex items-center gap-3 px-3 py-2 text-white/80 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
@@ -151,7 +151,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                           </button>
                           <button
                             onClick={() => {
-                              onNavigate('account');
+                              navigate('/account');
                               setIsUserMenuOpen(false);
                             }}
                             className="w-full flex items-center gap-3 px-3 py-2 text-white/80 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
@@ -175,7 +175,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => onNavigate('login')}
+                  onClick={() => navigate('/login')}
                   className="p-2 text-white/80 hover:text-white transition-colors"
                 >
                   <User className="w-6 h-6" />
@@ -223,16 +223,15 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
             >
               {navItems.map((item) => (
                 <motion.button
-                  key={item.page}
+                  key={item.path}
                   onClick={() => {
-                    onNavigate(item.page);
+                    navigate(item.path);
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`block w-full text-left px-4 py-3 text-sm font-medium rounded-lg mb-1 transition-colors ${
-                    currentPage === item.page
-                      ? 'text-amber-400 bg-amber-500/10'
-                      : 'text-white/80 hover:text-white hover:bg-white/5'
-                  }`}
+                  className={`block w-full text-left px-4 py-3 text-sm font-medium rounded-lg mb-1 transition-colors ${location.pathname === item.path
+                    ? 'text-amber-400 bg-amber-500/10'
+                    : 'text-white/80 hover:text-white hover:bg-white/5'
+                    }`}
                 >
                   {item.label}
                 </motion.button>

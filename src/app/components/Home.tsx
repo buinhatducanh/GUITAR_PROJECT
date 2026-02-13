@@ -1,18 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { ChevronLeft, ChevronRight, Star, ShoppingCart, Trophy, Zap, Tag, Gift, Sparkles, ArrowRight, Calendar, TrendingUp, Award, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useApp, Product } from '../context/AppContext';
+import { useCartStore } from '../../features/cart/store/cartStore';
 import { ProductCard } from './ProductCard';
 import { HeroBanner } from './HeroBanner';
 
-interface HomeProps {
-  onNavigate: (page: string) => void;
-  onViewProduct: (product: Product) => void;
-  onBuyNow: (product: Product) => void;
-}
-
-export const Home: React.FC<HomeProps> = ({ onNavigate, onViewProduct, onBuyNow }) => {
+export const Home: React.FC = () => {
+  const navigate = useNavigate();
   const { products, events, vouchers, landingPages, blogPosts } = useApp();
+  const addItem = useCartStore((state) => state.addItem);
 
   const featuredProducts = products.slice(0, 4);
   const newProducts = products.slice(4, 8);
@@ -22,10 +20,14 @@ export const Home: React.FC<HomeProps> = ({ onNavigate, onViewProduct, onBuyNow 
   const publishedLandingPages = landingPages.filter(lp => lp.isPublished).slice(0, 2);
   const publishedBlogs = blogPosts.filter(bp => bp.isPublished).slice(0, 3);
 
+  const handleViewProduct = (product: Product) => {
+    navigate(`/products/${product.slug}`);
+  };
+
   return (
     <div className="min-h-screen bg-black">
       {/* Hero Banner */}
-      <HeroBanner onNavigate={onNavigate} />
+      <HeroBanner />
 
       {/* Quick Actions - Events & Rewards */}
       <section className="py-12 bg-gradient-to-b from-black to-zinc-950">
@@ -98,7 +100,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate, onViewProduct, onBuyNow 
       <section className="py-20 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-black to-zinc-950" />
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-50" />
-        
+
         <div className="container mx-auto px-4 relative">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -218,7 +220,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate, onViewProduct, onBuyNow 
             <div className="absolute top-0 left-1/4 w-96 h-96 bg-red-500/10 rounded-full blur-3xl" />
             <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
           </div>
-          
+
           <div className="container mx-auto px-4 relative">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -427,7 +429,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate, onViewProduct, onBuyNow 
       {publishedLandingPages.length > 0 && (
         <section className="py-20 bg-gradient-to-b from-black to-zinc-950 relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.05),transparent_50%)]" />
-          
+
           <div className="container mx-auto px-4 relative">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -469,7 +471,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate, onViewProduct, onBuyNow 
                       />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-                    
+
                     {/* Badge */}
                     <div className="absolute top-4 left-4">
                       <span className="px-4 py-2 bg-blue-500/90 backdrop-blur-sm text-white text-xs font-bold rounded-full">
@@ -486,7 +488,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate, onViewProduct, onBuyNow 
                     <p className="text-white/60 mb-4 line-clamp-2">
                       {page.subtitle}
                     </p>
-                    
+
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-sm text-white/40">
                         <Calendar className="w-4 h-4" />
@@ -525,7 +527,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate, onViewProduct, onBuyNow 
       {publishedBlogs.length > 0 && (
         <section className="py-20 bg-gradient-to-b from-zinc-950 to-black relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(234,88,12,0.05),transparent_50%)]" />
-          
+
           <div className="container mx-auto px-4 relative">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -565,7 +567,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate, onViewProduct, onBuyNow 
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
-                    
+
                     {/* Category Badge */}
                     <div className="absolute top-4 left-4">
                       <span className="px-3 py-1 bg-orange-500/90 backdrop-blur-sm text-white text-xs font-bold rounded-full">
@@ -589,7 +591,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate, onViewProduct, onBuyNow 
                     <p className="text-white/60 text-sm mb-4 line-clamp-2">
                       {blog.excerpt}
                     </p>
-                    
+
                     {/* Author & Date */}
                     <div className="flex items-center justify-between pt-4 border-t border-white/10">
                       <div className="flex items-center gap-2">

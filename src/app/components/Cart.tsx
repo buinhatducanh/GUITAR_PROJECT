@@ -1,14 +1,17 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { useCartStore } from '../../features/cart/store/cartStore';
 
-interface CartProps {
-  onCheckout: () => void;
-}
-
-export const Cart: React.FC<CartProps> = ({ onCheckout }) => {
-  const { cart, isCartOpen, setIsCartOpen, updateCartQuantity, removeFromCart } = useApp();
+export const Cart: React.FC = () => {
+  const navigate = useNavigate();
+  const { cart, updateCartQuantity, removeFromCart } = useApp();
+  const { isOpen, setIsOpen } = useCartStore((state) => ({
+    isOpen: state.isOpen,
+    setIsOpen: state.setIsOpen,
+  }));
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -22,20 +25,20 @@ export const Cart: React.FC<CartProps> = ({ onCheckout }) => {
   const total = subtotal + shipping;
 
   const handleCheckout = () => {
-    setIsCartOpen(false);
-    onCheckout();
+    setIsOpen(false);
+    navigate('/checkout');
   };
 
   return (
     <AnimatePresence>
-      {isCartOpen && (
+      {isOpen && (
         <>
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setIsCartOpen(false)}
+            onClick={() => setIsOpen(false)}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
           />
 
@@ -56,7 +59,7 @@ export const Cart: React.FC<CartProps> = ({ onCheckout }) => {
               <motion.button
                 whileHover={{ scale: 1.1, rotate: 90 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => setIsCartOpen(false)}
+                onClick={() => setIsOpen(false)}
                 className="p-2 text-white/60 hover:text-white transition-colors"
               >
                 <X className="w-6 h-6" />
@@ -87,7 +90,7 @@ export const Cart: React.FC<CartProps> = ({ onCheckout }) => {
                           alt={item.product.name}
                           className="w-20 h-20 object-cover rounded-lg"
                         />
-                        
+
                         <div className="flex-1 min-w-0">
                           <h3 className="text-white font-medium mb-1 line-clamp-2 text-sm">
                             {item.product.name}
@@ -95,7 +98,7 @@ export const Cart: React.FC<CartProps> = ({ onCheckout }) => {
                           <p className="text-amber-500 font-bold mb-2">
                             {formatPrice(item.product.price)}
                           </p>
-                          
+
                           <div className="flex items-center gap-2">
                             <motion.button
                               whileHover={{ scale: 1.1 }}
@@ -105,11 +108,11 @@ export const Cart: React.FC<CartProps> = ({ onCheckout }) => {
                             >
                               <Minus className="w-4 h-4 text-white" />
                             </motion.button>
-                            
+
                             <span className="w-8 text-center text-white font-medium">
                               {item.quantity}
                             </span>
-                            
+
                             <motion.button
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
@@ -169,7 +172,7 @@ export const Cart: React.FC<CartProps> = ({ onCheckout }) => {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setIsCartOpen(false)}
+                    onClick={() => setIsOpen(false)}
                     className="w-full py-3 bg-white/5 hover:bg-white/10 text-white font-medium rounded-xl transition-colors"
                   >
                     Tiếp tục mua sắm

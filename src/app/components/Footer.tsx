@@ -1,12 +1,11 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Facebook, Instagram, Youtube, Mail, Phone, MapPin, Shield } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-interface FooterProps {
-  onNavigateAdmin: () => void;
-}
+export const Footer: React.FC = () => {
+  const navigate = useNavigate();
 
-export const Footer: React.FC<FooterProps> = ({ onNavigateAdmin }) => {
   return (
     <footer className="bg-gradient-to-b from-black to-zinc-950 border-t border-white/10 pt-16 pb-8">
       <div className="container mx-auto px-4">
@@ -105,7 +104,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateAdmin }) => {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={onNavigateAdmin}
+            onClick={() => navigate('/admin')}
             className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl transition-all"
           >
             <Shield className="w-5 h-5" />
