@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Percent, Tag, TrendingDown, Zap, Clock, Gift, Sparkles } from 'lucide-react';
+import { ArrowLeft, Percent, Tag, TrendingDown, Zap, Clock, Gift, Sparkles, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+import { useProducts } from '../hooks/useQueries';
 import { ProductCard } from './ProductCard';
 
 export const Promo: React.FC = () => {
   const navigate = useNavigate();
-  const { products } = useApp();
+  const { data, isLoading } = useProducts();
   const [sortBy, setSortBy] = useState<'discount' | 'price' | 'name'>('discount');
 
+  const products = data?.products || [];
   const promoProducts = products.filter(p => p.discount && p.discount > 0);
 
   const sortedProducts = [...promoProducts].sort((a, b) => {
@@ -164,7 +165,12 @@ export const Promo: React.FC = () => {
         </div>
 
         {/* Products Grid with Special Layout */}
-        {sortedProducts.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-20">
+            <Loader2 className="w-12 h-12 text-red-500 animate-spin mx-auto mb-4" />
+            <p className="text-xl text-white/60">Đang tải khuyến mãi...</p>
+          </div>
+        ) : sortedProducts.length === 0 ? (
           <div className="text-center py-20">
             <Gift className="w-20 h-20 text-white/20 mx-auto mb-4" />
             <p className="text-xl text-white/60">Hiện tại không có sản phẩm khuyến mãi nào</p>

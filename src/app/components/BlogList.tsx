@@ -1,31 +1,26 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, Clock, Eye, Calendar, User, Tag, Search } from 'lucide-react';
-import { useApp, BlogPost } from '../context/AppContext';
+import { ArrowLeft, Clock, Eye, Calendar, User, Tag, Search, Loader2 } from 'lucide-react';
+import { useBlogPosts } from '../hooks/useQueries';
 
 export const BlogList: React.FC = () => {
   const navigate = useNavigate();
-  const { blogPosts } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  const publishedPosts = blogPosts.filter(post => post.isPublished);
-  
-  // Get unique categories
-  const categories = ['all', ...Array.from(new Set(publishedPosts.map(post => post.category)))];
-
-  // Filter posts
-  const filteredPosts = publishedPosts.filter(post => {
-    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCategory = selectedCategory === 'all' || post.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+  const { data, isLoading } = useBlogPosts({
+    category: selectedCategory === 'all' ? undefined : selectedCategory,
+    search: searchTerm || undefined
   });
 
+  const publishedPosts = data?.posts?.filter((post: any) => post.isPublished) || [];
+
+  // Get unique categories
+  const categories = ['all', ...Array.from(new Set(publishedPosts.map((post: any) => post.category)))];
+
   // Sort by date (newest first)
-  const sortedPosts = [...filteredPosts].sort((a, b) => 
+  const sortedPosts = [...publishedPosts].sort((a, b) =>
     new Date(b.publishedDate).getTime() - new Date(a.publishedDate).getTime()
   );
 
@@ -92,7 +87,12 @@ export const BlogList: React.FC = () => {
         </div>
 
         {/* Blog Posts Grid */}
-        {sortedPosts.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-20">
+            <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mx-auto mb-4" />
+            <p className="text-xl text-white/60">Đang tải bài viết...</p>
+          </div>
+        ) : sortedPosts.length === 0 ? (
           <div className="text-center py-20">
             <Tag className="w-20 h-20 text-white/20 mx-auto mb-4" />
             <p className="text-xl text-white/60">Không tìm thấy bài viết nào</p>

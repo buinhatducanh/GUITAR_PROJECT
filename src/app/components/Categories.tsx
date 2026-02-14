@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Guitar, Music, Radio, Zap, Package } from 'lucide-react';
+import { ArrowLeft, Guitar, Music, Radio, Zap, Package, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+import { useProducts } from '../hooks/useQueries';
 import { Product } from '../../shared/types';
 import { ProductCard } from './ProductCard';
 
 export const Categories: React.FC = () => {
-  const { products } = useApp();
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const { data, isLoading } = useProducts();
+
+  const products = data?.products || [];
 
   const categories = [
     { 
@@ -162,7 +164,12 @@ export const Categories: React.FC = () => {
         )}
 
         {/* Products Grid */}
-        {filteredProducts.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-20">
+            <Loader2 className="w-12 h-12 text-amber-500 animate-spin mx-auto mb-4" />
+            <p className="text-xl text-white/60">Đang tải sản phẩm...</p>
+          </div>
+        ) : filteredProducts.length === 0 ? (
           <div className="text-center py-20">
             <Package className="w-20 h-20 text-white/20 mx-auto mb-4" />
             <p className="text-xl text-white/60">Không có sản phẩm nào trong danh mục này</p>

@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Calendar, Gift, Star, Heart, Users, Trophy, Sparkles, CheckCircle2, Clock } from 'lucide-react';
+import { ArrowLeft, Calendar, Gift, Star, Heart, Users, Trophy, Sparkles, CheckCircle2, Clock, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useApp, Event } from '../context/AppContext';
+import { useEvents } from '../hooks/useQueries';
+import { useAuthStore } from '../../features/auth/store/authStore';
+import { Event } from '../../shared/types';
 import { toast } from 'sonner';
 
 export const Events: React.FC = () => {
   const navigate = useNavigate();
-  const { user, events } = useApp();
+  const { user } = useAuthStore();
+  const { data, isLoading } = useEvents();
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [filter, setFilter] = useState<'active' | 'upcoming' | 'past'>('active');
+
+  const events = (data as any) || [];
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('vi-VN', {
@@ -66,7 +71,7 @@ export const Events: React.FC = () => {
     return now < start;
   };
 
-  const filteredEvents = events.filter((event) => {
+  const filteredEvents = events.filter((event: any) => {
     if (filter === 'active') return isEventActive(event);
     if (filter === 'upcoming') return isEventUpcoming(event);
     if (filter === 'past') return !isEventActive(event) && !isEventUpcoming(event);
@@ -160,7 +165,12 @@ export const Events: React.FC = () => {
         </div>
 
         {/* Events Grid */}
-        {filteredEvents.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-20">
+            <Loader2 className="w-12 h-12 text-purple-500 animate-spin mx-auto mb-4" />
+            <p className="text-xl text-white/60">Đang tải sự kiện...</p>
+          </div>
+        ) : filteredEvents.length === 0 ? (
           <div className="text-center py-20">
             <Trophy className="w-20 h-20 text-white/20 mx-auto mb-4" />
             <p className="text-xl text-white/60">

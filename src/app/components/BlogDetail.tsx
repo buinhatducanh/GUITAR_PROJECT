@@ -1,15 +1,24 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, Clock, Eye, Calendar, User, Tag, Share2, Heart } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { ArrowLeft, Clock, Eye, Calendar, User, Tag, Share2, Heart, Loader2 } from 'lucide-react';
+import { useBlogPost } from '../hooks/useQueries';
 
 export const BlogDetail: React.FC = () => {
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
-  const { blogPosts, setBlogPosts } = useApp();
+  const { data: post, isLoading } = useBlogPost(slug || '');
 
-  const post = blogPosts.find(p => p.slug === slug);
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black pt-24 pb-16 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mx-auto mb-4" />
+          <p className="text-xl text-white/60">Đang tải bài viết...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!post) {
     return (
@@ -23,14 +32,6 @@ export const BlogDetail: React.FC = () => {
       </div>
     );
   }
-
-  useEffect(() => {
-    // Increment view count when viewing post
-    const updatedPosts = blogPosts.map(p => 
-      p.id === post.id ? { ...p, views: p.views + 1 } : p
-    );
-    setBlogPosts(updatedPosts);
-  }, [post.id]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('vi-VN', {

@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShoppingCart, User, LogOut, Settings, Menu, X, Star, Gift } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+import { useAuthStore } from '../../features/auth/store/authStore';
 import { useCartStore } from '../../features/cart/store/cartStore';
 
 export const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, setUser, cart } = useApp();
-  const setIsCartOpen = useCartStore((state) => state.setIsOpen);
+  const { user, logout } = useAuthStore();
+  const { getTotalItems, setIsOpen: setIsCartOpen } = useCartStore();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -34,7 +34,7 @@ export const Header: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const totalItems = getTotalItems();
 
   const navItems = [
     { label: 'Trang chủ', path: '/' },
@@ -47,7 +47,7 @@ export const Header: React.FC = () => {
   ];
 
   const handleLogout = () => {
-    setUser(null);
+    logout();
     setIsUserMenuOpen(false);
   };
 

@@ -2,21 +2,32 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { ChevronLeft, ChevronRight, Star, ShoppingCart, Trophy, Zap, Tag, Gift, Sparkles, ArrowRight, Calendar, TrendingUp, Award, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+import { useProducts, useEvents, useVouchers, useLandingPages, useBlogPosts } from '../hooks/useQueries';
 import { ProductCard } from './ProductCard';
 import { HeroBanner } from './HeroBanner';
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { products, events, vouchers, landingPages, blogPosts } = useApp();
+
+  const { data: productsData } = useProducts({ limit: 20 });
+  const { data: eventsData } = useEvents();
+  const { data: vouchersData } = useVouchers();
+  const { data: landingPagesData } = useLandingPages();
+  const { data: blogPostsData } = useBlogPosts({ page: 1 });
+
+  const products = productsData?.products || [];
+  const events = (eventsData as any) || [];
+  const vouchers = (vouchersData as any) || [];
+  const landingPages = (landingPagesData as any) || [];
+  const blogPosts = blogPostsData?.posts || [];
 
   const featuredProducts = products.slice(0, 4);
   const newProducts = products.slice(4, 8);
-  const saleProducts = products.filter(p => p.discount).slice(0, 4);
-  const activeEvents = events.filter(e => e.isActive).slice(0, 2);
-  const topVouchers = vouchers.filter(v => v.isActive).slice(0, 3);
-  const publishedLandingPages = landingPages.filter(lp => lp.isPublished).slice(0, 2);
-  const publishedBlogs = blogPosts.filter(bp => bp.isPublished).slice(0, 3);
+  const saleProducts = products.filter((p: any) => p.discount).slice(0, 4);
+  const activeEvents = events.filter((e: any) => e.isActive).slice(0, 2);
+  const topVouchers = vouchers.filter((v: any) => v.isActive).slice(0, 3);
+  const publishedLandingPages = landingPages.filter((lp: any) => lp.isPublished).slice(0, 2);
+  const publishedBlogs = blogPosts.filter((bp: any) => bp.isPublished).slice(0, 3);
 
   return (
     <div className="min-h-screen bg-black">

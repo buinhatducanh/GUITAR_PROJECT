@@ -1,20 +1,29 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, ShoppingCart, Zap, Star, ChevronDown } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Zap, Star, ChevronDown, Loader2 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+import { useProduct } from '../hooks/useQueries';
 import { useCartStore } from '../../features/cart/store/cartStore';
 import { toast } from 'sonner';
 
 export const ProductDetail: React.FC = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { products } = useApp();
+  const { data: product, isLoading } = useProduct(slug || '');
   const addItem = useCartStore((state) => state.addItem);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  const product = products.find((p) => p.id === slug);
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black pt-24 pb-16 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-amber-500 animate-spin mx-auto mb-4" />
+          <p className="text-xl text-white/60">Đang tải sản phẩm...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -35,7 +44,7 @@ export const ProductDetail: React.FC = () => {
     );
   }
 
-  const images = [product.image, product.image, product.image];
+  const images = product.images && product.images.length > 0 ? product.images : [product.image];
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {

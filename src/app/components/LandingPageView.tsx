@@ -1,15 +1,24 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { useLandingPage } from '../hooks/useQueries';
 
 export const LandingPageView: React.FC = () => {
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
-  const { landingPages } = useApp();
+  const { data: landingPage, isLoading } = useLandingPage(slug || '');
 
-  const landingPage = landingPages.find(p => p.slug === slug);
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black pt-24 pb-16 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-amber-500 animate-spin mx-auto mb-4" />
+          <p className="text-xl text-white/60">Đang tải...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!landingPage) {
     return (

@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Star, Gift, Calendar, CheckCircle, X, Sparkles, Award } from 'lucide-react';
+import { ArrowLeft, Star, Gift, Calendar, CheckCircle, X, Sparkles, Award, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useApp, Voucher } from '../context/AppContext';
+import { useVouchers, useRedeemVoucher } from '../hooks/useQueries';
+import { useAuthStore } from '../../features/auth/store/authStore';
+import { Voucher } from '../../shared/types';
 import { toast } from 'sonner';
 
 export const Rewards: React.FC = () => {
   const navigate = useNavigate();
-  const { user, vouchers, userVouchers, redeemVoucher } = useApp();
+  const { user, updatePoints } = useAuthStore();
+  const { data, isLoading } = useVouchers();
+  const { mutateAsync: redeemVoucher } = useRedeemVoucher();
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
   const [filter, setFilter] = useState<'all' | 'redeemed'>('all');
+
+  const vouchers = (data as any) || [];
+  const userVouchers: string[] = []; // TODO: Get user's redeemed vouchers from backend
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -26,7 +33,7 @@ export const Rewards: React.FC = () => {
     });
   };
 
-  const handleRedeemVoucher = (voucher: Voucher) => {
+  const handleRedeemVoucher = async (voucher: Voucher) => {
     if (!user) {
       toast.error('Vui lòng đăng nhập để đổi quà');
       return;
@@ -42,14 +49,19 @@ export const Rewards: React.FC = () => {
       return;
     }
 
-    redeemVoucher(voucher.id);
-    toast.success(`Đã đổi voucher ${voucher.title} thành công!`);
-    setSelectedVoucher(null);
+    try {
+      await redeemVoucher(voucher.id);
+      updatePoints(-voucher.pointsCost);
+      toast.success(`Đã đổi voucher ${voucher.title} thành công!`);
+      setSelectedVoucher(null);
+    } catch (error) {
+      toast.error('Có lỗi xảy ra khi đổi voucher');
+    }
   };
 
-  const filteredVouchers = filter === 'all' 
-    ? vouchers.filter(v => v.isActive)
-    : vouchers.filter(v => userVouchers.includes(v.id));
+  const filteredVouchers = filter === 'all'
+    ? vouchers.filter((v: any) => v.isActive)
+    : vouchers.filter((v: any) => userVouchers.includes(v.id));
 
   const getTierColor = () => {
     if (!user) return 'from-zinc-500 to-zinc-600';
@@ -153,14 +165,19 @@ export const Rewards: React.FC = () => {
         </div>
 
         {/* Vouchers Grid */}
-        {!user ? (
+        {isLoading ? (
+          <div className="text-center py-20">
+            <Loader2 className="w-12 h-12 text-amber-500 animate-spin mx-auto mb-4" />
+            <p className="text-xl text-white/60">Đang tải voucher...</p>
+          </div>
+        ) : !user ? (
           <div className="text-center py-20">
             <Gift className="w-20 h-20 text-white/20 mx-auto mb-4" />
             <p className="text-xl text-white/60 mb-6">Vui lòng đăng nhập để xem và đổi voucher</p>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => navigate(-1)}
+              onClick={() => navigate('/login')}
               className="px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl"
             >
               Đăng nhập ngay

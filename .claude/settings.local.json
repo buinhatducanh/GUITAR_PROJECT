@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx tsc:*)",
+      "Bash(npm install:*)",
+      "Bash(npx vite build)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Complete Order Flow, refactor all components to use React Router navigation\n\n- Wire Checkout.tsx with real ordersApi.create \\(sends order to backend with stock management\\)\n- Add OrderDetail.tsx page with order tracking progress bar and status display\n- Update Account.tsx to fetch and display real order history from API\n- Add GET /api/orders/:id backend route with product details\n- Improve POST /api/orders with transaction-based stock deduction and validation\n- Refactor all 15+ components to use useNavigate\\(\\) instead of callback props\n- Fix all Express 5 req.params typing \\(string | string[]\\) across 9 backend routes\n- Add Order types \\(Order, OrderItem, OrderStatus\\) to shared types\n- Add useOrder, useUpdateOrderStatus hooks to useQueries\n- Fix tsconfig: add vite/client types, allowImportingTsExtensions\n- Install @types/react-dom for proper type declarations\n- 0 TypeScript errors, clean Vite production build\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Wire Auth + Admin Dashboard to real Backend API\n\n- Auth.tsx: Replace mock login/register with real useAuthStore \\(JWT API\\)\n- AdminLogin.tsx: Wire to real auth API with admin role validation\n- api.ts: Fix token key mismatch \\(token → auth_token\\) matching authStore\n- AdminDashboard.tsx: Complete rewrite - replace AppContext local state\n  with React Query hooks for all CRUD operations:\n  * Products: useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct\n  * Banners: useBanners, useCreateBanner, useUpdateBanner, useDeleteBanner\n  * Vouchers: useVouchers, useCreateVoucher, useUpdateVoucher, useDeleteVoucher\n  * Events: useEvents, useCreateEvent, useUpdateEvent, useDeleteEvent\n  * Landing Pages: useAllLandingPages, useCreateLandingPage, useUpdateLandingPage, useDeleteLandingPage\n  * Orders tab: useOrders with status display\n  * Added specific form fields per entity type \\(not generic title/description\\)\n  * Cloudinary image upload integration via uploadApi\n  * Loading states, error handling, and save confirmation\n- useQueries.ts: Add all CRUD mutation hooks for banners, vouchers,\n  events, landing pages, and blogs\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(find:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npm run build:*)"
+    ]
+  }
+}

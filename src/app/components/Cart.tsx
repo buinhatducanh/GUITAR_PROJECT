@@ -2,16 +2,11 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
 import { useCartStore } from '../../features/cart/store/cartStore';
 
 export const Cart: React.FC = () => {
   const navigate = useNavigate();
-  const { cart, updateCartQuantity, removeFromCart } = useApp();
-  const { isOpen, setIsOpen } = useCartStore((state) => ({
-    isOpen: state.isOpen,
-    setIsOpen: state.setIsOpen,
-  }));
+  const { items: cart, updateQuantity, removeItem, isOpen, setIsOpen, getTotalPrice } = useCartStore();
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -20,7 +15,7 @@ export const Cart: React.FC = () => {
     }).format(price);
   };
 
-  const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const subtotal = getTotalPrice();
   const shipping = subtotal > 0 ? 50000 : 0;
   const total = subtotal + shipping;
 
@@ -103,7 +98,7 @@ export const Cart: React.FC = () => {
                             <motion.button
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
-                              onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)}
+                              onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
                               className="w-7 h-7 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
                             >
                               <Minus className="w-4 h-4 text-white" />
@@ -116,7 +111,7 @@ export const Cart: React.FC = () => {
                             <motion.button
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
-                              onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}
+                              onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
                               className="w-7 h-7 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
                             >
                               <Plus className="w-4 h-4 text-white" />
@@ -127,7 +122,7 @@ export const Cart: React.FC = () => {
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          onClick={() => removeFromCart(item.product.id)}
+                          onClick={() => removeItem(item.product.id)}
                           className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors self-start"
                         >
                           <Trash2 className="w-5 h-5" />

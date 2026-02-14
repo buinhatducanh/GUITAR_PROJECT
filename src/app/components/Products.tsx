@@ -1,24 +1,23 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Filter, Search } from 'lucide-react';
+import { ArrowLeft, Filter, Search, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ProductCard } from './ProductCard';
-import { useApp } from '../context/AppContext';
+import { useProducts } from '../hooks/useQueries';
 import { Product } from '../../shared/types';
 
 export const Products: React.FC = () => {
-  const { products } = useApp();
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const categories = ['all', 'Electric Guitar', 'Acoustic Guitar', 'Bass Guitar', 'Amplifier', 'Effects', 'Accessories'];
-
-  const filteredProducts = products.filter(product => {
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+  const { data, isLoading } = useProducts({
+    category: selectedCategory === 'all' ? undefined : selectedCategory,
+    search: searchQuery || undefined
   });
+
+  const categories = ['all', 'Electric Guitar', 'Acoustic Guitar', 'Bass Guitar', 'Amplifier', 'Effects', 'Accessories'];
+  const filteredProducts = data?.products || [];
 
   return (
     <div className="min-h-screen bg-black pt-24 pb-16">
@@ -82,7 +81,12 @@ export const Products: React.FC = () => {
         </div>
 
         {/* Products Grid */}
-        {filteredProducts.length > 0 ? (
+        {isLoading ? (
+          <div className="text-center py-20">
+            <Loader2 className="w-12 h-12 text-amber-500 animate-spin mx-auto mb-4" />
+            <p className="text-xl text-white/60">Đang tải sản phẩm...</p>
+          </div>
+        ) : filteredProducts.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product, idx) => (
               <motion.div
