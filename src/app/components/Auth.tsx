@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { LogIn, UserPlus, ArrowLeft } from 'lucide-react';
+import { LogIn, UserPlus, ArrowLeft, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+import { useAuthStore } from '../../features/auth/store/authStore';
 import { toast } from 'sonner';
 
 interface AuthProps {
@@ -11,7 +11,8 @@ interface AuthProps {
 
 export const Auth: React.FC<AuthProps> = ({ mode }) => {
   const navigate = useNavigate();
-  const { setUser } = useApp();
+  const { login, register } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -26,7 +27,7 @@ export const Auth: React.FC<AuthProps> = ({ mode }) => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (mode === 'register') {
@@ -35,39 +36,32 @@ export const Auth: React.FC<AuthProps> = ({ mode }) => {
         return;
       }
 
-      // Simulate registration
-      const newUser = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: formData.name,
-        email: formData.email,
-        avatar: `https://i.pravatar.cc/150?u=${formData.email}`,
-        points: 100,
-        joinDate: new Date().toISOString(),
-        totalOrders: 0,
-        totalSpent: 0,
-        lastLogin: new Date().toISOString(),
-        role: 'user' as const
-      };
-      setUser(newUser);
-      toast.success('Đăng ký thành công! Bạn nhận được 100 điểm tân thủ 🎉');
-      navigate('/');
+      setIsLoading(true);
+      try {
+        await register(formData.name, formData.email, formData.password);
+        toast.success('Đăng ký thành công!');
+        navigate('/');
+      } catch (error: any) {
+        toast.error(error.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+      } finally {
+        setIsLoading(false);
+      }
     } else {
-      // Simulate login
-      const user = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: formData.email.split('@')[0],
-        email: formData.email,
-        avatar: `https://i.pravatar.cc/150?u=${formData.email}`,
-        points: 2500,
-        joinDate: '2025-06-15',
-        totalOrders: 5,
-        totalSpent: 25000000,
-        lastLogin: new Date().toISOString(),
-        role: 'user' as const
-      };
-      setUser(user);
-      toast.success('Đăng nhập thành công!');
-      navigate('/');
+      setIsLoading(true);
+      try {
+        await login(formData.email, formData.password);
+        const user = useAuthStore.getState().user;
+        toast.success('Đăng nhập thành công!');
+        if (user?.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
+      } catch (error: any) {
+        toast.error(error.message || 'Email hoặc mật khẩu không đúng!');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -176,12 +170,17 @@ export const Auth: React.FC<AuthProps> = ({ mode }) => {
               )}
 
               <motion.button
-                whileHover={{ scale: 1.02, boxShadow: '0 0 30px rgba(251, 191, 36, 0.5)' }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: isLoading ? 1 : 1.02, boxShadow: isLoading ? 'none' : '0 0 30px rgba(251, 191, 36, 0.5)' }}
+                whileTap={{ scale: isLoading ? 1 : 0.98 }}
                 type="submit"
-                className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-xl transition-all"
+                disabled={isLoading}
+                className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-xl transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {mode === 'login' ? 'Đăng nhập' : 'Đăng ký'}
+                {isLoading && <Loader2 className="w-5 h-5 animate-spin" />}
+                {isLoading
+                  ? (mode === 'login' ? 'Đang đăng nhập...' : 'Đang đăng ký...')
+                  : (mode === 'login' ? 'Đăng nhập' : 'Đăng ký')
+                }
               </motion.button>
             </form>
 

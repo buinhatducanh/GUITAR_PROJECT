@@ -87,6 +87,30 @@ export function useBlogPost(slug: string) {
     });
 }
 
+export function useCreateBlog() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: blogsApi.create,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['blogs'] }),
+    });
+}
+
+export function useUpdateBlog() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: string; data: any }) => blogsApi.update(id, data),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['blogs'] }),
+    });
+}
+
+export function useDeleteBlog() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: blogsApi.delete,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['blogs'] }),
+    });
+}
+
 // ─── Banners ────────────────────────────────────
 
 export function useBanners() {
@@ -97,6 +121,30 @@ export function useBanners() {
     });
 }
 
+export function useCreateBanner() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: bannersApi.create,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['banners'] }),
+    });
+}
+
+export function useUpdateBanner() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: string; data: any }) => bannersApi.update(id, data),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['banners'] }),
+    });
+}
+
+export function useDeleteBanner() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: bannersApi.delete,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['banners'] }),
+    });
+}
+
 // ─── Vouchers ───────────────────────────────────
 
 export function useVouchers() {
@@ -104,6 +152,30 @@ export function useVouchers() {
         queryKey: ['vouchers'],
         queryFn: vouchersApi.getAll,
         staleTime: 1000 * 60 * 3,
+    });
+}
+
+export function useCreateVoucher() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: vouchersApi.create,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['vouchers'] }),
+    });
+}
+
+export function useUpdateVoucher() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: string; data: any }) => vouchersApi.update(id, data),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['vouchers'] }),
+    });
+}
+
+export function useDeleteVoucher() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: vouchersApi.delete,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['vouchers'] }),
     });
 }
 
@@ -128,6 +200,30 @@ export function useEvents() {
     });
 }
 
+export function useCreateEvent() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: eventsApi.create,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['events'] }),
+    });
+}
+
+export function useUpdateEvent() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: string; data: any }) => eventsApi.update(id, data),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['events'] }),
+    });
+}
+
+export function useDeleteEvent() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: eventsApi.delete,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['events'] }),
+    });
+}
+
 // ─── Landing Pages ──────────────────────────────
 
 export function useLandingPages() {
@@ -143,6 +239,37 @@ export function useLandingPage(slug: string) {
         queryKey: ['landing-page', slug],
         queryFn: () => landingPagesApi.getBySlug(slug),
         enabled: !!slug,
+    });
+}
+
+export function useAllLandingPages() {
+    return useQuery({
+        queryKey: ['landing-pages', 'all'],
+        queryFn: landingPagesApi.getAll,
+    });
+}
+
+export function useCreateLandingPage() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: landingPagesApi.create,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['landing-pages'] }),
+    });
+}
+
+export function useUpdateLandingPage() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: string; data: any }) => landingPagesApi.update(id, data),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['landing-pages'] }),
+    });
+}
+
+export function useDeleteLandingPage() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: landingPagesApi.delete,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['landing-pages'] }),
     });
 }
 

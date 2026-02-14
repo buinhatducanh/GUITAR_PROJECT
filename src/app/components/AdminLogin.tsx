@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Shield, ArrowLeft, Eye, EyeOff } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { Shield, ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { useAuthStore } from '../../features/auth/store/authStore';
 import { toast } from 'sonner';
 
 // Demo accounts
@@ -23,11 +23,12 @@ const DEMO_ACCOUNTS = {
 
 export const AdminLogin: React.FC = () => {
   const navigate = useNavigate();
-  const { setUser } = useApp();
+  const { login } = useAuthStore();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showDemoAccounts, setShowDemoAccounts] = useState(true);
 
@@ -38,52 +39,27 @@ export const AdminLogin: React.FC = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check admin account
-    if (formData.email === DEMO_ACCOUNTS.admin.email && 
-        formData.password === DEMO_ACCOUNTS.admin.password) {
-      const adminUser = {
-        id: 'admin-001',
-        name: DEMO_ACCOUNTS.admin.name,
-        email: DEMO_ACCOUNTS.admin.email,
-        avatar: 'https://i.pravatar.cc/150?img=60',
-        points: 99999,
-        joinDate: '2024-01-01',
-        totalOrders: 999,
-        totalSpent: 999999999,
-        lastLogin: new Date().toISOString(),
-        role: 'admin' as const
-      };
-      setUser(adminUser);
+    setIsLoading(true);
+    try {
+      await login(formData.email, formData.password);
+      const user = useAuthStore.getState().user;
+
+      if (user?.role !== 'admin') {
+        toast.error('Bạn không có quyền truy cập Admin Dashboard');
+        setTimeout(() => navigate('/'), 1500);
+        return;
+      }
+
       toast.success('Đăng nhập admin thành công!');
       navigate('/admin');
-      return;
+    } catch (error: any) {
+      toast.error(error.message || 'Email hoặc mật khẩu không đúng!');
+    } finally {
+      setIsLoading(false);
     }
-
-    // Check user account
-    if (formData.email === DEMO_ACCOUNTS.user.email && 
-        formData.password === DEMO_ACCOUNTS.user.password) {
-      const regularUser = {
-        id: 'user-001',
-        name: DEMO_ACCOUNTS.user.name,
-        email: DEMO_ACCOUNTS.user.email,
-        avatar: 'https://i.pravatar.cc/150?img=12',
-        points: 2500,
-        joinDate: '2025-06-15',
-        totalOrders: 5,
-        totalSpent: 25000000,
-        lastLogin: new Date().toISOString(),
-        role: 'user' as const
-      };
-      setUser(regularUser);
-      toast.error('Bạn không có quyền truy cập Admin Dashboard');
-      setTimeout(() => navigate('/'), 1500);
-      return;
-    }
-
-    toast.error('Email hoặc mật khẩu không đúng!');
   };
 
   const handleDemoLogin = (accountType: 'admin' | 'user') => {
