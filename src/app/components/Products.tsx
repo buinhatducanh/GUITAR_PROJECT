@@ -1,17 +1,14 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Filter, Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { ProductCard } from './ProductCard';
-import { useApp, Product } from '../context/AppContext';
+import { useApp } from '../context/AppContext';
+import { Product } from '../../shared/types';
 
-interface ProductsProps {
-  onBack: () => void;
-  onViewProduct: (product: Product) => void;
-  onBuyNow: (product: Product) => void;
-}
-
-export const Products: React.FC<ProductsProps> = ({ onBack, onViewProduct, onBuyNow }) => {
+export const Products: React.FC = () => {
   const { products } = useApp();
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -29,7 +26,7 @@ export const Products: React.FC<ProductsProps> = ({ onBack, onViewProduct, onBuy
         {/* Back Button */}
         <motion.button
           whileHover={{ x: -5 }}
-          onClick={onBack}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-8"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -96,8 +93,6 @@ export const Products: React.FC<ProductsProps> = ({ onBack, onViewProduct, onBuy
               >
                 <ProductCard
                   product={product}
-                  onViewDetail={onViewProduct}
-                  onBuyNow={onBuyNow}
                 />
               </motion.div>
             ))}

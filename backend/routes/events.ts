@@ -32,7 +32,7 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
 router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
         const event = await prisma.event.update({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
             data: req.body,
         });
         res.json(event);
@@ -45,7 +45,7 @@ router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => 
 /** DELETE /api/events/:id */
 router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
-        await prisma.event.delete({ where: { id: req.params.id } });
+        await prisma.event.delete({ where: { id: req.params.id as string } });
         res.json({ message: 'Đã xóa sự kiện' });
     } catch (err) {
         console.error('Delete event error:', err);

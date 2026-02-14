@@ -1,19 +1,39 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, ShoppingCart, Zap, Star, ChevronDown } from 'lucide-react';
-import { Product, useApp } from '../context/AppContext';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useApp } from '../context/AppContext';
+import { useCartStore } from '../../features/cart/store/cartStore';
 import { toast } from 'sonner';
 
-interface ProductDetailProps {
-  product: Product;
-  onBack: () => void;
-  onBuyNow: () => void;
-}
-
-export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onBuyNow }) => {
-  const { addToCart } = useApp();
+export const ProductDetail: React.FC = () => {
+  const { slug } = useParams();
+  const navigate = useNavigate();
+  const { products } = useApp();
+  const addItem = useCartStore((state) => state.addItem);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+
+  const product = products.find((p) => p.id === slug);
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-black pt-24 pb-16 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">Sản phẩm không tìm thấy</h2>
+          <p className="text-white/60 mb-6">Sản phẩm bạn đang tìm kiếm không tồn tại.</p>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => navigate(-1)}
+            className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium rounded-xl"
+          >
+            Quay lại
+          </motion.button>
+        </div>
+      </div>
+    );
+  }
 
   const images = [product.image, product.image, product.image];
 
@@ -26,7 +46,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
 
   const handleAddToCart = () => {
     for (let i = 0; i < quantity; i++) {
-      addToCart(product);
+      addItem(product);
     }
     toast.success(`Đã thêm ${quantity} sản phẩm vào giỏ hàng!`, {
       description: product.name,
@@ -36,9 +56,9 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
 
   const handleBuyNow = () => {
     for (let i = 0; i < quantity; i++) {
-      addToCart(product);
+      addItem(product);
     }
-    onBuyNow();
+    navigate('/checkout');
   };
 
   return (
@@ -47,7 +67,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
       <div className="container mx-auto px-4 mb-8">
         <motion.button
           whileHover={{ x: -5 }}
-          onClick={onBack}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />

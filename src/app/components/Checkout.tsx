@@ -1,25 +1,29 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, CreditCard, CheckCircle2 } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { ArrowLeft, CreditCard, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useCartStore } from '../../features/cart/store/cartStore';
+import { useAuthStore } from '../../features/auth/store/authStore';
+import { useCreateOrder } from '../hooks/useQueries';
+import { toast } from 'sonner';
 
-interface CheckoutProps {
-  onBack: () => void;
-  onSuccess: () => void;
-}
+export const Checkout: React.FC = () => {
+  const navigate = useNavigate();
+  const { items: cart, clearCart } = useCartStore();
+  const { user } = useAuthStore();
+  const createOrder = useCreateOrder();
 
-export const Checkout: React.FC<CheckoutProps> = ({ onBack, onSuccess }) => {
-  const { cart, user, clearCart } = useApp();
   const [formData, setFormData] = useState({
     fullName: user?.name || '',
     email: user?.email || '',
     phone: '',
     address: '',
     city: '',
+    notes: '',
     paymentMethod: 'cod'
   });
-  const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [orderNumber, setOrderNumber] = useState('');
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -29,24 +33,45 @@ export const Checkout: React.FC<CheckoutProps> = ({ onBack, onSuccess }) => {
   };
 
   const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const shipping = 50000;
+  const shipping = subtotal >= 10000000 ? 0 : 50000;
   const total = subtotal + shipping;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsProcessing(true);
 
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    if (cart.length === 0) {
+      toast.error('Giỏ hàng trống');
+      return;
+    }
 
-    setIsProcessing(false);
-    setIsSuccess(true);
+    const fullAddress = `${formData.address}, ${formData.city}`;
 
-    // Wait for animation then redirect
-    setTimeout(() => {
-      clearCart();
-      onSuccess();
-    }, 3000);
+    try {
+      const order = await createOrder.mutateAsync({
+        items: cart.map(item => ({
+          productId: item.product.id,
+          name: item.product.name,
+          price: item.product.price,
+          quantity: item.quantity,
+        })),
+        address: fullAddress,
+        phone: formData.phone,
+        notes: formData.notes || undefined,
+        totalAmount: total,
+      });
+
+      setOrderNumber(order.orderNumber);
+      setIsSuccess(true);
+      toast.success('Đặt hàng thành công!');
+
+      // Wait for animation then clear cart and redirect
+      setTimeout(() => {
+        clearCart();
+        navigate('/account');
+      }, 3000);
+    } catch (error: any) {
+      toast.error(error.message || 'Đặt hàng thất bại. Vui lòng thử lại.');
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -56,13 +81,33 @@ export const Checkout: React.FC<CheckoutProps> = ({ onBack, onSuccess }) => {
     });
   };
 
+  if (cart.length === 0 && !isSuccess) {
+    return (
+      <div className="min-h-screen bg-black pt-24 pb-16">
+        <div className="container mx-auto px-4 text-center">
+          <AlertCircle className="w-16 h-16 text-white/20 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-4">Giỏ hàng trống</h2>
+          <p className="text-white/60 mb-6">Bạn cần thêm sản phẩm vào giỏ trước khi thanh toán.</p>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => navigate('/products')}
+            className="px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-xl"
+          >
+            Khám phá sản phẩm
+          </motion.button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-black pt-24 pb-16">
       {/* Back Button */}
       <div className="container mx-auto px-4 mb-8">
         <motion.button
           whileHover={{ x: -5 }}
-          onClick={onBack}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -90,7 +135,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onBack, onSuccess }) => {
             >
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-6">Thông tin giao hàng</h2>
-                
+
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-white/80 mb-2">Họ và tên</label>
@@ -156,12 +201,24 @@ export const Checkout: React.FC<CheckoutProps> = ({ onBack, onSuccess }) => {
                       placeholder="Số nhà, tên đường, phường/xã"
                     />
                   </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-white/80 mb-2">Ghi chú (tùy chọn)</label>
+                    <textarea
+                      name="notes"
+                      value={formData.notes}
+                      onChange={handleChange}
+                      rows={2}
+                      className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500/50 transition-colors resize-none"
+                      placeholder="Yêu cầu đặc biệt, thời gian giao hàng..."
+                    />
+                  </div>
                 </div>
               </div>
 
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-6">Phương thức thanh toán</h2>
-                
+
                 <div className="space-y-3">
                   <label className="flex items-center gap-3 p-4 bg-black/30 border border-white/10 rounded-xl cursor-pointer hover:border-amber-500/50 transition-colors">
                     <input
@@ -206,11 +263,17 @@ export const Checkout: React.FC<CheckoutProps> = ({ onBack, onSuccess }) => {
                 whileHover={{ scale: 1.02, boxShadow: '0 0 30px rgba(251, 191, 36, 0.5)' }}
                 whileTap={{ scale: 0.98 }}
                 type="submit"
-                disabled={isProcessing}
+                disabled={createOrder.isPending}
                 className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isProcessing ? 'Đang xử lý...' : `Thanh toán ${formatPrice(total)}`}
+                {createOrder.isPending ? 'Đang xử lý...' : `Thanh toán ${formatPrice(total)}`}
               </motion.button>
+
+              {createOrder.isError && (
+                <p className="text-red-400 text-sm text-center">
+                  {(createOrder.error as Error)?.message || 'Đã xảy ra lỗi'}
+                </p>
+              )}
             </motion.form>
           </div>
 
@@ -222,7 +285,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onBack, onSuccess }) => {
               className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 border border-white/10 sticky top-24"
             >
               <h2 className="text-2xl font-semibold text-white mb-6">Đơn hàng</h2>
-              
+
               <div className="space-y-4 mb-6">
                 {cart.map((item) => (
                   <div key={item.product.id} className="flex gap-3">
@@ -249,8 +312,11 @@ export const Checkout: React.FC<CheckoutProps> = ({ onBack, onSuccess }) => {
                 </div>
                 <div className="flex justify-between text-white/60">
                   <span>Phí vận chuyển</span>
-                  <span>{formatPrice(shipping)}</span>
+                  <span>{shipping === 0 ? <span className="text-green-400">Miễn phí</span> : formatPrice(shipping)}</span>
                 </div>
+                {shipping === 0 && (
+                  <p className="text-green-400/60 text-xs">Miễn phí ship cho đơn từ 10 triệu</p>
+                )}
               </div>
 
               <div className="flex justify-between text-2xl font-bold text-white mt-6">
@@ -286,10 +352,15 @@ export const Checkout: React.FC<CheckoutProps> = ({ onBack, onSuccess }) => {
               >
                 <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto mb-6" />
               </motion.div>
-              
-              <h2 className="text-3xl font-bold text-white mb-4">Thanh toán thành công!</h2>
+
+              <h2 className="text-3xl font-bold text-white mb-4">Đặt hàng thành công!</h2>
               <p className="text-white/60 mb-2">Cảm ơn bạn đã mua hàng tại Guitar NOVA</p>
-              <p className="text-white/40 text-sm">Đơn hàng của bạn đang được xử lý...</p>
+              {orderNumber && (
+                <p className="text-amber-400 font-mono text-sm mb-2">
+                  Mã đơn hàng: {orderNumber}
+                </p>
+              )}
+              <p className="text-white/40 text-sm">Đang chuyển đến trang tài khoản...</p>
             </motion.div>
           </motion.div>
         )}

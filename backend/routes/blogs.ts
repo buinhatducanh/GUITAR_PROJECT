@@ -66,7 +66,7 @@ router.get('/', async (req, res) => {
 router.get('/:slug', async (req, res) => {
     try {
         const post = await prisma.blogPost.update({
-            where: { slug: req.params.slug },
+            where: { slug: req.params.slug as string },
             data: { views: { increment: 1 } },
         });
 
@@ -129,7 +129,7 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
 router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
         const post = await prisma.blogPost.update({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
             data: req.body,
         });
         res.json(post);
@@ -142,7 +142,7 @@ router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => 
 /** DELETE /api/blogs/:id */
 router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
-        await prisma.blogPost.delete({ where: { id: req.params.id } });
+        await prisma.blogPost.delete({ where: { id: req.params.id as string } });
         res.json({ message: 'Đã xóa bài viết' });
     } catch (err) {
         console.error('Delete blog error:', err);

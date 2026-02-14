@@ -1,17 +1,14 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Guitar, Music, Radio, Zap, Package } from 'lucide-react';
-import { useApp, Product } from '../context/AppContext';
+import { useNavigate } from 'react-router-dom';
+import { useApp } from '../context/AppContext';
+import { Product } from '../../shared/types';
 import { ProductCard } from './ProductCard';
 
-interface CategoriesProps {
-  onBack: () => void;
-  onViewProduct: (product: Product) => void;
-  onBuyNow: (product: Product) => void;
-}
-
-export const Categories: React.FC<CategoriesProps> = ({ onBack, onViewProduct, onBuyNow }) => {
+export const Categories: React.FC = () => {
   const { products } = useApp();
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const categories = [
@@ -79,7 +76,7 @@ export const Categories: React.FC<CategoriesProps> = ({ onBack, onViewProduct, o
         <div className="container mx-auto px-4 py-8">
           <motion.button
             whileHover={{ x: -5 }}
-            onClick={onBack}
+            onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-4"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -181,8 +178,6 @@ export const Categories: React.FC<CategoriesProps> = ({ onBack, onViewProduct, o
               >
                 <ProductCard
                   product={product}
-                  onViewDetail={onViewProduct}
-                  onBuyNow={onBuyNow}
                 />
               </motion.div>
             ))}

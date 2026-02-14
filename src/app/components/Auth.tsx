@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { LogIn, UserPlus, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { toast } from 'sonner';
 
 interface AuthProps {
   mode: 'login' | 'register';
-  onBack: () => void;
-  onToggleMode: () => void;
 }
 
-export const Auth: React.FC<AuthProps> = ({ mode, onBack, onToggleMode }) => {
+export const Auth: React.FC<AuthProps> = ({ mode }) => {
+  const navigate = useNavigate();
   const { setUser } = useApp();
   const [formData, setFormData] = useState({
     name: '',
@@ -50,7 +50,7 @@ export const Auth: React.FC<AuthProps> = ({ mode, onBack, onToggleMode }) => {
       };
       setUser(newUser);
       toast.success('Đăng ký thành công! Bạn nhận được 100 điểm tân thủ 🎉');
-      onBack();
+      navigate('/');
     } else {
       // Simulate login
       const user = {
@@ -67,7 +67,7 @@ export const Auth: React.FC<AuthProps> = ({ mode, onBack, onToggleMode }) => {
       };
       setUser(user);
       toast.success('Đăng nhập thành công!');
-      onBack();
+      navigate('/');
     }
   };
 
@@ -78,7 +78,7 @@ export const Auth: React.FC<AuthProps> = ({ mode, onBack, onToggleMode }) => {
         <div className="mb-8">
           <motion.button
             whileHover={{ x: -5 }}
-            onClick={onBack}
+            onClick={() => navigate('/')}
             className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -191,7 +191,7 @@ export const Auth: React.FC<AuthProps> = ({ mode, onBack, onToggleMode }) => {
                 {mode === 'login' ? 'Chưa có tài khoản?' : 'Đã có tài khoản?'}
                 {' '}
                 <button
-                  onClick={onToggleMode}
+                  onClick={() => navigate(mode === 'login' ? '/register' : '/login')}
                   className="text-amber-500 hover:text-amber-400 font-medium transition-colors"
                 >
                   {mode === 'login' ? 'Đăng ký ngay' : 'Đăng nhập'}

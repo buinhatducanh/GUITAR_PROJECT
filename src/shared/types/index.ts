@@ -143,18 +143,33 @@ export interface UserData {
     tier: 'bronze' | 'silver' | 'gold' | 'platinum';
 }
 
-// ─── Re-exports ──────────────────────────────────
-// Organize commonly used type groups
+// ─── Order Types ────────────────────────────────
 
-export type {
-    Product,
-    Review,
-    CartItem,
-    Banner,
-    User,
-    Voucher,
-    Event,
-    LandingPageData,
-    BlogPost,
-    UserData,
-};
+export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+
+export interface OrderItem {
+    id: string;
+    productId: string;
+    name: string;
+    price: number;
+    quantity: number;
+}
+
+export interface Order {
+    id: string;
+    orderNumber: string;
+    userId: string;
+    status: OrderStatus;
+    totalAmount: number;
+    address: string;
+    phone: string;
+    notes?: string;
+    createdAt: string;
+    updatedAt: string;
+    items: OrderItem[];
+    user?: {
+        id: string;
+        name: string;
+        email: string;
+    };
+}

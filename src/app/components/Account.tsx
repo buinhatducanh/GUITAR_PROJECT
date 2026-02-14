@@ -1,15 +1,24 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, User, Mail, Calendar, Star, ShoppingBag, Award, TrendingUp, Gift } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { ArrowLeft, User, Mail, Calendar, Star, ShoppingBag, Award, TrendingUp, Gift, Package, Clock, ChevronRight, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../features/auth/store/authStore';
+import { useOrders } from '../hooks/useQueries';
+import type { Order, OrderStatus } from '../../shared/types';
 
-interface AccountProps {
-  onBack: () => void;
-  onNavigate: (page: string) => void;
-}
+const STATUS_MAP: Record<OrderStatus, { label: string; color: string }> = {
+  PENDING: { label: 'Chờ xác nhận', color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30' },
+  CONFIRMED: { label: 'Đã xác nhận', color: 'text-blue-400 bg-blue-400/10 border-blue-400/30' },
+  PROCESSING: { label: 'Đang xử lý', color: 'text-purple-400 bg-purple-400/10 border-purple-400/30' },
+  SHIPPED: { label: 'Đang giao', color: 'text-orange-400 bg-orange-400/10 border-orange-400/30' },
+  DELIVERED: { label: 'Đã giao', color: 'text-green-400 bg-green-400/10 border-green-400/30' },
+  CANCELLED: { label: 'Đã hủy', color: 'text-red-400 bg-red-400/10 border-red-400/30' },
+};
 
-export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
-  const { user, userVouchers, vouchers } = useApp();
+export const Account: React.FC = () => {
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const { data: orders, isLoading: ordersLoading } = useOrders();
   const [activeTab, setActiveTab] = useState<'info' | 'orders' | 'vouchers'>('info');
 
   if (!user) {
@@ -37,6 +46,16 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
     });
   };
 
+  const formatDateTime = (date: string) => {
+    return new Date(date).toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   const getTierColor = () => {
     const points = user.points;
     if (points >= 5000) return 'from-purple-500 to-purple-600';
@@ -53,7 +72,10 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
     return 'Bronze';
   };
 
-  const myVouchers = vouchers.filter(v => userVouchers.includes(v.id));
+  const orderList = (orders || []) as Order[];
+  const totalSpent = orderList
+    .filter(o => o.status !== 'CANCELLED')
+    .reduce((sum, o) => sum + Number(o.totalAmount), 0);
 
   return (
     <div className="min-h-screen bg-black pt-24 pb-16">
@@ -62,7 +84,7 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
         <div className="container mx-auto px-4 py-8">
           <motion.button
             whileHover={{ x: -5 }}
-            onClick={onBack}
+            onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-4"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -71,11 +93,9 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
 
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="flex items-center gap-4">
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="w-20 h-20 rounded-full border-2 border-purple-500"
-              />
+              <div className="w-20 h-20 rounded-full border-2 border-purple-500 bg-purple-900/50 flex items-center justify-center">
+                <User className="w-10 h-10 text-purple-300" />
+              </div>
               <div>
                 <h1 className="text-3xl font-bold text-white mb-1">{user.name}</h1>
                 <p className="text-purple-300">{user.email}</p>
@@ -97,7 +117,7 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
               <div className="flex items-baseline gap-2">
                 <Star className="w-8 h-8 text-white fill-white" />
                 <span className="text-4xl font-bold text-white">
-                  {user.points.toLocaleString('vi-VN')}
+                  {(user.points || 0).toLocaleString('vi-VN')}
                 </span>
                 <span className="text-white/80 text-sm">điểm</span>
               </div>
@@ -118,7 +138,7 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
               <ShoppingBag className="w-10 h-10 text-blue-400" />
             </div>
             <p className="text-blue-200 text-sm mb-1">Tổng đơn hàng</p>
-            <p className="text-3xl font-bold text-white">{user.totalOrders}</p>
+            <p className="text-3xl font-bold text-white">{orderList.length}</p>
           </motion.div>
 
           <motion.div
@@ -131,7 +151,7 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
               <TrendingUp className="w-10 h-10 text-green-400" />
             </div>
             <p className="text-green-200 text-sm mb-1">Tổng chi tiêu</p>
-            <p className="text-xl font-bold text-white">{formatPrice(user.totalSpent)}</p>
+            <p className="text-xl font-bold text-white">{formatPrice(totalSpent)}</p>
           </motion.div>
 
           <motion.div
@@ -143,8 +163,8 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
             <div className="flex items-center justify-between mb-4">
               <Gift className="w-10 h-10 text-amber-400" />
             </div>
-            <p className="text-amber-200 text-sm mb-1">Voucher của tôi</p>
-            <p className="text-3xl font-bold text-white">{myVouchers.length}</p>
+            <p className="text-amber-200 text-sm mb-1">Điểm tích lũy</p>
+            <p className="text-3xl font-bold text-white">{(user.points || 0).toLocaleString('vi-VN')}</p>
           </motion.div>
         </div>
 
@@ -175,7 +195,7 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
                 : 'text-white/60 hover:text-white'
             }`}
           >
-            Đơn hàng
+            Đơn hàng ({orderList.length})
             {activeTab === 'orders' && (
               <motion.div
                 layoutId="activeTab"
@@ -192,7 +212,7 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
                 : 'text-white/60 hover:text-white'
             }`}
           >
-            Voucher ({myVouchers.length})
+            Voucher
             {activeTab === 'vouchers' && (
               <motion.div
                 layoutId="activeTab"
@@ -210,7 +230,7 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
             className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 border border-white/10"
           >
             <h2 className="text-2xl font-bold text-white mb-6">Thông tin cá nhân</h2>
-            
+
             <div className="space-y-4">
               <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl">
                 <User className="w-5 h-5 text-purple-400" />
@@ -232,7 +252,7 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
                 <Calendar className="w-5 h-5 text-purple-400" />
                 <div>
                   <p className="text-white/60 text-sm">Ngày tham gia</p>
-                  <p className="text-white font-medium">{formatDate(user.joinDate)}</p>
+                  <p className="text-white font-medium">{user.joinDate ? formatDate(user.joinDate) : 'N/A'}</p>
                 </div>
               </div>
 
@@ -251,19 +271,72 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 border border-white/10 text-center"
           >
-            <ShoppingBag className="w-16 h-16 text-white/20 mx-auto mb-4" />
-            <h3 className="text-xl text-white mb-2">Chưa có đơn hàng nào</h3>
-            <p className="text-white/60 mb-6">Bạn chưa mua sản phẩm nào từ Guitar NOVA</p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => onNavigate('products')}
-              className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-xl"
-            >
-              Khám phá sản phẩm
-            </motion.button>
+            {ordersLoading ? (
+              <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 border border-white/10 text-center">
+                <Loader2 className="w-10 h-10 text-purple-400 mx-auto mb-4 animate-spin" />
+                <p className="text-white/60">Đang tải đơn hàng...</p>
+              </div>
+            ) : orderList.length === 0 ? (
+              <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 border border-white/10 text-center">
+                <ShoppingBag className="w-16 h-16 text-white/20 mx-auto mb-4" />
+                <h3 className="text-xl text-white mb-2">Chưa có đơn hàng nào</h3>
+                <p className="text-white/60 mb-6">Bạn chưa mua sản phẩm nào từ Guitar NOVA</p>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate('/products')}
+                  className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-xl"
+                >
+                  Khám phá sản phẩm
+                </motion.button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {orderList.map((order) => {
+                  const status = STATUS_MAP[order.status] || STATUS_MAP.PENDING;
+                  return (
+                    <motion.div
+                      key={order.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      whileHover={{ scale: 1.005 }}
+                      onClick={() => navigate(`/orders/${order.id}`)}
+                      className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10 cursor-pointer hover:border-purple-500/30 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <Package className="w-5 h-5 text-purple-400" />
+                          <span className="text-amber-400 font-mono text-sm font-semibold">
+                            {order.orderNumber}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium border ${status.color}`}>
+                            {status.label}
+                          </span>
+                          <ChevronRight className="w-4 h-4 text-white/40" />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-white/50 text-sm mb-3">
+                        <Clock className="w-4 h-4" />
+                        <span>{formatDateTime(order.createdAt)}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/60 text-sm">
+                          {order.items.length} sản phẩm
+                        </span>
+                        <span className="text-lg font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
+                          {formatPrice(Number(order.totalAmount))}
+                        </span>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -272,58 +345,19 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            {myVouchers.length === 0 ? (
-              <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 border border-white/10 text-center">
-                <Gift className="w-16 h-16 text-white/20 mx-auto mb-4" />
-                <h3 className="text-xl text-white mb-2">Chưa có voucher nào</h3>
-                <p className="text-white/60 mb-6">Đổi điểm để nhận voucher giảm giá hấp dẫn</p>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => onNavigate('rewards')}
-                  className="px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-xl"
-                >
-                  Đổi voucher ngay
-                </motion.button>
-              </div>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {myVouchers.map((voucher) => (
-                  <div
-                    key={voucher.id}
-                    className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl overflow-hidden border border-green-500/30"
-                  >
-                    <div className="relative h-32">
-                      <img
-                        src={voucher.image}
-                        alt={voucher.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
-                      <div className="absolute top-3 right-3 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                        Đã sở hữu
-                      </div>
-                    </div>
-                    <div className="p-5">
-                      <div className="inline-block px-3 py-1 bg-amber-500/20 border border-amber-500/40 rounded-lg mb-3">
-                        <span className="text-amber-400 font-mono font-bold text-sm">
-                          {voucher.code}
-                        </span>
-                      </div>
-                      <h3 className="text-lg font-bold text-white mb-2">
-                        {voucher.title}
-                      </h3>
-                      <p className="text-white/60 text-sm mb-3">
-                        {voucher.description}
-                      </p>
-                      <p className="text-xs text-white/40">
-                        HSD: {formatDate(voucher.expiryDate)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 border border-white/10 text-center">
+              <Gift className="w-16 h-16 text-white/20 mx-auto mb-4" />
+              <h3 className="text-xl text-white mb-2">Chưa có voucher nào</h3>
+              <p className="text-white/60 mb-6">Đổi điểm để nhận voucher giảm giá hấp dẫn</p>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/rewards')}
+                className="px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-xl"
+              >
+                Đổi voucher ngay
+              </motion.button>
+            </div>
           </motion.div>
         )}
       </div>

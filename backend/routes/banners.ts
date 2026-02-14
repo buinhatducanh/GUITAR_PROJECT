@@ -33,7 +33,7 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
 router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
         const banner = await prisma.banner.update({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
             data: req.body,
         });
         res.json(banner);
@@ -46,7 +46,7 @@ router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => 
 /** DELETE /api/banners/:id */
 router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
-        await prisma.banner.delete({ where: { id: req.params.id } });
+        await prisma.banner.delete({ where: { id: req.params.id as string } });
         res.json({ message: 'Đã xóa banner' });
     } catch (err) {
         console.error('Delete banner error:', err);

@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Calendar, Gift, Star, Heart, Users, Trophy, Sparkles, CheckCircle2, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useApp, Event } from '../context/AppContext';
 import { toast } from 'sonner';
 
-interface EventsProps {
-  onBack: () => void;
-}
-
-export const Events: React.FC<EventsProps> = ({ onBack }) => {
+export const Events: React.FC = () => {
+  const navigate = useNavigate();
   const { user, events } = useApp();
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [filter, setFilter] = useState<'active' | 'upcoming' | 'past'>('active');
@@ -92,7 +90,7 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
         <div className="container mx-auto px-4 py-8">
           <motion.button
             whileHover={{ x: -5 }}
-            onClick={onBack}
+            onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-4"
           >
             <ArrowLeft className="w-5 h-5" />

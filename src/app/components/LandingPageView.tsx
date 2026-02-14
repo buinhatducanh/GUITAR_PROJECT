@@ -1,21 +1,35 @@
 import React from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { LandingPageData } from '../context/AppContext';
+import { useApp } from '../context/AppContext';
 
-interface LandingPageViewProps {
-  landingPage: LandingPageData;
-  onBack: () => void;
-}
+export const LandingPageView: React.FC = () => {
+  const navigate = useNavigate();
+  const { slug } = useParams<{ slug: string }>();
+  const { landingPages } = useApp();
 
-export const LandingPageView: React.FC<LandingPageViewProps> = ({ landingPage, onBack }) => {
+  const landingPage = landingPages.find(p => p.slug === slug);
+
+  if (!landingPage) {
+    return (
+      <div className="min-h-screen bg-black pt-24 pb-16 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Không tìm thấy landing page</h1>
+          <button onClick={() => navigate('/landing')} className="text-amber-400 hover:underline">
+            Quay lại
+          </button>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-black pt-24 pb-16">
       {/* Back Button */}
       <div className="container mx-auto px-4 mb-8">
         <motion.button
           whileHover={{ x: -5 }}
-          onClick={onBack}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />

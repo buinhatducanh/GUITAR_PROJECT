@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  ArrowLeft, BarChart3, Package, Users, FileText, Image, 
+import {
+  ArrowLeft, BarChart3, Package, Users, FileText, Image,
   Star, Plus, Edit, Trash2, X, DollarSign, TrendingUp, ShoppingCart,
   Gift, Calendar, Award, Settings as SettingsIcon
 } from 'lucide-react';
@@ -9,11 +10,8 @@ import { useApp, Product, Banner, Voucher, Event, UserData, Review, LandingPageD
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { toast } from 'sonner';
 
-interface AdminDashboardProps {
-  onBack: () => void;
-}
-
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
+export const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { 
     products, setProducts, 
     banners, setBanners,
@@ -162,7 +160,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         <div className="container mx-auto px-4 py-6">
           <motion.button
             whileHover={{ x: -5 }}
-            onClick={onBack}
+            onClick={() => navigate('/')}
             className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-4"
           >
             <ArrowLeft className="w-5 h-5" />

@@ -1,16 +1,12 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Percent, Tag, TrendingDown, Zap, Clock, Gift, Sparkles } from 'lucide-react';
-import { useApp, Product } from '../context/AppContext';
+import { useNavigate } from 'react-router-dom';
+import { useApp } from '../context/AppContext';
 import { ProductCard } from './ProductCard';
 
-interface PromoProps {
-  onBack: () => void;
-  onViewProduct: (product: Product) => void;
-  onBuyNow: (product: Product) => void;
-}
-
-export const Promo: React.FC<PromoProps> = ({ onBack, onViewProduct, onBuyNow }) => {
+export const Promo: React.FC = () => {
+  const navigate = useNavigate();
   const { products } = useApp();
   const [sortBy, setSortBy] = useState<'discount' | 'price' | 'name'>('discount');
 
@@ -48,7 +44,7 @@ export const Promo: React.FC<PromoProps> = ({ onBack, onViewProduct, onBuyNow })
         <div className="container mx-auto px-4 py-12 relative">
           <motion.button
             whileHover={{ x: -5 }}
-            onClick={onBack}
+            onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-6"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -219,8 +215,6 @@ export const Promo: React.FC<PromoProps> = ({ onBack, onViewProduct, onBuyNow })
 
                 <ProductCard
                   product={product}
-                  onViewDetail={onViewProduct}
-                  onBuyNow={onBuyNow}
                 />
               </motion.div>
             ))}
@@ -255,7 +249,7 @@ export const Promo: React.FC<PromoProps> = ({ onBack, onViewProduct, onBuyNow })
             <motion.button
               whileHover={{ scale: 1.05, boxShadow: '0 0 40px rgba(239, 68, 68, 0.6)' }}
               whileTap={{ scale: 0.95 }}
-              onClick={onBack}
+              onClick={() => navigate(-1)}
               className="px-12 py-5 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-bold text-lg rounded-full shadow-lg shadow-red-500/50 transition-all"
             >
               🔥 Mua ngay kẻo lỡ

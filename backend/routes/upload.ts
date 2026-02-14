@@ -31,7 +31,7 @@ router.post('/signature', authenticate, async (req: AuthRequest, res) => {
 /** DELETE /api/upload/:publicId — delete image from Cloudinary */
 router.delete('/:publicId', authenticate, async (req: AuthRequest, res) => {
     try {
-        const result = await cloudinary.uploader.destroy(req.params.publicId);
+        const result = await cloudinary.uploader.destroy(req.params.publicId as string);
         res.json(result);
     } catch (err) {
         console.error('Delete image error:', err);

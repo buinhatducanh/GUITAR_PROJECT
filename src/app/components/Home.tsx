@@ -2,15 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { ChevronLeft, ChevronRight, Star, ShoppingCart, Trophy, Zap, Tag, Gift, Sparkles, ArrowRight, Calendar, TrendingUp, Award, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useApp, Product } from '../context/AppContext';
-import { useCartStore } from '../../features/cart/store/cartStore';
+import { useApp } from '../context/AppContext';
 import { ProductCard } from './ProductCard';
 import { HeroBanner } from './HeroBanner';
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
   const { products, events, vouchers, landingPages, blogPosts } = useApp();
-  const addItem = useCartStore((state) => state.addItem);
 
   const featuredProducts = products.slice(0, 4);
   const newProducts = products.slice(4, 8);
@@ -19,10 +17,6 @@ export const Home: React.FC = () => {
   const topVouchers = vouchers.filter(v => v.isActive).slice(0, 3);
   const publishedLandingPages = landingPages.filter(lp => lp.isPublished).slice(0, 2);
   const publishedBlogs = blogPosts.filter(bp => bp.isPublished).slice(0, 3);
-
-  const handleViewProduct = (product: Product) => {
-    navigate(`/products/${product.slug}`);
-  };
 
   return (
     <div className="min-h-screen bg-black">
@@ -39,7 +33,7 @@ export const Home: React.FC = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               whileHover={{ scale: 1.02, y: -5 }}
-              onClick={() => onNavigate('events')}
+              onClick={() => navigate('/events')}
               className="group bg-gradient-to-br from-purple-900/30 to-pink-900/30 rounded-2xl p-8 border border-purple-500/30 hover:border-purple-500/60 transition-all cursor-pointer relative overflow-hidden"
             >
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(168,85,247,0.15),transparent_70%)]" />
@@ -69,7 +63,7 @@ export const Home: React.FC = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               whileHover={{ scale: 1.02, y: -5 }}
-              onClick={() => onNavigate('rewards')}
+              onClick={() => navigate('/rewards')}
               className="group bg-gradient-to-br from-amber-900/30 to-orange-900/30 rounded-2xl p-8 border border-amber-500/30 hover:border-amber-500/60 transition-all cursor-pointer relative overflow-hidden"
             >
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(251,191,36,0.15),transparent_70%)]" />
@@ -131,8 +125,6 @@ export const Home: React.FC = () => {
               >
                 <ProductCard
                   product={product}
-                  onViewDetail={onViewProduct}
-                  onBuyNow={onBuyNow}
                 />
               </motion.div>
             ))}
@@ -147,7 +139,7 @@ export const Home: React.FC = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => onNavigate('products')}
+              onClick={() => navigate('/products')}
               className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-medium rounded-xl border border-white/10 hover:border-amber-500/50 transition-all"
             >
               Xem tất cả sản phẩm
@@ -180,7 +172,7 @@ export const Home: React.FC = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => onNavigate('products')}
+              onClick={() => navigate('/products')}
               className="hidden md:flex items-center gap-2 px-6 py-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 font-medium rounded-xl border border-blue-500/30 transition-all"
             >
               <span>Xem tất cả</span>
@@ -202,8 +194,6 @@ export const Home: React.FC = () => {
                 >
                   <ProductCard
                     product={product}
-                    onViewDetail={onViewProduct}
-                    onBuyNow={onBuyNow}
                   />
                 </motion.div>
               ))}
@@ -269,8 +259,6 @@ export const Home: React.FC = () => {
                     )}
                     <ProductCard
                       product={product}
-                      onViewDetail={onViewProduct}
-                      onBuyNow={onBuyNow}
                     />
                   </div>
                 </motion.div>
@@ -286,7 +274,7 @@ export const Home: React.FC = () => {
               <motion.button
                 whileHover={{ scale: 1.05, boxShadow: '0 0 40px rgba(239, 68, 68, 0.6)' }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => onNavigate('promo')}
+                onClick={() => navigate('/promo')}
                 className="px-10 py-5 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-bold text-lg rounded-full transition-all shadow-lg shadow-red-500/50"
               >
                 🔥 Xem tất cả khuyến mãi HOT
@@ -327,7 +315,7 @@ export const Home: React.FC = () => {
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.1 }}
                   whileHover={{ y: -10 }}
-                  onClick={() => onNavigate('rewards')}
+                  onClick={() => navigate('/rewards')}
                   className="group bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl overflow-hidden border border-amber-500/20 hover:border-amber-500/50 transition-all cursor-pointer"
                 >
                   <div className="relative h-32 overflow-hidden">
@@ -368,7 +356,7 @@ export const Home: React.FC = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => onNavigate('rewards')}
+                onClick={() => navigate('/rewards')}
                 className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl transition-all"
               >
                 Xem tất cả voucher
@@ -406,7 +394,7 @@ export const Home: React.FC = () => {
                 <motion.button
                   whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(251, 191, 36, 0.5)' }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => onNavigate('products')}
+                  onClick={() => navigate('/products')}
                   className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-full transition-all"
                 >
                   Khám phá ngay
@@ -414,7 +402,7 @@ export const Home: React.FC = () => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => onNavigate('/landing/about')}
+                  onClick={() => navigate('/landing/about')}
                   className="px-8 py-4 border-2 border-white/30 text-white font-medium rounded-full hover:bg-white/10 backdrop-blur-sm transition-all"
                 >
                   Về chúng tôi
@@ -458,7 +446,7 @@ export const Home: React.FC = () => {
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.15 }}
                   whileHover={{ y: -10 }}
-                  onClick={() => onNavigate(page.slug)}
+                  onClick={() => navigate(page.slug)}
                   className="group bg-gradient-to-br from-zinc-900 to-black rounded-2xl overflow-hidden border border-blue-500/20 hover:border-blue-500/50 transition-all cursor-pointer"
                 >
                   {/* Card Image */}
@@ -513,7 +501,7 @@ export const Home: React.FC = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => onNavigate('landing')}
+                onClick={() => navigate('/landing')}
                 className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all"
               >
                 Xem tất cả Landing Pages
@@ -556,7 +544,7 @@ export const Home: React.FC = () => {
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.1 }}
                   whileHover={{ y: -10 }}
-                  onClick={() => onNavigate(blog.slug)}
+                  onClick={() => navigate(blog.slug)}
                   className="group bg-gradient-to-br from-zinc-900 to-black rounded-2xl overflow-hidden border border-orange-500/20 hover:border-orange-500/50 transition-all cursor-pointer"
                 >
                   {/* Card Image */}
@@ -620,7 +608,7 @@ export const Home: React.FC = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => onNavigate('blog')}
+                onClick={() => navigate('/blog')}
                 className="px-8 py-4 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold rounded-xl transition-all"
               >
                 Xem tất cả bài viết

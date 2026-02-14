@@ -35,7 +35,7 @@ router.get('/all', authenticate, requireAdmin, async (_req: AuthRequest, res) =>
 router.get('/:slug', async (req, res) => {
     try {
         const page = await prisma.landingPage.findUnique({
-            where: { slug: req.params.slug },
+            where: { slug: req.params.slug as string },
         });
 
         if (!page) {
@@ -65,7 +65,7 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
 router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
         const page = await prisma.landingPage.update({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
             data: req.body,
         });
         res.json(page);
@@ -78,7 +78,7 @@ router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => 
 /** DELETE /api/landing-pages/:id */
 router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
-        await prisma.landingPage.delete({ where: { id: req.params.id } });
+        await prisma.landingPage.delete({ where: { id: req.params.id as string } });
         res.json({ message: 'Đã xóa trang' });
     } catch (err) {
         console.error('Delete landing page error:', err);

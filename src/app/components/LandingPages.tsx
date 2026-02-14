@@ -1,21 +1,19 @@
 import React from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, Award, Heart, Users, Zap } from 'lucide-react';
 
-interface LandingPagesProps {
-  page: string;
-  onBack: () => void;
-  onNavigate: (page: string) => void;
-}
-
-export const LandingPages: React.FC<LandingPagesProps> = ({ page, onBack, onNavigate }) => {
+export const LandingPages: React.FC = () => {
+  const navigate = useNavigate();
+  const { slug } = useParams<{ slug: string }>();
+  const page = slug ? `/landing/${slug}` : '/landing';
   if (page === '/landing/collection-2026') {
     return (
       <div className="min-h-screen bg-black pt-24 pb-16">
         <div className="container mx-auto px-4">
           <motion.button
             whileHover={{ x: -5 }}
-            onClick={onBack}
+            onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-8"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -58,7 +56,7 @@ export const LandingPages: React.FC<LandingPagesProps> = ({ page, onBack, onNavi
               <motion.button
                 whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(251, 191, 36, 0.5)' }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => onNavigate('products')}
+                onClick={() => navigate('/products')}
                 className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-full hover:from-amber-600 hover:to-orange-700 transition-all"
               >
                 Khám phá ngay
@@ -97,7 +95,7 @@ export const LandingPages: React.FC<LandingPagesProps> = ({ page, onBack, onNavi
         <div className="container mx-auto px-4">
           <motion.button
             whileHover={{ x: -5 }}
-            onClick={onBack}
+            onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-8"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -187,7 +185,7 @@ export const LandingPages: React.FC<LandingPagesProps> = ({ page, onBack, onNavi
       <div className="container mx-auto px-4">
         <motion.button
           whileHover={{ x: -5 }}
-          onClick={onBack}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-8"
         >
           <ArrowLeft className="w-5 h-5" />

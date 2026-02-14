@@ -1,15 +1,28 @@
 import React, { useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, Clock, Eye, Calendar, User, Tag, Share2, Heart } from 'lucide-react';
-import { BlogPost, useApp } from '../context/AppContext';
+import { useApp } from '../context/AppContext';
 
-interface BlogDetailProps {
-  post: BlogPost;
-  onBack: () => void;
-}
-
-export const BlogDetail: React.FC<BlogDetailProps> = ({ post, onBack }) => {
+export const BlogDetail: React.FC = () => {
+  const navigate = useNavigate();
+  const { slug } = useParams<{ slug: string }>();
   const { blogPosts, setBlogPosts } = useApp();
+
+  const post = blogPosts.find(p => p.slug === slug);
+
+  if (!post) {
+    return (
+      <div className="min-h-screen bg-black pt-24 pb-16 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Không tìm thấy bài viết</h1>
+          <button onClick={() => navigate('/blog')} className="text-emerald-400 hover:underline">
+            Quay lại danh sách
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     // Increment view count when viewing post
@@ -33,7 +46,7 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ post, onBack }) => {
         {/* Back Button */}
         <motion.button
           whileHover={{ x: -5 }}
-          onClick={onBack}
+          onClick={() => navigate('/blog')}
           className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-8"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -226,7 +239,7 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ post, onBack }) => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={onBack}
+            onClick={() => navigate('/blog')}
             className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/50 transition-all"
           >
             Xem thêm bài viết

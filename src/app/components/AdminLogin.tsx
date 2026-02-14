@@ -1,13 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Shield, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { toast } from 'sonner';
-
-interface AdminLoginProps {
-  onBack: () => void;
-  onSuccess: () => void;
-}
 
 // Demo accounts
 const DEMO_ACCOUNTS = {
@@ -25,7 +21,8 @@ const DEMO_ACCOUNTS = {
   }
 };
 
-export const AdminLogin: React.FC<AdminLoginProps> = ({ onBack, onSuccess }) => {
+export const AdminLogin: React.FC = () => {
+  const navigate = useNavigate();
   const { setUser } = useApp();
   const [formData, setFormData] = useState({
     email: '',
@@ -61,7 +58,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onBack, onSuccess }) => 
       };
       setUser(adminUser);
       toast.success('Đăng nhập admin thành công!');
-      onSuccess();
+      navigate('/admin');
       return;
     }
 
@@ -82,7 +79,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onBack, onSuccess }) => 
       };
       setUser(regularUser);
       toast.error('Bạn không có quyền truy cập Admin Dashboard');
-      setTimeout(() => onBack(), 1500);
+      setTimeout(() => navigate('/'), 1500);
       return;
     }
 
@@ -104,7 +101,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onBack, onSuccess }) => 
         <div className="mb-8">
           <motion.button
             whileHover={{ x: -5 }}
-            onClick={onBack}
+            onClick={() => navigate('/')}
             className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />

@@ -33,7 +33,7 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
 router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
         const voucher = await prisma.voucher.update({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
             data: req.body,
         });
         res.json(voucher);
@@ -46,7 +46,7 @@ router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => 
 /** DELETE /api/vouchers/:id */
 router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
-        await prisma.voucher.delete({ where: { id: req.params.id } });
+        await prisma.voucher.delete({ where: { id: req.params.id as string } });
         res.json({ message: 'Đã xóa voucher' });
     } catch (err) {
         console.error('Delete voucher error:', err);
@@ -57,7 +57,7 @@ router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) 
 /** POST /api/vouchers/:id/redeem — user redeems voucher */
 router.post('/:id/redeem', authenticate, async (req: AuthRequest, res) => {
     try {
-        const voucher = await prisma.voucher.findUnique({ where: { id: req.params.id } });
+        const voucher = await prisma.voucher.findUnique({ where: { id: req.params.id as string } });
         if (!voucher) {
             res.status(404).json({ error: 'Voucher không tồn tại' });
             return;

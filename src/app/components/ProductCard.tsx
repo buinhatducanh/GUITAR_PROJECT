@@ -1,21 +1,22 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { ShoppingCart, Zap, Star } from 'lucide-react';
-import { Product, useApp } from '../context/AppContext';
+import { useNavigate } from 'react-router-dom';
+import { Product } from '../../shared/types';
+import { useCartStore } from '../../features/cart/store/cartStore';
 import { toast } from 'sonner';
 
 interface ProductCardProps {
   product: Product;
-  onViewDetail: (product: Product) => void;
-  onBuyNow: (product: Product) => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetail, onBuyNow }) => {
-  const { addToCart } = useApp();
+export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  const navigate = useNavigate();
+  const addItem = useCartStore((state) => state.addItem);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
-    addToCart(product);
+    addItem(product);
     toast.success('Đã thêm vào giỏ hàng!', {
       description: product.name,
       duration: 2000
@@ -24,8 +25,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetail,
 
   const handleBuyNow = (e: React.MouseEvent) => {
     e.stopPropagation();
-    addToCart(product);
-    onBuyNow(product);
+    addItem(product);
+    navigate('/checkout');
   };
 
   const formatPrice = (price: number) => {
@@ -40,7 +41,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetail,
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -8 }}
-      onClick={() => onViewDetail(product)}
+      onClick={() => navigate('/products/' + product.id)}
       className="group relative bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl overflow-hidden border border-white/5 hover:border-amber-500/30 transition-all duration-300 cursor-pointer"
     >
       {/* Discount Badge */}
@@ -76,7 +77,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetail,
             whileHover={{ y: 0, opacity: 1 }}
             onClick={(e) => {
               e.stopPropagation();
-              onViewDetail(product);
+              navigate('/products/' + product.id);
             }}
             className="px-6 py-2 bg-white/10 backdrop-blur-sm text-white rounded-full border border-white/20 hover:bg-white/20 transition-colors"
           >

@@ -93,7 +93,7 @@ router.get('/', async (req, res) => {
 router.get('/:slug', async (req, res) => {
     try {
         const product = await prisma.product.findUnique({
-            where: { slug: req.params.slug },
+            where: { slug: req.params.slug as string },
             include: {
                 category: { select: { id: true, name: true, slug: true } },
                 reviews: {
@@ -165,7 +165,7 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
 router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
         const product = await prisma.product.update({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
             data: req.body,
             include: { category: { select: { id: true, name: true, slug: true } } },
         });
@@ -180,7 +180,7 @@ router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => 
 /** DELETE /api/products/:id — delete (admin only) */
 router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
-        await prisma.product.delete({ where: { id: req.params.id } });
+        await prisma.product.delete({ where: { id: req.params.id as string } });
         res.json({ message: 'Đã xóa sản phẩm' });
     } catch (err) {
         console.error('Delete product error:', err);

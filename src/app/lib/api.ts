@@ -195,10 +195,20 @@ export const landingPagesApi = {
 
 // ─── Orders API ─────────────────────────────────
 
+export interface CreateOrderPayload {
+    items: { productId: string; name: string; price: number; quantity: number }[];
+    address: string;
+    phone: string;
+    notes?: string;
+    totalAmount: number;
+}
+
 export const ordersApi = {
     getAll: () => request<any[]>('/orders'),
 
-    create: (data: { items: any[]; address: string; phone: string; notes?: string; totalAmount: number }) =>
+    getById: (id: string) => request<any>(`/orders/${id}`),
+
+    create: (data: CreateOrderPayload) =>
         request<any>('/orders', { method: 'POST', body: JSON.stringify(data) }),
 
     updateStatus: (id: string, status: string) =>

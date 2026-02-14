@@ -1,14 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, Clock, Eye, Calendar, User, Tag, Search } from 'lucide-react';
 import { useApp, BlogPost } from '../context/AppContext';
 
-interface BlogListProps {
-  onBack: () => void;
-  onSelectPost: (post: BlogPost) => void;
-}
-
-export const BlogList: React.FC<BlogListProps> = ({ onBack, onSelectPost }) => {
+export const BlogList: React.FC = () => {
+  const navigate = useNavigate();
   const { blogPosts } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -47,7 +44,7 @@ export const BlogList: React.FC<BlogListProps> = ({ onBack, onSelectPost }) => {
         <div className="container mx-auto px-4 py-8">
           <motion.button
             whileHover={{ x: -5 }}
-            onClick={onBack}
+            onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-4"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -109,7 +106,7 @@ export const BlogList: React.FC<BlogListProps> = ({ onBack, onSelectPost }) => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.1 }}
                 whileHover={{ y: -5 }}
-                onClick={() => onSelectPost(post)}
+                onClick={() => navigate('/blog/' + post.slug)}
                 className="group cursor-pointer bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl overflow-hidden border border-white/10 hover:border-emerald-500/30 transition-all"
               >
                 {/* Cover Image */}

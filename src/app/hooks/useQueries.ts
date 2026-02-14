@@ -155,10 +155,28 @@ export function useOrders() {
     });
 }
 
+export function useOrder(id: string) {
+    return useQuery({
+        queryKey: ['order', id],
+        queryFn: () => ordersApi.getById(id),
+        enabled: !!id,
+    });
+}
+
 export function useCreateOrder() {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: ordersApi.create,
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['orders'] }),
+    });
+}
+
+export function useUpdateOrderStatus() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, status }: { id: string; status: string }) => ordersApi.updateStatus(id, status),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+        },
     });
 }

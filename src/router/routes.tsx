@@ -22,6 +22,7 @@ const BlogList = React.lazy(() => import('../app/components/BlogList').then(m =>
 const BlogDetail = React.lazy(() => import('../app/components/BlogDetail').then(m => ({ default: m.BlogDetail })));
 const LandingPages = React.lazy(() => import('../app/components/LandingPages').then(m => ({ default: m.LandingPages })));
 const LandingPageView = React.lazy(() => import('../app/components/LandingPageView').then(m => ({ default: m.LandingPageView })));
+const OrderDetail = React.lazy(() => import('../app/components/OrderDetail').then(m => ({ default: m.OrderDetail })));
 const AdminLogin = React.lazy(() => import('../app/components/AdminLogin').then(m => ({ default: m.AdminLogin })));
 const AdminDashboard = React.lazy(() => import('../app/components/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 
@@ -71,6 +72,14 @@ export const routes: RouteObject[] = [
                 element: (
                     <AuthGuard>
                         <Account />
+                    </AuthGuard>
+                ),
+            },
+            {
+                path: '/orders/:id',
+                element: (
+                    <AuthGuard>
+                        <OrderDetail />
                     </AuthGuard>
                 ),
             },

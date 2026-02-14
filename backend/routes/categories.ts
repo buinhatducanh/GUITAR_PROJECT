@@ -68,7 +68,7 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
 router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
         const category = await prisma.category.update({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
             data: req.body,
         });
 
@@ -82,7 +82,7 @@ router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => 
 /** DELETE /api/categories/:id — delete (admin only) */
 router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
-        await prisma.category.delete({ where: { id: req.params.id } });
+        await prisma.category.delete({ where: { id: req.params.id as string } });
         res.json({ message: 'Đã xóa danh mục' });
     } catch (err) {
         console.error('Delete category error:', err);
