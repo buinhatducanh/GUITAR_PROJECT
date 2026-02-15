@@ -4,8 +4,8 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "vite build",
-    "dev": "concurrently \"vite\" \"tsx watch backend/index.ts\"",
+    "build": "node api.js && vite build",
+    "dev": "node api.js && concurrently \"vite\" \"tsx watch backend/index.ts\"",
     "dev:frontend": "vite",
     "dev:backend": "tsx watch backend/index.ts",
     "db:push": "npx prisma db push",
