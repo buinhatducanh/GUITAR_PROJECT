@@ -87,9 +87,11 @@ A full-stack e-commerce platform for musical instruments built with React, TypeS
 ## 📖 Documentation
 
 - **[Setup Guide](SETUP.md)** - Detailed installation instructions
+- **[Atomic Design](ATOMIC_DESIGN.md)** - ⚛️ Component architecture guide
 - **[API Documentation](API_DOCUMENTATION.md)** - Complete API reference
 - **[Contributing Guide](CONTRIBUTING.md)** - How to contribute
 - **[Account Credentials](ACCOUNTS.md)** - Demo accounts and features
+- **[Database Setup](DATABASE_SETUP.md)** - Database configuration help
 
 ## 🏗️ Tech Stack
 
@@ -122,49 +124,70 @@ A full-stack e-commerce platform for musical instruments built with React, TypeS
 
 ## 📂 Project Structure
 
+### ⚛️ Atomic Design Architecture
+
+This project follows **Atomic Design** principles for component organization:
+
 ```
 GUITAR_PROJECT/
 ├── backend/                 # Express API Server
 │   ├── index.ts            # Server entry point
-│   ├── routes/             # API routes
-│   │   ├── auth.ts         # Authentication
-│   │   ├── products.ts     # Products CRUD
-│   │   ├── categories.ts   # Categories
-│   │   ├── blogs.ts        # Blog posts
-│   │   ├── orders.ts       # Order management
-│   │   └── ...
-│   ├── middleware/         # Express middleware
-│   │   └── auth.ts         # JWT verification
-│   └── lib/                # Utilities
-│       ├── prisma.ts       # Prisma client
-│       └── cloudinary.ts   # Image upload
+│   ├── routes/             # API routes (10 routes)
+│   ├── middleware/         # Auth middleware
+│   └── lib/                # Prisma & Cloudinary
 │
-├── src/                    # React Frontend
-│   ├── app/                # App components
-│   │   ├── components/     # UI components
+├── src/
+│   ├── components/         # ⚛️ ATOMIC DESIGN
+│   │   ├── atoms/          # 🔹 Basic UI elements (48 components)
+│   │   │   ├── button.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── card.tsx
+│   │   │   └── ... (45 more)
+│   │   │
+│   │   ├── molecules/      # 🔸 Simple combinations
+│   │   │   └── (to be created)
+│   │   │
+│   │   ├── organisms/      # 🔶 Complex sections (5 components)
+│   │   │   ├── Header.tsx
+│   │   │   ├── Footer.tsx
+│   │   │   ├── ProductCard.tsx
+│   │   │   ├── HeroBanner.tsx
+│   │   │   └── Cart.tsx
+│   │   │
+│   │   ├── templates/      # 📄 Page layouts
+│   │   │   ├── MainLayout.tsx
+│   │   │   └── AuthLayout.tsx
+│   │   │
+│   │   └── pages/          # 📱 Actual pages (16 pages)
+│   │       ├── Home.tsx
+│   │       ├── Products.tsx
+│   │       ├── AdminDashboard.tsx
+│   │       └── ... (13 more)
+│   │
+│   ├── app/                # App core
 │   │   ├── context/        # React context
 │   │   └── App.tsx         # Root component
+│   │
 │   ├── features/           # Feature modules
 │   │   ├── auth/           # Auth logic
 │   │   └── cart/           # Cart logic
+│   │
 │   ├── router/             # React Router
-│   │   ├── routes.tsx      # Route definitions
-│   │   └── guards/         # Route guards
 │   ├── shared/             # Shared utilities
-│   │   └── types/          # TypeScript types
 │   └── styles/             # Global styles
 │
 ├── prisma/
-│   ├── schema.prisma       # Database schema
+│   ├── schema.prisma       # Database schema (13 models)
 │   └── seed.ts             # Seed data
 │
-├── .env                    # Environment variables
-├── .env.example            # Env template
-├── docker-compose.yml      # Docker setup
-├── package.json            # Dependencies
-├── tsconfig.json           # TypeScript config
-└── vite.config.ts          # Vite config
+└── Configuration files
+    ├── .env                # Environment variables
+    ├── docker-compose.yml  # Docker setup
+    ├── package.json        # Dependencies
+    └── vite.config.ts      # Vite config
 ```
+
+**📚 Learn more**: See [ATOMIC_DESIGN.md](ATOMIC_DESIGN.md) for detailed architecture guide
 
 ## 🎯 Scripts
 
