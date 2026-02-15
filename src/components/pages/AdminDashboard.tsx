@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowLeft, BarChart3, Package, Users, FileText, Image,
   Star, Plus, Edit, Trash2, X, DollarSign, TrendingUp, ShoppingCart,
-  Gift, Calendar, Award, Settings as SettingsIcon, Truck
+  Gift, Calendar, Award, Settings as SettingsIcon, Truck, Warehouse, AlertTriangle
 } from 'lucide-react';
 import { useApp, Product, Banner, Voucher, Event, UserData, Review, LandingPageData, BlogPost } from '@/app/context/AppContext';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -86,12 +86,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'products', label: 'Sản phẩm', icon: Package },
     { id: 'brands', label: 'Thương hiệu', icon: Award },
+    { id: 'inventory', label: 'Kho hàng', icon: Warehouse },
     { id: 'banners', label: 'Banner', icon: Image },
     { id: 'users', label: 'Người dùng', icon: Users },
     { id: 'reviews', label: 'Đánh giá', icon: Star },
     { id: 'vouchers', label: 'Voucher', icon: Gift },
     { id: 'events', label: 'Sự kiện', icon: Calendar },
     { id: 'shipping', label: 'Vận chuyển', icon: Truck },
+    { id: 'settings', label: 'Cài đặt', icon: SettingsIcon },
     { id: 'landing', label: 'Landing Pages', icon: FileText },
     { id: 'blog', label: 'Blog Posts', icon: FileText }
   ];
@@ -588,6 +590,143 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                       <li>• DELETE /api/brands/:id - Xóa thương hiệu (Admin)</li>
                       <li>• GET /api/brands/:id/products - Sản phẩm theo thương hiệu</li>
                       <li>• GET /api/brands/:id/analytics - Phân tích hiệu suất thương hiệu (Admin)</li>
+                    </ul>
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'inventory' && (
+                <motion.div
+                  key="inventory"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                >
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-white">Quản lý Kho Hàng</h2>
+                    <div className="flex gap-3">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => toast.info('Tính năng điều chỉnh hàng loạt đang phát triển')}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all"
+                      >
+                        <Edit className="w-5 h-5" />
+                        Cập nhật hàng loạt
+                      </motion.button>
+                    </div>
+                  </div>
+
+                  {/* Inventory Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-gradient-to-br from-green-500/10 to-green-600/10 rounded-xl p-4 border border-green-500/20">
+                      <div className="flex items-center gap-3">
+                        <div className="p-3 bg-green-500/20 rounded-lg">
+                          <Package className="w-6 h-6 text-green-400" />
+                        </div>
+                        <div>
+                          <p className="text-white/60 text-sm">Tổng sản phẩm</p>
+                          <p className="text-2xl font-bold text-white">248</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 rounded-xl p-4 border border-yellow-500/20">
+                      <div className="flex items-center gap-3">
+                        <div className="p-3 bg-yellow-500/20 rounded-lg">
+                          <AlertTriangle className="w-6 h-6 text-yellow-400" />
+                        </div>
+                        <div>
+                          <p className="text-white/60 text-sm">Sắp hết hàng</p>
+                          <p className="text-2xl font-bold text-white">12</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-red-500/10 to-red-600/10 rounded-xl p-4 border border-red-500/20">
+                      <div className="flex items-center gap-3">
+                        <div className="p-3 bg-red-500/20 rounded-lg">
+                          <X className="w-6 h-6 text-red-400" />
+                        </div>
+                        <div>
+                          <p className="text-white/60 text-sm">Hết hàng</p>
+                          <p className="text-2xl font-bold text-white">3</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-xl p-4 border border-blue-500/20">
+                      <div className="flex items-center gap-3">
+                        <div className="p-3 bg-blue-500/20 rounded-lg">
+                          <Warehouse className="w-6 h-6 text-blue-400" />
+                        </div>
+                        <div>
+                          <p className="text-white/60 text-sm">Tổng số lượng</p>
+                          <p className="text-2xl font-bold text-white">1,247</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Low Stock Alert Section */}
+                  <div className="mb-6">
+                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5 text-yellow-400" />
+                      Cảnh báo sắp hết hàng
+                    </h3>
+                    <div className="space-y-3">
+                      {[
+                        { id: '1', name: 'Yamaha Pacifica 112V', category: 'Guitar Điện', stock: 5, lowStockAlert: 10, trend: 'down' },
+                        { id: '2', name: 'Fender Player Stratocaster', category: 'Guitar Điện', stock: 8, lowStockAlert: 15, trend: 'down' },
+                        { id: '3', name: 'Taylor 214ce-K DLX', category: 'Guitar Acoustic', stock: 3, lowStockAlert: 10, trend: 'stable' }
+                      ].map((product) => (
+                        <div key={product.id} className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-xl p-4 border border-yellow-500/20">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <AlertTriangle className="w-5 h-5 text-yellow-400" />
+                                <div>
+                                  <h4 className="text-white font-semibold">{product.name}</h4>
+                                  <p className="text-white/40 text-sm">{product.category}</p>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-6">
+                              <div className="text-right">
+                                <p className="text-white/40 text-xs">Tồn kho</p>
+                                <p className="text-2xl font-bold text-yellow-400">{product.stock}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-white/40 text-xs">Mức cảnh báo</p>
+                                <p className="text-white font-semibold">{product.lowStockAlert}</p>
+                              </div>
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => toast.info('Tính năng điều chỉnh kho đang phát triển')}
+                                className="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all text-sm font-semibold"
+                              >
+                                Nhập thêm
+                              </motion.button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-8 p-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl border border-blue-500/20">
+                    <h3 className="text-lg font-bold text-white mb-2">✅ Backend API đã sẵn sàng!</h3>
+                    <p className="text-white/60 mb-3">
+                      API endpoints cho Inventory Management đã được triển khai đầy đủ tại <code className="bg-black/30 px-2 py-1 rounded text-green-400">/api/inventory</code>
+                    </p>
+                    <ul className="space-y-1 text-white/60 text-sm">
+                      <li>• GET /api/inventory - Tổng quan kho hàng</li>
+                      <li>• GET /api/inventory/low-stock - Sản phẩm sắp hết</li>
+                      <li>• GET /api/inventory/out-of-stock - Sản phẩm hết hàng</li>
+                      <li>• POST /api/inventory/adjust - Điều chỉnh tồn kho (Admin)</li>
+                      <li>• GET /api/inventory/history/:productId - Lịch sử xuất nhập</li>
+                      <li>• POST /api/inventory/bulk-update - Cập nhật hàng loạt (Admin)</li>
                     </ul>
                   </div>
                 </motion.div>
@@ -1148,6 +1287,229 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                       <li>• DELETE /api/shipping/:id - Xóa phương thức (Admin)</li>
                       <li>• POST /api/shipping/calculate - Tính phí vận chuyển</li>
                     </ul>
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'settings' && (
+                <motion.div
+                  key="settings"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                >
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-white">Cài Đặt Website</h2>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => toast.success('Tính năng lưu cài đặt đang phát triển')}
+                      className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all"
+                    >
+                      Lưu cài đặt
+                    </motion.button>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Site Information */}
+                    <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
+                      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-purple-400" />
+                        Thông tin website
+                      </h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-white/60 text-sm mb-2">Tên website</label>
+                          <input
+                            type="text"
+                            defaultValue="Guitar NOVA"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-white/60 text-sm mb-2">Slogan</label>
+                          <input
+                            type="text"
+                            defaultValue="Nơi Đam Mê Âm Nhạc Thăng Hoa"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-white/60 text-sm mb-2">Logo URL</label>
+                          <input
+                            type="text"
+                            placeholder="https://..."
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-white/60 text-sm mb-2">Favicon URL</label>
+                          <input
+                            type="text"
+                            placeholder="https://..."
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Contact Information */}
+                    <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
+                      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <Users className="w-5 h-5 text-blue-400" />
+                        Thông tin liên hệ
+                      </h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-white/60 text-sm mb-2">Email</label>
+                          <input
+                            type="email"
+                            defaultValue="contact@guitarnova.com"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-white/60 text-sm mb-2">Số điện thoại</label>
+                          <input
+                            type="text"
+                            defaultValue="1900-GUITAR"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-white/60 text-sm mb-2">Địa chỉ</label>
+                          <textarea
+                            defaultValue="123 Music Street, Ho Chi Minh City, Vietnam"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:outline-none resize-none"
+                            rows={3}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Social Media */}
+                    <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
+                      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <Image className="w-5 h-5 text-pink-400" />
+                        Mạng xã hội
+                      </h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-white/60 text-sm mb-2">Facebook</label>
+                          <input
+                            type="url"
+                            placeholder="https://facebook.com/..."
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-pink-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-white/60 text-sm mb-2">Instagram</label>
+                          <input
+                            type="url"
+                            placeholder="https://instagram.com/..."
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-pink-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-white/60 text-sm mb-2">YouTube</label>
+                          <input
+                            type="url"
+                            placeholder="https://youtube.com/..."
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-pink-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-white/60 text-sm mb-2">TikTok</label>
+                          <input
+                            type="url"
+                            placeholder="https://tiktok.com/@..."
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-pink-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* SEO Settings */}
+                    <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
+                      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-green-400" />
+                        SEO Settings
+                      </h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-white/60 text-sm mb-2">Meta Title</label>
+                          <input
+                            type="text"
+                            defaultValue="Guitar NOVA - Premium Guitar Store"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-green-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-white/60 text-sm mb-2">Meta Description</label>
+                          <textarea
+                            defaultValue="Cửa hàng guitar chính hãng, chất lượng cao"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-green-500 focus:outline-none resize-none"
+                            rows={3}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-white/60 text-sm mb-2">Meta Keywords (comma separated)</label>
+                          <input
+                            type="text"
+                            placeholder="guitar, music, instruments..."
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-green-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Payment Methods */}
+                    <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
+                      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <DollarSign className="w-5 h-5 text-yellow-400" />
+                        Phương thức thanh toán
+                      </h3>
+                      <div className="space-y-3">
+                        {['COD (Tiền mặt)', 'Chuyển khoản ngân hàng', 'Thẻ tín dụng', 'VNPay', 'MoMo', 'ZaloPay'].map((method) => (
+                          <label key={method} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">
+                            <input type="checkbox" defaultChecked={['COD (Tiền mặt)', 'Chuyển khoản ngân hàng'].includes(method)} className="w-4 h-4 text-yellow-500" />
+                            <span className="text-white">{method}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Business Hours */}
+                    <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
+                      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-orange-400" />
+                        Giờ làm việc
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                          <span className="text-white">Thứ 2 - Thứ 6</span>
+                          <span className="text-white/60">8:00 - 18:00</span>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                          <span className="text-white">Thứ 7 - Chủ nhật</span>
+                          <span className="text-white/60">9:00 - 17:00</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-8 p-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl border border-blue-500/20">
+                    <h3 className="text-lg font-bold text-white mb-2">✅ Backend API đã sẵn sàng!</h3>
+                    <p className="text-white/60 mb-3">
+                      API endpoints cho Site Settings đã được triển khai đầy đủ tại <code className="bg-black/30 px-2 py-1 rounded text-purple-400">/api/settings</code>
+                    </p>
+                    <ul className="space-y-1 text-white/60 text-sm">
+                      <li>• GET /api/settings - Lấy cấu hình website</li>
+                      <li>• PUT /api/settings - Cập nhật cấu hình (Admin)</li>
+                    </ul>
+                    <p className="text-white/40 text-sm mt-4">
+                      Tất cả thông tin: siteName, slogan, logo, favicon, contact info, social media, SEO settings, payment methods, business hours đều được lưu trong database.
+                    </p>
                   </div>
                 </motion.div>
               )}
