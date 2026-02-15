@@ -4,26 +4,26 @@ import { Outlet } from 'react-router-dom';
 import { AuthGuard } from './guards/AuthGuard';
 import { AdminGuard } from './guards/AdminGuard';
 
-// Layout Components
-const MainLayout = React.lazy(() => import('../app/components/layouts/MainLayout').then(m => ({ default: m.MainLayout })));
+// ─── Templates (Layouts) ────────────────────────────────────
+const MainLayout = React.lazy(() => import('../components/templates/MainLayout').then(m => ({ default: m.MainLayout })));
 
-// Lazy load pages for code splitting
-const Home = React.lazy(() => import('../app/components/Home').then(m => ({ default: m.Home })));
-const Products = React.lazy(() => import('../app/components/Products').then(m => ({ default: m.Products })));
-const ProductDetail = React.lazy(() => import('../app/components/ProductDetail').then(m => ({ default: m.ProductDetail })));
-const Categories = React.lazy(() => import('../app/components/Categories').then(m => ({ default: m.Categories })));
-const Promo = React.lazy(() => import('../app/components/Promo').then(m => ({ default: m.Promo })));
-const Checkout = React.lazy(() => import('../app/components/Checkout').then(m => ({ default: m.Checkout })));
-const Auth = React.lazy(() => import('../app/components/Auth').then(m => ({ default: m.Auth })));
-const Account = React.lazy(() => import('../app/components/Account').then(m => ({ default: m.Account })));
-const Rewards = React.lazy(() => import('../app/components/Rewards').then(m => ({ default: m.Rewards })));
-const Events = React.lazy(() => import('../app/components/Events').then(m => ({ default: m.Events })));
-const BlogList = React.lazy(() => import('../app/components/BlogList').then(m => ({ default: m.BlogList })));
-const BlogDetail = React.lazy(() => import('../app/components/BlogDetail').then(m => ({ default: m.BlogDetail })));
-const LandingPages = React.lazy(() => import('../app/components/LandingPages').then(m => ({ default: m.LandingPages })));
-const LandingPageView = React.lazy(() => import('../app/components/LandingPageView').then(m => ({ default: m.LandingPageView })));
-const AdminLogin = React.lazy(() => import('../app/components/AdminLogin').then(m => ({ default: m.AdminLogin })));
-const AdminDashboard = React.lazy(() => import('../app/components/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+// ─── Pages (Atomic Design) ───────────────────────────────────
+const Home = React.lazy(() => import('../components/pages/Home').then(m => ({ default: m.Home })));
+const Products = React.lazy(() => import('../components/pages/Products').then(m => ({ default: m.Products })));
+const ProductDetail = React.lazy(() => import('../components/pages/ProductDetail').then(m => ({ default: m.ProductDetail })));
+const Categories = React.lazy(() => import('../components/pages/Categories').then(m => ({ default: m.Categories })));
+const Promo = React.lazy(() => import('../components/pages/Promo').then(m => ({ default: m.Promo })));
+const Checkout = React.lazy(() => import('../components/pages/Checkout').then(m => ({ default: m.Checkout })));
+const Auth = React.lazy(() => import('../components/pages/Auth').then(m => ({ default: m.Auth })));
+const Account = React.lazy(() => import('../components/pages/Account').then(m => ({ default: m.Account })));
+const Rewards = React.lazy(() => import('../components/pages/Rewards').then(m => ({ default: m.Rewards })));
+const Events = React.lazy(() => import('../components/pages/Events').then(m => ({ default: m.Events })));
+const BlogList = React.lazy(() => import('../components/pages/BlogList').then(m => ({ default: m.BlogList })));
+const BlogDetail = React.lazy(() => import('../components/pages/BlogDetail').then(m => ({ default: m.BlogDetail })));
+const LandingPages = React.lazy(() => import('../components/pages/LandingPages').then(m => ({ default: m.LandingPages })));
+const LandingPageView = React.lazy(() => import('../components/pages/LandingPageView').then(m => ({ default: m.LandingPageView })));
+const AdminLogin = React.lazy(() => import('../components/pages/AdminLogin').then(m => ({ default: m.AdminLogin })));
+const AdminDashboard = React.lazy(() => import('../components/pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 
 export const routes: RouteObject[] = [
     // Main layout routes (with Header/Footer)
