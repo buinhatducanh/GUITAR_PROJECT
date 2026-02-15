@@ -12,10 +12,14 @@ import eventRoutes from './routes/events.js';
 import uploadRoutes from './routes/upload.js';
 import orderRoutes from './routes/orders.js';
 import landingPageRoutes from './routes/landing-pages.js';
-import brandRoutes from './routes/brands.js';
+// Old routes (to be refactored)
+import oldBrandRoutes from './routes/brands.js';
 import settingsRoutes from './routes/settings.js';
 import inventoryRoutes from './routes/inventory.js';
 import analyticsRoutes from './routes/analytics.js';
+
+// ─── MVC Feature Routes ─────────────────────────────────
+import brandsRoutes from './features/brands/brands.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -42,7 +46,10 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/landing-pages', landingPageRoutes);
 
 // ─── Business Management Routes ────────────────
-app.use('/api/brands', brandRoutes);
+// MVC Structure (Refactored)
+app.use('/api/brands', brandsRoutes);
+
+// Old Structure (To be refactored)
 app.use('/api/settings', settingsRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/analytics', analyticsRoutes);
