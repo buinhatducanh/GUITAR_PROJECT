@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Product } from '../../shared/types';
 import { useCartStore } from '../../features/cart/store/cartStore';
 import { toast } from 'sonner';
+import { OptimizedImage } from './ui/OptimizedImage';
 
 interface ProductCardProps {
   product: Product;
@@ -58,13 +59,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
       {/* Product Image */}
       <div className="relative h-64 overflow-hidden bg-black/20">
-        <motion.img
-          src={product.image}
-          alt={product.name}
-          className="w-full h-full object-cover"
+        <motion.div
           whileHover={{ scale: 1.1 }}
           transition={{ duration: 0.6 }}
-        />
+          className="w-full h-full"
+        >
+          <OptimizedImage
+            src={product.image}
+            alt={product.name}
+            width={400}
+            className="w-full h-full object-cover"
+          />
+        </motion.div>
         
         {/* Hover Overlay */}
         <motion.div

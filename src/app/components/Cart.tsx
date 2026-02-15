@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '../../features/cart/store/cartStore';
+import { OptimizedImage } from './ui/OptimizedImage';
 
 export const Cart: React.FC = () => {
   const navigate = useNavigate();
@@ -80,9 +81,11 @@ export const Cart: React.FC = () => {
                         exit={{ opacity: 0, x: -20 }}
                         className="flex gap-4 bg-zinc-900/50 rounded-xl p-4 border border-white/5"
                       >
-                        <img
+                        <OptimizedImage
                           src={item.product.image}
                           alt={item.product.name}
+                          width={80}
+                          height={80}
                           className="w-20 h-20 object-cover rounded-lg"
                         />
 

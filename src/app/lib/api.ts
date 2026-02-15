@@ -243,4 +243,10 @@ export const uploadApi = {
         const data = await res.json();
         return data.secure_url;
     },
+
+    /** Delete image from Cloudinary by public ID */
+    deleteFromCloudinary: (publicId: string) =>
+        request<{ result: string }>(`/upload/${encodeURIComponent(publicId)}`, {
+            method: 'DELETE',
+        }),
 };
