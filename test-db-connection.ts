@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { prisma } from './backend/lib/prisma';
+import { prisma } from './backend/shared/lib/prisma';
 
 async function main() {
     try {
