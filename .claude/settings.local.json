@@ -10,7 +10,11 @@
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Wire Auth + Admin Dashboard to real Backend API\n\n- Auth.tsx: Replace mock login/register with real useAuthStore \\(JWT API\\)\n- AdminLogin.tsx: Wire to real auth API with admin role validation\n- api.ts: Fix token key mismatch \\(token → auth_token\\) matching authStore\n- AdminDashboard.tsx: Complete rewrite - replace AppContext local state\n  with React Query hooks for all CRUD operations:\n  * Products: useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct\n  * Banners: useBanners, useCreateBanner, useUpdateBanner, useDeleteBanner\n  * Vouchers: useVouchers, useCreateVoucher, useUpdateVoucher, useDeleteVoucher\n  * Events: useEvents, useCreateEvent, useUpdateEvent, useDeleteEvent\n  * Landing Pages: useAllLandingPages, useCreateLandingPage, useUpdateLandingPage, useDeleteLandingPage\n  * Orders tab: useOrders with status display\n  * Added specific form fields per entity type \\(not generic title/description\\)\n  * Cloudinary image upload integration via uploadApi\n  * Loading states, error handling, and save confirmation\n- useQueries.ts: Add all CRUD mutation hooks for banners, vouchers,\n  events, landing pages, and blogs\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(find:*)",
       "Bash(npm run type-check:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(where gh)"
     ]
   }
 }
