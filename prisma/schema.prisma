@@ -51,47 +51,59 @@ enum OrderStatus {
 // ─── Models ──────────────────────────────────────────────
 
 model User {
-  id               String        @id @default(cuid())
-  email            String        @unique
+  id               String          @id @default(cuid())
+  email            String          @unique
   name             String
   password         String
   avatar           String?
-  points           Int           @default(0)
-  role             Role          @default(USER)
-  tier             Tier          @default(BRONZE)
+  points           Int             @default(0)
+  role             Role            @default(USER)
+  tier             Tier            @default(BRONZE)
+  segment          CustomerSegment @default(NEW)
+  totalSpent       Decimal         @db.Decimal(12, 0) @default(0)
+  orderCount       Int             @default(0)
+  notes            String?
+  isBlacklisted    Boolean         @default(false)
+  tags             String[]
   lastLogin        DateTime?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
   reviews          Review[]
   orders           Order[]
   redeemedVouchers UserVoucher[]
 
+  @@index([segment])
   @@map("users")
 }
 
 model Product {
-  id          String      @id @default(cuid())
-  name        String
-  slug        String      @unique
-  price       Decimal     @db.Decimal(12, 0)
-  oldPrice    Decimal?    @db.Decimal(12, 0)
-  discount    Int?
-  image       String
-  images      String[]
-  categoryId  String?
-  description String?
-  specs       String[]
-  rating      Float       @default(0)
-  stock       Int         @default(0)
-  isActive    Boolean     @default(true)
-  isFeatured  Boolean     @default(false)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  category    Category?   @relation(fields: [categoryId], references: [id])
-  reviews     Review[]
-  orderItems  OrderItem[]
+  id            String         @id @default(cuid())
+  name          String
+  slug          String         @unique
+  price         Decimal        @db.Decimal(12, 0)
+  oldPrice      Decimal?       @db.Decimal(12, 0)
+  discount      Int?
+  image         String
+  images        String[]
+  categoryId    String?
+  brandId       String?
+  description   String?
+  specs         String[]
+  rating        Float          @default(0)
+  stock         Int            @default(0)
+  lowStockAlert Int            @default(10)
+  isActive      Boolean        @default(true)
+  isFeatured    Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  category      Category?      @relation(fields: [categoryId], references: [id])
+  brand         Brand?         @relation(fields: [brandId], references: [id])
+  reviews       Review[]
+  orderItems    OrderItem[]
+  stockHistory  StockHistory[]
 
   @@index([categoryId])
+  @@index([brandId])
   @@index([slug])
   @@map("products")
 }
@@ -245,4 +257,93 @@ model OrderItem {
   product   Product @relation(fields: [productId], references: [id])
 
   @@map("order_items")
+}
+
+// ─── Business Management Models ──────────────────────
+
+model Brand {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  logo        String?
+  description String?
+  website     String?
+  hotline     String?
+  isActive    Boolean   @default(true)
+  order       Int       @default(0)
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([slug])
+  @@map("brands")
+}
+
+model SiteSettings {
+  id              String   @id @default(cuid())
+  siteName        String   @default("Guitar NOVA")
+  slogan          String?
+  logo            String?
+  favicon         String?
+  email           String?
+  phone           String?
+  address         String?
+  facebookUrl     String?
+  instagramUrl    String?
+  youtubeUrl      String?
+  tiktokUrl       String?
+  metaTitle       String?
+  metaDescription String?
+  metaKeywords    String[]
+  businessHours   Json?
+  paymentMethods  String[]
+  shippingInfo    Json?
+  updatedAt       DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
+enum StockChangeType {
+  IN
+  OUT
+  ADJUSTMENT
+  RETURN
+}
+
+model StockHistory {
+  id          String          @id @default(cuid())
+  productId   String
+  product     Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type        StockChangeType
+  quantity    Int
+  previousQty Int
+  newQty      Int
+  reason      String?
+  createdBy   String?
+  createdAt   DateTime        @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
+  @@map("stock_history")
+}
+
+enum CustomerSegment {
+  NEW
+  ACTIVE
+  VIP
+  INACTIVE
+}
+
+model ShippingMethod {
+  id            String  @id @default(cuid())
+  name          String
+  description   String?
+  baseCost      Decimal @db.Decimal(12, 0)
+  costPerKm     Decimal @db.Decimal(12, 0)
+  freeThreshold Decimal @db.Decimal(12, 0)
+  estimatedDays String
+  isActive      Boolean @default(true)
+  order         Int     @default(0)
+
+  @@map("shipping_methods")
 }

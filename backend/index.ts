@@ -2,7 +2,6 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 
-import authRoutes from './routes/auth.js';
 import productRoutes from './routes/products.js';
 import categoryRoutes from './routes/categories.js';
 import blogRoutes from './routes/blogs.js';
@@ -12,6 +11,14 @@ import eventRoutes from './routes/events.js';
 import uploadRoutes from './routes/upload.js';
 import orderRoutes from './routes/orders.js';
 import landingPageRoutes from './routes/landing-pages.js';
+// Old routes (to be refactored)
+import settingsRoutes from './routes/settings.js';
+import inventoryRoutes from './routes/inventory.js';
+import analyticsRoutes from './routes/analytics.js';
+
+// ─── MVC Feature Routes ─────────────────────────────────
+import authRoutes from './features/auth/auth.routes.js';
+import brandsRoutes from './features/brands/brands.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -26,7 +33,11 @@ app.get('/api/health', (_req, res) => {
 });
 
 // ─── Routes ─────────────────────────────────────
+// MVC Structure (Refactored)
 app.use('/api/auth', authRoutes);
+app.use('/api/brands', brandsRoutes);
+
+// Old Structure (To be refactored)
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/blogs', blogRoutes);
@@ -36,6 +47,9 @@ app.use('/api/events', eventRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/landing-pages', landingPageRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // ─── 404 handler ────────────────────────────────
 app.use((_req, res) => {
