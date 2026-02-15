@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: guitar-nova-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: guitar_nova
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Prisma Studio (Optional - Database GUI)
+  # Uncomment to use
+  # prisma-studio:
+  #   image: node:18-alpine
+  #   container_name: guitar-nova-studio
+  #   working_dir: /app
+  #   command: sh -c "npm install prisma -g && prisma studio"
+  #   ports:
+  #     - "5555:5555"
+  #   volumes:
+  #     - .:/app
+  #   depends_on:
+  #     - postgres
+  #   environment:
+  #     DATABASE_URL: postgresql://postgres:postgres@postgres:5432/guitar_nova?schema=public
+
+volumes:
+  postgres_data:
+    driver: local
+
+# Usage:
+# 1. Start database:
+#    docker-compose up -d
+#
+# 2. Update .env with local database URL:
+#    DATABASE_URL="postgresql://postgres:postgres@localhost:5432/guitar_nova?schema=public"
+#
+# 3. Push schema and seed:
+#    npm run db:push
+#    npm run db:seed
+#
+# 4. Stop database:
+#    docker-compose down
+#
+# 5. Remove all data:
+#    docker-compose down -v
