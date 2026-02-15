@@ -8,10 +8,8 @@ import { useCartStore } from '../../features/cart/store/cartStore';
 export const Cart: React.FC = () => {
   const navigate = useNavigate();
   const { cart, updateCartQuantity, removeFromCart } = useApp();
-  const { isOpen, setIsOpen } = useCartStore((state) => ({
-    isOpen: state.isOpen,
-    setIsOpen: state.setIsOpen,
-  }));
+  const isOpen = useCartStore((state) => state.isOpen);
+  const setIsOpen = useCartStore((state) => state.setIsOpen);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
