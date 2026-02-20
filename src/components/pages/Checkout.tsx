@@ -1,19 +1,16 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, CreditCard, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, CreditCard, CheckCircle2, Phone } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/app/context/AppContext';
+import { toast } from 'sonner';
 
-interface CheckoutProps {
-  onBack: () => void;
-  onSuccess: () => void;
-}
-
-export const Checkout: React.FC<CheckoutProps> = ({ onBack, onSuccess }) => {
-  const { cart, user, clearCart } = useApp();
+export const Checkout: React.FC = () => {
+  const navigate = useNavigate();
+  const { cart, user, setUser, clearCart } = useApp();
   const [formData, setFormData] = useState({
     fullName: user?.name || '',
-    email: user?.email || '',
-    phone: '',
+    phone: user?.phone || '',
     address: '',
     city: '',
     paymentMethod: 'cod'
@@ -32,12 +29,42 @@ export const Checkout: React.FC<CheckoutProps> = ({ onBack, onSuccess }) => {
   const shipping = 50000;
   const total = subtotal + shipping;
 
+  const validatePhone = (phone: string): boolean => {
+    const phoneRegex = /^(0[3|5|7|8|9])\d{8}$/;
+    return phoneRegex.test(phone);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validatePhone(formData.phone)) {
+      toast.error('Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại Việt Nam (VD: 0912345678)');
+      return;
+    }
+
     setIsProcessing(true);
 
     // Simulate payment processing
     await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // If user is not logged in, auto-create account from phone number
+    if (!user) {
+      const newUser = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: formData.fullName || `KH_${formData.phone.slice(-4)}`,
+        email: '',
+        phone: formData.phone,
+        avatar: `https://i.pravatar.cc/150?u=${formData.phone}`,
+        points: 100,
+        joinDate: new Date().toISOString(),
+        totalOrders: 1,
+        totalSpent: total,
+        lastLogin: new Date().toISOString(),
+        role: 'user' as const
+      };
+      setUser(newUser);
+      toast.success(`Tài khoản đã được tạo tự động với SĐT: ${formData.phone}`);
+    }
 
     setIsProcessing(false);
     setIsSuccess(true);
@@ -45,7 +72,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onBack, onSuccess }) => {
     // Wait for animation then redirect
     setTimeout(() => {
       clearCart();
-      onSuccess();
+      navigate('/');
     }, 3000);
   };
 
@@ -56,13 +83,32 @@ export const Checkout: React.FC<CheckoutProps> = ({ onBack, onSuccess }) => {
     });
   };
 
+  // Redirect if cart is empty and not showing success
+  if (cart.length === 0 && !isSuccess) {
+    return (
+      <div className="min-h-screen bg-black pt-24 pb-16 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-white/60 text-xl mb-4">Giỏ hàng trống</p>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => navigate('/products')}
+            className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-xl"
+          >
+            Tiếp tục mua sắm
+          </motion.button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-black pt-24 pb-16">
       {/* Back Button */}
       <div className="container mx-auto px-4 mb-8">
         <motion.button
           whileHover={{ x: -5 }}
-          onClick={onBack}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -90,7 +136,15 @@ export const Checkout: React.FC<CheckoutProps> = ({ onBack, onSuccess }) => {
             >
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-6">Thông tin giao hàng</h2>
-                
+
+                {!user && (
+                  <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                    <p className="text-amber-400 text-sm">
+                      Bạn chưa đăng nhập. Tài khoản sẽ được tạo tự động khi đặt hàng với số điện thoại của bạn.
+                    </p>
+                  </div>
+                )}
+
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-white/80 mb-2">Họ và tên</label>
@@ -106,29 +160,19 @@ export const Checkout: React.FC<CheckoutProps> = ({ onBack, onSuccess }) => {
                   </div>
 
                   <div>
-                    <label className="block text-white/80 mb-2">Email</label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500/50 transition-colors"
-                      placeholder="email@example.com"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-white/80 mb-2">Số điện thoại</label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500/50 transition-colors"
-                      placeholder="0123456789"
-                    />
+                    <label className="block text-white/80 mb-2">Số điện thoại <span className="text-amber-500">*</span></label>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        required
+                        className="w-full pl-12 pr-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500/50 transition-colors"
+                        placeholder="0912345678"
+                      />
+                    </div>
                   </div>
 
                   <div>
@@ -161,7 +205,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onBack, onSuccess }) => {
 
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-6">Phương thức thanh toán</h2>
-                
+
                 <div className="space-y-3">
                   <label className="flex items-center gap-3 p-4 bg-black/30 border border-white/10 rounded-xl cursor-pointer hover:border-amber-500/50 transition-colors">
                     <input
@@ -222,7 +266,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ onBack, onSuccess }) => {
               className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 border border-white/10 sticky top-24"
             >
               <h2 className="text-2xl font-semibold text-white mb-6">Đơn hàng</h2>
-              
+
               <div className="space-y-4 mb-6">
                 {cart.map((item) => (
                   <div key={item.product.id} className="flex gap-3">
@@ -286,9 +330,10 @@ export const Checkout: React.FC<CheckoutProps> = ({ onBack, onSuccess }) => {
               >
                 <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto mb-6" />
               </motion.div>
-              
-              <h2 className="text-3xl font-bold text-white mb-4">Thanh toán thành công!</h2>
+
+              <h2 className="text-3xl font-bold text-white mb-4">Đặt hàng thành công!</h2>
               <p className="text-white/60 mb-2">Cảm ơn bạn đã mua hàng tại Guitar NOVA</p>
+              <p className="text-white/60 mb-2">Chúng tôi sẽ liên hệ qua SĐT: <span className="text-amber-400 font-medium">{formData.phone}</span></p>
               <p className="text-white/40 text-sm">Đơn hàng của bạn đang được xử lý...</p>
             </motion.div>
           </motion.div>

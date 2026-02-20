@@ -1,23 +1,31 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { LogIn, UserPlus, ArrowLeft } from 'lucide-react';
+import { LogIn, UserPlus, ArrowLeft, Phone } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/app/context/AppContext';
 import { toast } from 'sonner';
 
 interface AuthProps {
   mode: 'login' | 'register';
-  onBack: () => void;
-  onToggleMode: () => void;
 }
 
-export const Auth: React.FC<AuthProps> = ({ mode, onBack, onToggleMode }) => {
+export const Auth: React.FC<AuthProps> = ({ mode }) => {
+  const navigate = useNavigate();
   const { setUser } = useApp();
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
+    phone: '',
     password: '',
     confirmPassword: ''
   });
+
+  const handleBack = () => {
+    navigate(-1);
+  };
+
+  const handleToggleMode = () => {
+    navigate(mode === 'login' ? '/register' : '/login', { replace: true });
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -26,8 +34,18 @@ export const Auth: React.FC<AuthProps> = ({ mode, onBack, onToggleMode }) => {
     });
   };
 
+  const validatePhone = (phone: string): boolean => {
+    const phoneRegex = /^(0[3|5|7|8|9])\d{8}$/;
+    return phoneRegex.test(phone);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validatePhone(formData.phone)) {
+      toast.error('Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại Việt Nam (VD: 0912345678)');
+      return;
+    }
 
     if (mode === 'register') {
       if (formData.password !== formData.confirmPassword) {
@@ -39,8 +57,9 @@ export const Auth: React.FC<AuthProps> = ({ mode, onBack, onToggleMode }) => {
       const newUser = {
         id: Math.random().toString(36).substr(2, 9),
         name: formData.name,
-        email: formData.email,
-        avatar: `https://i.pravatar.cc/150?u=${formData.email}`,
+        email: '',
+        phone: formData.phone,
+        avatar: `https://i.pravatar.cc/150?u=${formData.phone}`,
         points: 100,
         joinDate: new Date().toISOString(),
         totalOrders: 0,
@@ -49,15 +68,16 @@ export const Auth: React.FC<AuthProps> = ({ mode, onBack, onToggleMode }) => {
         role: 'user' as const
       };
       setUser(newUser);
-      toast.success('Đăng ký thành công! Bạn nhận được 100 điểm tân thủ 🎉');
-      onBack();
+      toast.success('Đăng ký thành công! Bạn nhận được 100 điểm tân thủ!');
+      navigate('/');
     } else {
       // Simulate login
       const user = {
         id: Math.random().toString(36).substr(2, 9),
-        name: formData.email.split('@')[0],
-        email: formData.email,
-        avatar: `https://i.pravatar.cc/150?u=${formData.email}`,
+        name: `KH_${formData.phone.slice(-4)}`,
+        email: '',
+        phone: formData.phone,
+        avatar: `https://i.pravatar.cc/150?u=${formData.phone}`,
         points: 2500,
         joinDate: '2025-06-15',
         totalOrders: 5,
@@ -67,7 +87,7 @@ export const Auth: React.FC<AuthProps> = ({ mode, onBack, onToggleMode }) => {
       };
       setUser(user);
       toast.success('Đăng nhập thành công!');
-      onBack();
+      navigate(-1);
     }
   };
 
@@ -78,7 +98,7 @@ export const Auth: React.FC<AuthProps> = ({ mode, onBack, onToggleMode }) => {
         <div className="mb-8">
           <motion.button
             whileHover={{ x: -5 }}
-            onClick={onBack}
+            onClick={handleBack}
             className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -106,13 +126,13 @@ export const Auth: React.FC<AuthProps> = ({ mode, onBack, onToggleMode }) => {
                   <UserPlus className="w-8 h-8 text-white" />
                 )}
               </motion.div>
-              
+
               <h1 className="text-3xl font-bold text-white mb-2">
                 {mode === 'login' ? 'Đăng nhập' : 'Đăng ký'}
               </h1>
               <p className="text-white/60">
-                {mode === 'login' 
-                  ? 'Chào mừng bạn quay lại Guitar NOVA' 
+                {mode === 'login'
+                  ? 'Chào mừng bạn quay lại Guitar NOVA'
                   : 'Tạo tài khoản mới tại Guitar NOVA'}
               </p>
             </div>
@@ -135,16 +155,19 @@ export const Auth: React.FC<AuthProps> = ({ mode, onBack, onToggleMode }) => {
               )}
 
               <div>
-                <label className="block text-white/80 mb-2">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500/50 transition-colors"
-                  placeholder="email@example.com"
-                />
+                <label className="block text-white/80 mb-2">Số điện thoại</label>
+                <div className="relative">
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    required
+                    className="w-full pl-12 pr-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500/50 transition-colors"
+                    placeholder="0912345678"
+                  />
+                </div>
               </div>
 
               <div>
@@ -191,7 +214,7 @@ export const Auth: React.FC<AuthProps> = ({ mode, onBack, onToggleMode }) => {
                 {mode === 'login' ? 'Chưa có tài khoản?' : 'Đã có tài khoản?'}
                 {' '}
                 <button
-                  onClick={onToggleMode}
+                  onClick={handleToggleMode}
                   className="text-amber-500 hover:text-amber-400 font-medium transition-colors"
                 >
                   {mode === 'login' ? 'Đăng ký ngay' : 'Đăng nhập'}

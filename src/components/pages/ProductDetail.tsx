@@ -1,19 +1,37 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, ShoppingCart, Zap, Star, ChevronDown } from 'lucide-react';
-import { Product, useApp } from '@/app/context/AppContext';
+import { ArrowLeft, ShoppingCart, Zap, Star } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useApp } from '@/app/context/AppContext';
 import { toast } from 'sonner';
 
-interface ProductDetailProps {
-  product: Product;
-  onBack: () => void;
-  onBuyNow: () => void;
-}
-
-export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onBuyNow }) => {
-  const { addToCart } = useApp();
+export const ProductDetail: React.FC = () => {
+  const navigate = useNavigate();
+  const { slug } = useParams<{ slug: string }>();
+  const { addToCart, products } = useApp();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+
+  // Find product by slug (using id as slug fallback)
+  const product = products.find(p => p.id === slug || p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') === slug);
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-black pt-24 pb-16 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-white/60 text-xl mb-4">Không tìm thấy sản phẩm</p>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => navigate('/products')}
+            className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-xl"
+          >
+            Xem sản phẩm khác
+          </motion.button>
+        </div>
+      </div>
+    );
+  }
 
   const images = [product.image, product.image, product.image];
 
@@ -38,7 +56,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
     for (let i = 0; i < quantity; i++) {
       addToCart(product);
     }
-    onBuyNow();
+    navigate('/checkout');
   };
 
   return (
@@ -47,7 +65,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
       <div className="container mx-auto px-4 mb-8">
         <motion.button
           whileHover={{ x: -5 }}
-          onClick={onBack}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -72,7 +90,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
                 alt={product.name}
                 className="w-full h-full object-cover"
               />
-              
+
               {/* Zoom Indicator */}
               <div className="absolute top-4 right-4 px-3 py-1 bg-black/50 backdrop-blur-sm text-white text-sm rounded-full">
                 Click to zoom

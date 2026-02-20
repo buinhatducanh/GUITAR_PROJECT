@@ -52,11 +52,7 @@ export const routes: RouteObject[] = [
             },
             {
                 path: '/checkout',
-                element: (
-                    <AuthGuard>
-                        <Checkout />
-                    </AuthGuard>
-                ),
+                element: <Checkout />,
             },
             {
                 path: '/login',
