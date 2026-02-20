@@ -7,24 +7,24 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../../shared/lib/prisma.js';
 import { JWT_SECRET } from '../../shared/middleware/auth.js';
-import type { RegisterDto, LoginDto, AuthResponse, UserResponse, TokenPayload } from './auth.types.js';
+import type { RegisterDto, LoginDto, GuestCheckoutDto, AuthResponse, UserResponse, TokenPayload } from './auth.types.js';
 
 /**
  * Register new user
  */
 export const register = async (data: RegisterDto): Promise<AuthResponse> => {
     // Validate input
-    if (!data.name || !data.email || !data.password) {
+    if (!data.name || !data.phone || !data.password) {
         throw new Error('Vui lòng điền đầy đủ thông tin');
     }
 
-    // Check if email already exists
+    // Check if phone already exists
     const existing = await prisma.user.findUnique({
-        where: { email: data.email }
+        where: { phone: data.phone }
     });
 
     if (existing) {
-        throw new Error('Email đã được sử dụng');
+        throw new Error('Số điện thoại đã được sử dụng');
     }
 
     // Hash password
@@ -34,12 +34,13 @@ export const register = async (data: RegisterDto): Promise<AuthResponse> => {
     const user = await prisma.user.create({
         data: {
             name: data.name,
-            email: data.email,
+            phone: data.phone,
             password: hashedPassword,
         },
         select: {
             id: true,
             name: true,
+            phone: true,
             email: true,
             avatar: true,
             points: true,
@@ -56,27 +57,27 @@ export const register = async (data: RegisterDto): Promise<AuthResponse> => {
 };
 
 /**
- * Login user
+ * Login user by phone
  */
 export const login = async (data: LoginDto): Promise<AuthResponse> => {
     // Validate input
-    if (!data.email || !data.password) {
-        throw new Error('Vui lòng nhập email và mật khẩu');
+    if (!data.phone || !data.password) {
+        throw new Error('Vui lòng nhập số điện thoại và mật khẩu');
     }
 
-    // Find user by email
+    // Find user by phone
     const user = await prisma.user.findUnique({
-        where: { email: data.email }
+        where: { phone: data.phone }
     });
 
     if (!user) {
-        throw new Error('Email hoặc mật khẩu không đúng');
+        throw new Error('Số điện thoại hoặc mật khẩu không đúng');
     }
 
     // Verify password
     const valid = await bcrypt.compare(data.password, user.password);
     if (!valid) {
-        throw new Error('Email hoặc mật khẩu không đúng');
+        throw new Error('Số điện thoại hoặc mật khẩu không đúng');
     }
 
     // Update last login
@@ -93,6 +94,59 @@ export const login = async (data: LoginDto): Promise<AuthResponse> => {
         user: {
             id: user.id,
             name: user.name,
+            phone: user.phone,
+            email: user.email,
+            avatar: user.avatar,
+            points: user.points,
+            role: user.role,
+            tier: user.tier,
+            lastLogin: new Date(),
+            createdAt: user.createdAt,
+        },
+        token,
+    };
+};
+
+/**
+ * Guest checkout - find or create user by phone
+ */
+export const guestCheckout = async (data: GuestCheckoutDto): Promise<AuthResponse> => {
+    if (!data.phone) {
+        throw new Error('Vui lòng nhập số điện thoại');
+    }
+
+    // Check if user exists with this phone
+    let user = await prisma.user.findUnique({
+        where: { phone: data.phone }
+    });
+
+    if (!user) {
+        // Auto-create account: phone = password
+        const hashedPassword = await bcrypt.hash(data.phone, 10);
+
+        user = await prisma.user.create({
+            data: {
+                name: data.name || `KH_${data.phone.slice(-4)}`,
+                phone: data.phone,
+                password: hashedPassword,
+                points: 100,
+            },
+        });
+    }
+
+    // Update last login
+    await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLogin: new Date() },
+    });
+
+    const token = generateToken({ userId: user.id, role: user.role });
+
+    return {
+        user: {
+            id: user.id,
+            name: user.name,
+            phone: user.phone,
             email: user.email,
             avatar: user.avatar,
             points: user.points,
@@ -114,6 +168,7 @@ export const getCurrentUser = async (userId: string): Promise<UserResponse> => {
         select: {
             id: true,
             name: true,
+            phone: true,
             email: true,
             avatar: true,
             points: true,

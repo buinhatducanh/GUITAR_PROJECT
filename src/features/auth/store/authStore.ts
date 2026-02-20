@@ -9,8 +9,8 @@ interface AuthState {
 }
 
 interface AuthActions {
-    login: (email: string, password: string) => Promise<void>;
-    register: (name: string, email: string, password: string) => Promise<void>;
+    login: (phone: string, password: string) => Promise<void>;
+    register: (name: string, phone: string, password: string) => Promise<void>;
     logout: () => void;
     setUser: (user: User | null) => void;
     updatePoints: (points: number) => void;
@@ -27,12 +27,12 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: false,
 
             // Actions
-            login: async (email: string, password: string) => {
+            login: async (phone: string, password: string) => {
                 try {
                     const response = await fetch('/api/auth/login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email, password }),
+                        body: JSON.stringify({ phone, password }),
                     });
 
                     if (!response.ok) {
@@ -55,12 +55,12 @@ export const useAuthStore = create<AuthStore>()(
                 }
             },
 
-            register: async (name: string, email: string, password: string) => {
+            register: async (name: string, phone: string, password: string) => {
                 try {
                     const response = await fetch('/api/auth/register', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, email, password }),
+                        body: JSON.stringify({ name, phone, password }),
                     });
 
                     if (!response.ok) {

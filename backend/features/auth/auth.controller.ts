@@ -18,11 +18,10 @@ export const register = async (req: Request, res: Response) => {
         return successResponse(res, result, 201);
     } catch (error) {
         if (error instanceof Error) {
-            // Handle specific validation errors
             if (error.message === 'Vui lòng điền đầy đủ thông tin') {
                 return errorResponse(res, error, 400);
             }
-            if (error.message === 'Email đã được sử dụng') {
+            if (error.message === 'Số điện thoại đã được sử dụng') {
                 return errorResponse(res, error, 409);
             }
         }
@@ -32,7 +31,7 @@ export const register = async (req: Request, res: Response) => {
 
 /**
  * POST /api/auth/login
- * Login user
+ * Login user by phone
  */
 export const login = async (req: Request, res: Response) => {
     try {
@@ -40,12 +39,29 @@ export const login = async (req: Request, res: Response) => {
         return successResponse(res, result);
     } catch (error) {
         if (error instanceof Error) {
-            // Handle specific validation errors
-            if (error.message === 'Vui lòng nhập email và mật khẩu') {
+            if (error.message === 'Vui lòng nhập số điện thoại và mật khẩu') {
                 return errorResponse(res, error, 400);
             }
-            if (error.message === 'Email hoặc mật khẩu không đúng') {
+            if (error.message === 'Số điện thoại hoặc mật khẩu không đúng') {
                 return errorResponse(res, error, 401);
+            }
+        }
+        return errorResponse(res, error);
+    }
+};
+
+/**
+ * POST /api/auth/guest-checkout
+ * Find or create user by phone for guest checkout
+ */
+export const guestCheckout = async (req: Request, res: Response) => {
+    try {
+        const result = await authService.guestCheckout(req.body);
+        return successResponse(res, result);
+    } catch (error) {
+        if (error instanceof Error) {
+            if (error.message === 'Vui lòng nhập số điện thoại') {
+                return errorResponse(res, error, 400);
             }
         }
         return errorResponse(res, error);

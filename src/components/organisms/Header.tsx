@@ -130,7 +130,7 @@ export const Header: React.FC = () => {
                       >
                         <div className="p-4 border-b border-white/10">
                           <p className="font-medium text-white">{user.name}</p>
-                          <p className="text-sm text-white/60 mb-3">{user.email}</p>
+                          <p className="text-sm text-white/60 mb-3">{user.phone || user.email}</p>
                           <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-lg">
                             <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
                             <span className="text-sm font-semibold text-amber-400">

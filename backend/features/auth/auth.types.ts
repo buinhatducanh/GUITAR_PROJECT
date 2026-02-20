@@ -5,13 +5,18 @@
 
 export interface RegisterDto {
     name: string;
-    email: string;
+    phone: string;
     password: string;
 }
 
 export interface LoginDto {
-    email: string;
+    phone: string;
     password: string;
+}
+
+export interface GuestCheckoutDto {
+    name: string;
+    phone: string;
 }
 
 export interface AuthResponse {
@@ -22,7 +27,8 @@ export interface AuthResponse {
 export interface UserResponse {
     id: string;
     name: string;
-    email: string;
+    phone: string;
+    email: string | null;
     avatar: string | null;
     points: number;
     role: string;
