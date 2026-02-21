@@ -20,10 +20,23 @@ router.get('/', async (_req: Request, res: Response) => {
     }
 });
 
+/** Get all shipping methods (Admin) — must be before /:id to avoid "admin" matching as an ID */
+router.get('/admin/all', authenticate, requireAdmin, async (_req: Request, res: Response) => {
+    try {
+        const shippingMethods = await prisma.shippingMethod.findMany({
+            orderBy: [{ order: 'asc' }, { name: 'asc' }]
+        });
+
+        res.json({ shippingMethods });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch shipping methods' });
+    }
+});
+
 /** Get shipping method by ID */
 router.get('/:id', async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         const shippingMethod = await prisma.shippingMethod.findUnique({
             where: { id }
@@ -97,20 +110,6 @@ router.post('/calculate', async (req: Request, res: Response) => {
 });
 
 // ─── Admin Routes ─────────────────────────────────────────
-
-/** Get all shipping methods (Admin) */
-router.get('/admin/all', authenticate, requireAdmin, async (_req: Request, res: Response) => {
-    try {
-        const shippingMethods = await prisma.shippingMethod.findMany({
-            orderBy: [{ order: 'asc' }, { name: 'asc' }]
-        });
-
-        res.json({ shippingMethods });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch shipping methods' });
-    }
-});
-
 /** Create shipping method (Admin only) */
 router.post('/', authenticate, requireAdmin, async (req: Request, res: Response) => {
     try {
@@ -153,7 +152,7 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
 /** Update shipping method (Admin only) */
 router.put('/:id', authenticate, requireAdmin, async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const {
             name,
             description,
@@ -188,7 +187,7 @@ router.put('/:id', authenticate, requireAdmin, async (req: Request, res: Respons
 /** Delete shipping method (Admin only) */
 router.delete('/:id', authenticate, requireAdmin, async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         await prisma.shippingMethod.delete({ where: { id } });
 
@@ -201,7 +200,7 @@ router.delete('/:id', authenticate, requireAdmin, async (req: Request, res: Resp
 /** Toggle shipping method status (Admin only) */
 router.patch('/:id/toggle', authenticate, requireAdmin, async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         const current = await prisma.shippingMethod.findUnique({
             where: { id }

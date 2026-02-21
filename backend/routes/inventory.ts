@@ -15,7 +15,7 @@ router.get('/', authenticate, requireAdmin, async (_req: Request, res: Response)
             prisma.product.aggregate({ _sum: { stock: true } }),
             // Column-to-column compare not supported in Prisma where — use raw SQL
             prisma.$queryRaw<[{ count: bigint }]>`
-                SELECT COUNT(*)::bigint AS count FROM "Product"
+                SELECT COUNT(*)::bigint AS count FROM "products"
                 WHERE stock > 0 AND stock <= "lowStockAlert"
             `,
         ]);
@@ -38,7 +38,7 @@ router.get('/low-stock', authenticate, requireAdmin, async (req: Request, res: R
 
         // Column-to-column compare not supported in Prisma where — use raw SQL for IDs
         const lowStockIds = await prisma.$queryRaw<{ id: string }[]>`
-            SELECT id FROM "Product"
+            SELECT id FROM "products"
             WHERE stock > 0 AND stock <= "lowStockAlert"
             ORDER BY stock ASC
             LIMIT ${parseInt(limit as string)}
@@ -170,7 +170,7 @@ router.post('/adjust', authenticate, requireAdmin, async (req: AuthRequest, res:
 /** Get stock history for a product (Admin only) */
 router.get('/history/:productId', authenticate, requireAdmin, async (req: Request, res: Response) => {
     try {
-        const { productId } = req.params;
+        const productId = req.params.productId as string;
         const { limit = '50', offset = '0' } = req.query;
 
         const history = await prisma.stockHistory.findMany({
