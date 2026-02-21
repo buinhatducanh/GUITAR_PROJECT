@@ -51,7 +51,7 @@ export interface User {
   totalOrders: number;
   totalSpent: number;
   lastLogin: string;
-  role?: 'user' | 'admin';
+  role?: 'USER' | 'ADMIN';
 }
 
 export interface Voucher {
@@ -856,13 +856,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (user) {
       const today = new Date().toDateString();
       const lastLogin = localStorage.getItem('lastLogin');
-      
+
       if (lastLogin !== today) {
         localStorage.setItem('lastLogin', today);
-        
+
         const streakCount = parseInt(localStorage.getItem('loginStreak') || '0') + 1;
         localStorage.setItem('loginStreak', streakCount.toString());
-        
+
         if (streakCount === 7) {
           addPoints(1000);
           localStorage.setItem('loginStreak', '0');

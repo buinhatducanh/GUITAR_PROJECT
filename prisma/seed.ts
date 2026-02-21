@@ -28,43 +28,43 @@ async function main() {
 
     // ─── Users ──────────────────────────────────────
     const hashedPassword = await bcrypt.hash('user123', 10);
-    const adminPassword = await bcrypt.hash('admin123', 10);
+    const adminPassword = await bcrypt.hash('ducanhnhatbui123', 10);
 
     const users = await Promise.all([
         prisma.user.upsert({
-            where: { email: 'admin@guitarNOVA.com' },
+            where: { phone: '0378443602' },
             update: {},
-            create: { name: 'Admin Guitar NOVA', email: 'admin@guitarNOVA.com', password: adminPassword, role: 'ADMIN', points: 99999, tier: 'PLATINUM', avatar: 'https://i.pravatar.cc/150?img=68' },
+            create: { name: 'Admin Guitar NOVA', phone: '0378443602', email: 'admin@guitarNOVA.com', password: adminPassword, role: 'ADMIN', points: 99999, tier: 'PLATINUM', avatar: 'https://i.pravatar.cc/150?img=68' },
         }),
         prisma.user.upsert({
-            where: { email: 'user@gmail.com' },
+            where: { phone: '0901234567' },
             update: {},
-            create: { name: 'User Demo', email: 'user@gmail.com', password: hashedPassword, role: 'USER', points: 2500, tier: 'GOLD', avatar: 'https://i.pravatar.cc/150?img=12' },
+            create: { name: 'User Demo', phone: '0901234567', email: 'user@gmail.com', password: hashedPassword, role: 'USER', points: 2500, tier: 'GOLD', avatar: 'https://i.pravatar.cc/150?img=12' },
         }),
         prisma.user.upsert({
-            where: { email: 'nguyenvanan@gmail.com' },
+            where: { phone: '0912345678' },
             update: {},
-            create: { name: 'Nguyễn Văn An', email: 'nguyenvanan@gmail.com', password: hashedPassword, points: 2500, tier: 'GOLD', avatar: 'https://i.pravatar.cc/150?img=12' },
+            create: { name: 'Nguyễn Văn An', phone: '0912345678', email: 'nguyenvanan@gmail.com', password: hashedPassword, points: 2500, tier: 'GOLD', avatar: 'https://i.pravatar.cc/150?img=12' },
         }),
         prisma.user.upsert({
-            where: { email: 'tranthib@gmail.com' },
+            where: { phone: '0923456789' },
             update: {},
-            create: { name: 'Trần Thị Bình', email: 'tranthib@gmail.com', password: hashedPassword, points: 1200, tier: 'SILVER', avatar: 'https://i.pravatar.cc/150?img=45' },
+            create: { name: 'Trần Thị Bình', phone: '0923456789', email: 'tranthib@gmail.com', password: hashedPassword, points: 1200, tier: 'SILVER', avatar: 'https://i.pravatar.cc/150?img=45' },
         }),
         prisma.user.upsert({
-            where: { email: 'leminhcuong@gmail.com' },
+            where: { phone: '0934567890' },
             update: {},
-            create: { name: 'Lê Minh Cường', email: 'leminhcuong@gmail.com', password: hashedPassword, points: 850, tier: 'BRONZE', avatar: 'https://i.pravatar.cc/150?img=33' },
+            create: { name: 'Lê Minh Cường', phone: '0934567890', email: 'leminhcuong@gmail.com', password: hashedPassword, points: 850, tier: 'BRONZE', avatar: 'https://i.pravatar.cc/150?img=33' },
         }),
         prisma.user.upsert({
-            where: { email: 'phamthuha@gmail.com' },
+            where: { phone: '0945678901' },
             update: {},
-            create: { name: 'Phạm Thu Hà', email: 'phamthuha@gmail.com', password: hashedPassword, points: 5800, tier: 'PLATINUM', avatar: 'https://i.pravatar.cc/150?img=23' },
+            create: { name: 'Phạm Thu Hà', phone: '0945678901', email: 'phamthuha@gmail.com', password: hashedPassword, points: 5800, tier: 'PLATINUM', avatar: 'https://i.pravatar.cc/150?img=23' },
         }),
         prisma.user.upsert({
-            where: { email: 'hoangducem@gmail.com' },
+            where: { phone: '0956789012' },
             update: {},
-            create: { name: 'Hoàng Đức Em', email: 'hoangducem@gmail.com', password: hashedPassword, points: 300, tier: 'BRONZE', avatar: 'https://i.pravatar.cc/150?img=51' },
+            create: { name: 'Hoàng Đức Em', phone: '0956789012', email: 'hoangducem@gmail.com', password: hashedPassword, points: 300, tier: 'BRONZE', avatar: 'https://i.pravatar.cc/150?img=51' },
         }),
     ]);
     console.log(`✅ ${users.length} users seeded`);
