@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowLeft, BarChart3, Package, Users, FileText, Image,
@@ -8,6 +8,7 @@ import {
 import { useApp, Product, Banner, Voucher, Event, UserData, Review, LandingPageData, BlogPost } from '@/app/context/AppContext';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { toast } from 'sonner';
+import { brandsApi, shippingApi, inventoryApi, settingsApi, analyticsApi } from '@/app/lib/api';
 
 interface AdminDashboardProps {
   onBack: () => void;
@@ -34,6 +35,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [editingLandingPage, setEditingLandingPage] = useState<LandingPageData | null>(null);
   const [editingBlogPost, setEditingBlogPost] = useState<BlogPost | null>(null);
   const [dashboardPeriod, setDashboardPeriod] = useState<'day' | 'week' | 'month' | 'year'>('month');
+
+  // ── Real API state ──────────────────────────────────────
+  const [analyticsOverview, setAnalyticsOverview] = useState<any>(null);
+  const [revenueChartData, setRevenueChartData] = useState<any[]>([]);
+  const [realBrands, setRealBrands] = useState<any[]>([]);
+  const [shippingMethods, setShippingMethods] = useState<any[]>([]);
+  const [inventoryStats, setInventoryStats] = useState<any>(null);
+  const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
+  const [siteSettings, setSiteSettings] = useState<any>(null);
+
+  // ── Brand modal ─────────────────────────────────────────
+  const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
+  const [editingBrand, setEditingBrand] = useState<any>(null);
+  const [brandForm, setBrandForm] = useState({ name: '', slug: '', logo: '', description: '', website: '', hotline: '' });
+
+  // ── Shipping modal ──────────────────────────────────────
+  const [isShippingModalOpen, setIsShippingModalOpen] = useState(false);
+  const [editingShipping, setEditingShipping] = useState<any>(null);
+  const [shippingForm, setShippingForm] = useState({ name: '', description: '', baseCost: '', costPerKm: '', freeThreshold: '', estimatedDays: '', order: '0' });
+
+  // ── Inventory adjust modal ──────────────────────────────
+  const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
+  const [adjustingProduct, setAdjustingProduct] = useState<any>(null);
+  const [adjustQty, setAdjustQty] = useState('');
+  const [adjustNotes, setAdjustNotes] = useState('');
 
   // Mock analytics data theo tiếng Việt
   const getRevenueData = () => {
@@ -111,6 +137,166 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       month: '2-digit',
       year: 'numeric'
     });
+  };
+
+  // ── Data loaders ──────────────────────────────────────────
+  const loadBrands = async () => {
+    try {
+      const data = await brandsApi.getAll();
+      setRealBrands(data.brands || []);
+    } catch { toast.error('Không thể tải danh sách thương hiệu'); }
+  };
+
+  const loadShipping = async () => {
+    try {
+      const data = await shippingApi.getAdminAll();
+      setShippingMethods(data.shippingMethods || []);
+    } catch { toast.error('Không thể tải phương thức vận chuyển'); }
+  };
+
+  const loadInventory = async () => {
+    try {
+      const [overview, lowStock] = await Promise.all([
+        inventoryApi.getOverview(),
+        inventoryApi.getLowStock(),
+      ]);
+      setInventoryStats(overview);
+      setLowStockProducts(lowStock.products || []);
+    } catch { toast.error('Không thể tải dữ liệu kho hàng'); }
+  };
+
+  const loadSettings = async () => {
+    try {
+      const data = await settingsApi.get();
+      setSiteSettings(data);
+    } catch { toast.error('Không thể tải cài đặt'); }
+  };
+
+  // Map API revenue data → chart format
+  const mapRevenueData = (data: any[]) =>
+    data.map(d => ({ name: d.date, doanhthu: d.revenue }));
+
+  // ── useEffects ────────────────────────────────────────────
+  useEffect(() => {
+    analyticsApi.getOverview()
+      .then(d => setAnalyticsOverview(d))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    analyticsApi.getRevenue(dashboardPeriod)
+      .then(d => { if (d?.data) setRevenueChartData(mapRevenueData(d.data)); })
+      .catch(() => {});
+  }, [dashboardPeriod]);
+
+  useEffect(() => {
+    if (activeTab === 'brands') loadBrands();
+    if (activeTab === 'shipping') loadShipping();
+    if (activeTab === 'inventory') loadInventory();
+    if (activeTab === 'settings') loadSettings();
+  }, [activeTab]);
+
+  // ── Brand CRUD ────────────────────────────────────────────
+  const openBrandModal = (brand?: any) => {
+    if (brand) {
+      setEditingBrand(brand);
+      setBrandForm({ name: brand.name, slug: brand.slug, logo: brand.logo || '', description: brand.description || '', website: brand.website || '', hotline: brand.hotline || '' });
+    } else {
+      setEditingBrand(null);
+      setBrandForm({ name: '', slug: '', logo: '', description: '', website: '', hotline: '' });
+    }
+    setIsBrandModalOpen(true);
+  };
+
+  const handleSaveBrand = async () => {
+    try {
+      if (editingBrand) {
+        await brandsApi.update(editingBrand.id, brandForm);
+        toast.success('Đã cập nhật thương hiệu');
+      } else {
+        await brandsApi.create(brandForm);
+        toast.success('Đã thêm thương hiệu');
+      }
+      setIsBrandModalOpen(false);
+      loadBrands();
+    } catch (e: any) { toast.error(e.message || 'Lỗi khi lưu thương hiệu'); }
+  };
+
+  const handleDeleteBrand = async (id: string) => {
+    try {
+      await brandsApi.delete(id);
+      toast.success('Đã xóa thương hiệu');
+      loadBrands();
+    } catch (e: any) { toast.error(e.message || 'Không thể xóa thương hiệu đang có sản phẩm'); }
+  };
+
+  // Auto-generate slug from name
+  const handleBrandNameChange = (name: string) => {
+    const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    setBrandForm(f => ({ ...f, name, slug: f.slug === '' || f.slug === (f.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')) ? slug : f.slug }));
+  };
+
+  // ── Shipping CRUD ─────────────────────────────────────────
+  const openShippingModal = (method?: any) => {
+    if (method) {
+      setEditingShipping(method);
+      setShippingForm({ name: method.name, description: method.description || '', baseCost: String(method.baseCost), costPerKm: String(method.costPerKm), freeThreshold: String(method.freeThreshold), estimatedDays: method.estimatedDays, order: String(method.order ?? 0) });
+    } else {
+      setEditingShipping(null);
+      setShippingForm({ name: '', description: '', baseCost: '', costPerKm: '', freeThreshold: '', estimatedDays: '', order: '0' });
+    }
+    setIsShippingModalOpen(true);
+  };
+
+  const handleSaveShipping = async () => {
+    try {
+      const payload = { ...shippingForm, baseCost: parseFloat(shippingForm.baseCost), costPerKm: parseFloat(shippingForm.costPerKm), freeThreshold: parseFloat(shippingForm.freeThreshold), order: parseInt(shippingForm.order) };
+      if (editingShipping) {
+        await shippingApi.update(editingShipping.id, payload);
+        toast.success('Đã cập nhật phương thức vận chuyển');
+      } else {
+        await shippingApi.create(payload);
+        toast.success('Đã thêm phương thức vận chuyển');
+      }
+      setIsShippingModalOpen(false);
+      loadShipping();
+    } catch (e: any) { toast.error(e.message || 'Lỗi khi lưu phương thức vận chuyển'); }
+  };
+
+  const handleDeleteShipping = async (id: string) => {
+    try {
+      await shippingApi.delete(id);
+      toast.success('Đã xóa phương thức vận chuyển');
+      loadShipping();
+    } catch (e: any) { toast.error(e.message || 'Không thể xóa'); }
+  };
+
+  const handleToggleShipping = async (id: string) => {
+    try {
+      await shippingApi.toggle(id);
+      loadShipping();
+    } catch { toast.error('Không thể thay đổi trạng thái'); }
+  };
+
+  // ── Inventory adjust ──────────────────────────────────────
+  const handleAdjustStock = async () => {
+    if (!adjustingProduct || !adjustQty) return;
+    try {
+      await inventoryApi.adjust(adjustingProduct.id, parseInt(adjustQty), 'IN', adjustNotes);
+      toast.success('Đã cập nhật tồn kho');
+      setIsAdjustModalOpen(false);
+      setAdjustQty('');
+      setAdjustNotes('');
+      loadInventory();
+    } catch (e: any) { toast.error(e.message || 'Lỗi khi điều chỉnh kho'); }
+  };
+
+  // ── Settings save ─────────────────────────────────────────
+  const handleSaveSettings = async () => {
+    try {
+      await settingsApi.update(siteSettings);
+      toast.success('Đã lưu cài đặt');
+    } catch (e: any) { toast.error(e.message || 'Lỗi khi lưu cài đặt'); }
   };
 
   const handleDeleteProduct = (id: string) => {
@@ -241,37 +427,45 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                     <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/30 rounded-2xl p-6 border border-blue-500/20">
                       <div className="flex items-center justify-between mb-4">
                         <DollarSign className="w-10 h-10 text-blue-400" />
-                        <span className="text-green-400 text-sm font-medium">+12.5%</span>
+                        <TrendingUp className="w-5 h-5 text-green-400" />
                       </div>
-                      <p className="text-blue-200 text-sm mb-1">Doanh thu tháng này</p>
-                      <p className="text-2xl font-bold text-white">67,5 triệu</p>
+                      <p className="text-blue-200 text-sm mb-1">Tổng doanh thu</p>
+                      <p className="text-2xl font-bold text-white">
+                        {analyticsOverview ? formatPrice(analyticsOverview.totalRevenue) : '—'}
+                      </p>
                     </div>
 
                     <div className="bg-gradient-to-br from-green-900/30 to-green-800/30 rounded-2xl p-6 border border-green-500/20">
                       <div className="flex items-center justify-between mb-4">
                         <ShoppingCart className="w-10 h-10 text-green-400" />
-                        <span className="text-green-400 text-sm font-medium">+8.2%</span>
+                        <TrendingUp className="w-5 h-5 text-green-400" />
                       </div>
-                      <p className="text-green-200 text-sm mb-1">Đơn hàng</p>
-                      <p className="text-2xl font-bold text-white">124</p>
+                      <p className="text-green-200 text-sm mb-1">Tổng đơn hàng</p>
+                      <p className="text-2xl font-bold text-white">
+                        {analyticsOverview ? analyticsOverview.totalOrders : '—'}
+                      </p>
                     </div>
 
                     <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/30 rounded-2xl p-6 border border-purple-500/20">
                       <div className="flex items-center justify-between mb-4">
                         <Package className="w-10 h-10 text-purple-400" />
-                        <span className="text-purple-400 text-sm font-medium">{products.length}</span>
+                        <span className="text-purple-400 text-sm font-medium">{analyticsOverview?.totalProducts ?? products.length}</span>
                       </div>
                       <p className="text-purple-200 text-sm mb-1">Sản phẩm</p>
-                      <p className="text-2xl font-bold text-white">{products.length}</p>
+                      <p className="text-2xl font-bold text-white">
+                        {analyticsOverview?.totalProducts ?? products.length}
+                      </p>
                     </div>
 
                     <div className="bg-gradient-to-br from-orange-900/30 to-orange-800/30 rounded-2xl p-6 border border-orange-500/20">
                       <div className="flex items-center justify-between mb-4">
                         <Users className="w-10 h-10 text-orange-400" />
-                        <span className="text-orange-400 text-sm font-medium">+15.3%</span>
+                        <TrendingUp className="w-5 h-5 text-orange-400" />
                       </div>
                       <p className="text-orange-200 text-sm mb-1">Khách hàng</p>
-                      <p className="text-2xl font-bold text-white">{users.length}</p>
+                      <p className="text-2xl font-bold text-white">
+                        {analyticsOverview?.totalCustomers ?? users.length}
+                      </p>
                     </div>
                   </div>
 
@@ -282,7 +476,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                         Biểu đồ doanh thu ({dashboardPeriod === 'day' ? 'Ngày' : dashboardPeriod === 'week' ? 'Tuần' : dashboardPeriod === 'month' ? 'Tháng' : 'Năm'})
                       </h3>
                       <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={getRevenueData()}>
+                        <LineChart data={revenueChartData.length > 0 ? revenueChartData : getRevenueData()}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                           <XAxis dataKey="name" stroke="#999" />
                           <YAxis stroke="#999" />
@@ -321,26 +515,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                     </div>
                   </div>
 
-                  {/* Recent Activity */}
+                  {/* Recent Orders */}
                   <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
-                    <h3 className="text-xl font-semibold text-white mb-4">Hoạt động gần đây</h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
-                        <div className="w-2 h-2 bg-green-500 rounded-full" />
-                        <p className="text-white/80">Đơn hàng mới #124 - {formatPrice(15000000)}</p>
-                        <span className="text-white/40 text-sm ml-auto">5 phút trước</span>
+                    <h3 className="text-xl font-semibold text-white mb-4">Đơn hàng gần đây</h3>
+                    {analyticsOverview?.recentOrders?.length > 0 ? (
+                      <div className="space-y-3">
+                        {analyticsOverview.recentOrders.map((order: any) => (
+                          <div key={order.id} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
+                            <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white/80 truncate">
+                                {order.user?.name || 'Khách hàng'} — {formatPrice(parseFloat(order.totalAmount))}
+                              </p>
+                              <p className="text-white/40 text-xs">{order.status}</p>
+                            </div>
+                            <span className="text-white/40 text-sm flex-shrink-0">{formatDate(order.createdAt)}</span>
+                          </div>
+                        ))}
                       </div>
-                      <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                        <p className="text-white/80">Người dùng mới đăng ký: Nguyễn Văn A</p>
-                        <span className="text-white/40 text-sm ml-auto">15 phút trước</span>
-                      </div>
-                      <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
-                        <div className="w-2 h-2 bg-amber-500 rounded-full" />
-                        <p className="text-white/80">Đánh giá mới: 5 sao cho Fender Stratocaster</p>
-                        <span className="text-white/40 text-sm ml-auto">30 phút trước</span>
-                      </div>
-                    </div>
+                    ) : (
+                      <p className="text-white/40 text-sm">Chưa có đơn hàng</p>
+                    )}
                   </div>
                 </motion.div>
               )}
@@ -450,7 +645,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => toast.info('Tính năng đang phát triển - Brand API đã sẵn sàng!')}
+                      onClick={() => openBrandModal()}
                       className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-xl hover:from-amber-700 hover:to-amber-800 transition-all"
                     >
                       <Plus className="w-5 h-5" />
@@ -458,140 +653,83 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                     </motion.button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Sample brands - Will be replaced with real API data */}
-                    {[
-                      {
-                        id: '1',
-                        name: 'Yamaha',
-                        slug: 'yamaha',
-                        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Yamaha_Motor_logo.svg/2560px-Yamaha_Motor_logo.svg.png',
-                        description: 'Thương hiệu nhạc cụ hàng đầu thế giới',
-                        website: 'https://www.yamaha.com',
-                        hotline: '1900-1234',
-                        isActive: true,
-                        productCount: 45
-                      },
-                      {
-                        id: '2',
-                        name: 'Fender',
-                        slug: 'fender',
-                        logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Fender_guitars_logo.svg/2560px-Fender_guitars_logo.svg.png',
-                        description: 'Huyền thoại guitar điện Mỹ',
-                        website: 'https://www.fender.com',
-                        hotline: '1900-5678',
-                        isActive: true,
-                        productCount: 38
-                      },
-                      {
-                        id: '3',
-                        name: 'Gibson',
-                        slug: 'gibson',
-                        logo: 'https://1000logos.net/wp-content/uploads/2020/09/Gibson-Logo.png',
-                        description: 'Thương hiệu guitar cao cấp',
-                        website: 'https://www.gibson.com',
-                        hotline: '1900-9012',
-                        isActive: true,
-                        productCount: 28
-                      },
-                      {
-                        id: '4',
-                        name: 'Taylor',
-                        slug: 'taylor',
-                        logo: null,
-                        description: 'Chuyên guitar acoustic cao cấp',
-                        website: 'https://www.taylorguitars.com',
-                        hotline: '1900-3456',
-                        isActive: false,
-                        productCount: 15
-                      }
-                    ].map((brand) => (
-                      <div key={brand.id} className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10 hover:border-amber-500/30 transition-all">
-                        <div className="flex flex-col h-full">
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                              {brand.logo ? (
-                                <img src={brand.logo} alt={brand.name} className="w-12 h-12 object-contain bg-white rounded-lg p-1" />
-                              ) : (
-                                <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
-                                  <Award className="w-6 h-6 text-white" />
+                  {realBrands.length === 0 ? (
+                    <div className="text-center py-16 text-white/40">
+                      <Award className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                      <p>Chưa có thương hiệu nào. Nhấn "Thêm thương hiệu" để bắt đầu.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {realBrands.map((brand) => (
+                        <div key={brand.id} className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10 hover:border-amber-500/30 transition-all">
+                          <div className="flex flex-col h-full">
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex items-center gap-3">
+                                {brand.logo ? (
+                                  <img src={brand.logo} alt={brand.name} className="w-12 h-12 object-contain bg-white rounded-lg p-1" />
+                                ) : (
+                                  <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
+                                    <Award className="w-6 h-6 text-white" />
+                                  </div>
+                                )}
+                                <div>
+                                  <h3 className="text-lg font-bold text-white">{brand.name}</h3>
+                                  <p className="text-white/40 text-xs">@{brand.slug}</p>
+                                </div>
+                              </div>
+                              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                brand.isActive ? 'bg-green-500/20 text-green-400' : 'bg-zinc-500/20 text-zinc-400'
+                              }`}>
+                                {brand.isActive ? 'Hoạt động' : 'Tạm dừng'}
+                              </span>
+                            </div>
+
+                            <p className="text-white/60 text-sm mb-4 flex-grow">{brand.description || '—'}</p>
+
+                            <div className="space-y-2 mb-4">
+                              {brand.website && (
+                                <div className="flex items-center gap-2 text-white/40 text-xs">
+                                  <FileText className="w-3 h-3" />
+                                  <a href={brand.website} target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors truncate">{brand.website}</a>
                                 </div>
                               )}
-                              <div>
-                                <h3 className="text-lg font-bold text-white">{brand.name}</h3>
-                                <p className="text-white/40 text-xs">@{brand.slug}</p>
-                              </div>
+                              {brand.hotline && (
+                                <div className="flex items-center gap-2 text-white/40 text-xs">
+                                  <ShoppingCart className="w-3 h-3" />
+                                  <span>{brand.hotline}</span>
+                                </div>
+                              )}
                             </div>
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                              brand.isActive ? 'bg-green-500/20 text-green-400' : 'bg-zinc-500/20 text-zinc-400'
-                            }`}>
-                              {brand.isActive ? 'Hoạt động' : 'Tạm dừng'}
-                            </span>
-                          </div>
 
-                          <p className="text-white/60 text-sm mb-4 flex-grow">{brand.description}</p>
-
-                          <div className="space-y-2 mb-4">
-                            {brand.website && (
-                              <div className="flex items-center gap-2 text-white/40 text-xs">
-                                <FileText className="w-3 h-3" />
-                                <a href={brand.website} target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors">
-                                  {brand.website}
-                                </a>
+                            <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                              <div className="flex items-center gap-2">
+                                <Package className="w-4 h-4 text-amber-400" />
+                                <span className="text-white font-semibold">{brand._count?.products ?? 0} sản phẩm</span>
                               </div>
-                            )}
-                            {brand.hotline && (
-                              <div className="flex items-center gap-2 text-white/40 text-xs">
-                                <ShoppingCart className="w-3 h-3" />
-                                <span>{brand.hotline}</span>
+                              <div className="flex gap-2">
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={() => openBrandModal(brand)}
+                                  className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </motion.button>
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={() => handleDeleteBrand(brand.id)}
+                                  className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </motion.button>
                               </div>
-                            )}
-                          </div>
-
-                          <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                            <div className="flex items-center gap-2">
-                              <Package className="w-4 h-4 text-amber-400" />
-                              <span className="text-white font-semibold">{brand.productCount} sản phẩm</span>
-                            </div>
-                            <div className="flex gap-2">
-                              <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => toast.info('Tính năng chỉnh sửa đang phát triển')}
-                                className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </motion.button>
-                              <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => toast.warning('Tính năng xóa đang phát triển')}
-                                className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </motion.button>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-8 p-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl border border-blue-500/20">
-                    <h3 className="text-lg font-bold text-white mb-2">✅ Backend API đã sẵn sàng!</h3>
-                    <p className="text-white/60 mb-3">
-                      API endpoints cho Brand Management đã được triển khai đầy đủ tại <code className="bg-black/30 px-2 py-1 rounded text-amber-400">/api/brands</code>
-                    </p>
-                    <ul className="space-y-1 text-white/60 text-sm">
-                      <li>• GET /api/brands - Lấy danh sách thương hiệu</li>
-                      <li>• GET /api/brands/:slug - Chi tiết thương hiệu theo slug</li>
-                      <li>• POST /api/brands - Tạo thương hiệu mới (Admin)</li>
-                      <li>• PUT /api/brands/:id - Cập nhật thương hiệu (Admin)</li>
-                      <li>• DELETE /api/brands/:id - Xóa thương hiệu (Admin)</li>
-                      <li>• GET /api/brands/:id/products - Sản phẩm theo thương hiệu</li>
-                      <li>• GET /api/brands/:id/analytics - Phân tích hiệu suất thương hiệu (Admin)</li>
-                    </ul>
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </motion.div>
               )}
 
@@ -604,17 +742,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                 >
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold text-white">Quản lý Kho Hàng</h2>
-                    <div className="flex gap-3">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => toast.info('Tính năng điều chỉnh hàng loạt đang phát triển')}
-                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all"
-                      >
-                        <Edit className="w-5 h-5" />
-                        Cập nhật hàng loạt
-                      </motion.button>
-                    </div>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={loadInventory}
+                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all"
+                    >
+                      <TrendingUp className="w-5 h-5" />
+                      Làm mới
+                    </motion.button>
                   </div>
 
                   {/* Inventory Stats */}
@@ -626,7 +762,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                         </div>
                         <div>
                           <p className="text-white/60 text-sm">Tổng sản phẩm</p>
-                          <p className="text-2xl font-bold text-white">248</p>
+                          <p className="text-2xl font-bold text-white">{inventoryStats?.totalProducts ?? '—'}</p>
                         </div>
                       </div>
                     </div>
@@ -638,7 +774,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                         </div>
                         <div>
                           <p className="text-white/60 text-sm">Sắp hết hàng</p>
-                          <p className="text-2xl font-bold text-white">12</p>
+                          <p className="text-2xl font-bold text-white">{inventoryStats?.lowStockCount ?? '—'}</p>
                         </div>
                       </div>
                     </div>
@@ -650,7 +786,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                         </div>
                         <div>
                           <p className="text-white/60 text-sm">Hết hàng</p>
-                          <p className="text-2xl font-bold text-white">3</p>
+                          <p className="text-2xl font-bold text-white">{inventoryStats?.outOfStockCount ?? '—'}</p>
                         </div>
                       </div>
                     </div>
@@ -662,72 +798,61 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                         </div>
                         <div>
                           <p className="text-white/60 text-sm">Tổng số lượng</p>
-                          <p className="text-2xl font-bold text-white">1,247</p>
+                          <p className="text-2xl font-bold text-white">{inventoryStats?.totalStock?.toLocaleString('vi-VN') ?? '—'}</p>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Low Stock Alert Section */}
-                  <div className="mb-6">
+                  <div>
                     <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                       <AlertTriangle className="w-5 h-5 text-yellow-400" />
                       Cảnh báo sắp hết hàng
                     </h3>
-                    <div className="space-y-3">
-                      {[
-                        { id: '1', name: 'Yamaha Pacifica 112V', category: 'Guitar Điện', stock: 5, lowStockAlert: 10, trend: 'down' },
-                        { id: '2', name: 'Fender Player Stratocaster', category: 'Guitar Điện', stock: 8, lowStockAlert: 15, trend: 'down' },
-                        { id: '3', name: 'Taylor 214ce-K DLX', category: 'Guitar Acoustic', stock: 3, lowStockAlert: 10, trend: 'stable' }
-                      ].map((product) => (
-                        <div key={product.id} className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-xl p-4 border border-yellow-500/20">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <AlertTriangle className="w-5 h-5 text-yellow-400" />
-                                <div>
-                                  <h4 className="text-white font-semibold">{product.name}</h4>
-                                  <p className="text-white/40 text-sm">{product.category}</p>
+
+                    {lowStockProducts.length === 0 ? (
+                      <div className="text-center py-10 text-white/40">
+                        <Package className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                        <p>Không có sản phẩm sắp hết hàng</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {lowStockProducts.map((product) => (
+                          <div key={product.id} className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-xl p-4 border border-yellow-500/20">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-1">
+                                  <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+                                  <div>
+                                    <h4 className="text-white font-semibold">{product.name}</h4>
+                                    <p className="text-white/40 text-sm">{product.category?.name}</p>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            <div className="flex items-center gap-6">
-                              <div className="text-right">
-                                <p className="text-white/40 text-xs">Tồn kho</p>
-                                <p className="text-2xl font-bold text-yellow-400">{product.stock}</p>
+                              <div className="flex items-center gap-6">
+                                <div className="text-right">
+                                  <p className="text-white/40 text-xs">Tồn kho</p>
+                                  <p className="text-2xl font-bold text-yellow-400">{product.stock}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-white/40 text-xs">Mức cảnh báo</p>
+                                  <p className="text-white font-semibold">{product.lowStockAlert}</p>
+                                </div>
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => { setAdjustingProduct(product); setIsAdjustModalOpen(true); }}
+                                  className="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all text-sm font-semibold"
+                                >
+                                  Nhập thêm
+                                </motion.button>
                               </div>
-                              <div className="text-right">
-                                <p className="text-white/40 text-xs">Mức cảnh báo</p>
-                                <p className="text-white font-semibold">{product.lowStockAlert}</p>
-                              </div>
-                              <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => toast.info('Tính năng điều chỉnh kho đang phát triển')}
-                                className="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all text-sm font-semibold"
-                              >
-                                Nhập thêm
-                              </motion.button>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="mt-8 p-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl border border-blue-500/20">
-                    <h3 className="text-lg font-bold text-white mb-2">✅ Backend API đã sẵn sàng!</h3>
-                    <p className="text-white/60 mb-3">
-                      API endpoints cho Inventory Management đã được triển khai đầy đủ tại <code className="bg-black/30 px-2 py-1 rounded text-green-400">/api/inventory</code>
-                    </p>
-                    <ul className="space-y-1 text-white/60 text-sm">
-                      <li>• GET /api/inventory - Tổng quan kho hàng</li>
-                      <li>• GET /api/inventory/low-stock - Sản phẩm sắp hết</li>
-                      <li>• GET /api/inventory/out-of-stock - Sản phẩm hết hàng</li>
-                      <li>• POST /api/inventory/adjust - Điều chỉnh tồn kho (Admin)</li>
-                      <li>• GET /api/inventory/history/:productId - Lịch sử xuất nhập</li>
-                      <li>• POST /api/inventory/bulk-update - Cập nhật hàng loạt (Admin)</li>
-                    </ul>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               )}
@@ -1175,119 +1300,81 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => {
-                        toast.info('Tính năng đang phát triển - Shipping Management API đã sẵn sàng!');
-                      }}
+                      onClick={() => openShippingModal()}
                       className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all"
                     >
                       <Plus className="w-5 h-5" />
-                      Thêm phương thức vận chuyển
+                      Thêm phương thức
                     </motion.button>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-6">
-                    {/* Sample shipping methods - Will be replaced with real API data */}
-                    {[
-                      {
-                        id: '1',
-                        name: 'Giao hàng tiêu chuẩn',
-                        description: 'Giao hàng trong 3-5 ngày làm việc',
-                        baseCost: 30000,
-                        costPerKm: 5000,
-                        freeThreshold: 1000000,
-                        estimatedDays: '3-5 ngày',
-                        isActive: true
-                      },
-                      {
-                        id: '2',
-                        name: 'Giao hàng nhanh',
-                        description: 'Giao hàng trong 1-2 ngày làm việc',
-                        baseCost: 50000,
-                        costPerKm: 8000,
-                        freeThreshold: 2000000,
-                        estimatedDays: '1-2 ngày',
-                        isActive: true
-                      },
-                      {
-                        id: '3',
-                        name: 'Giao hàng trong ngày',
-                        description: 'Giao hàng trong cùng ngày (nội thành)',
-                        baseCost: 80000,
-                        costPerKm: 12000,
-                        freeThreshold: 5000000,
-                        estimatedDays: 'Trong ngày',
-                        isActive: false
-                      }
-                    ].map((method) => (
-                      <div key={method.id} className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <Truck className="w-6 h-6 text-orange-400" />
-                              <h3 className="text-xl font-bold text-white">{method.name}</h3>
-                              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                method.isActive ? 'bg-green-500/20 text-green-400' : 'bg-zinc-500/20 text-zinc-400'
-                              }`}>
-                                {method.isActive ? 'Hoạt động' : 'Tạm dừng'}
-                              </span>
-                            </div>
-                            <p className="text-white/60 mb-4">{method.description}</p>
+                  {shippingMethods.length === 0 ? (
+                    <div className="text-center py-16 text-white/40">
+                      <Truck className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                      <p>Chưa có phương thức vận chuyển nào.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-6">
+                      {shippingMethods.map((method) => (
+                        <div key={method.id} className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <Truck className="w-6 h-6 text-orange-400" />
+                                <h3 className="text-xl font-bold text-white">{method.name}</h3>
+                                <button
+                                  onClick={() => handleToggleShipping(method.id)}
+                                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
+                                    method.isActive ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' : 'bg-zinc-500/20 text-zinc-400 hover:bg-zinc-500/30'
+                                  }`}
+                                >
+                                  {method.isActive ? 'Hoạt động' : 'Tạm dừng'}
+                                </button>
+                              </div>
+                              <p className="text-white/60 mb-4">{method.description}</p>
 
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                              <div className="bg-white/5 rounded-lg p-3">
-                                <p className="text-white/40 text-xs mb-1">Phí cơ bản</p>
-                                <p className="text-white font-semibold">{formatPrice(method.baseCost)}</p>
-                              </div>
-                              <div className="bg-white/5 rounded-lg p-3">
-                                <p className="text-white/40 text-xs mb-1">Phí / km</p>
-                                <p className="text-white font-semibold">{formatPrice(method.costPerKm)}</p>
-                              </div>
-                              <div className="bg-white/5 rounded-lg p-3">
-                                <p className="text-white/40 text-xs mb-1">Freeship từ</p>
-                                <p className="text-white font-semibold">{formatPrice(method.freeThreshold)}</p>
-                              </div>
-                              <div className="bg-white/5 rounded-lg p-3">
-                                <p className="text-white/40 text-xs mb-1">Thời gian</p>
-                                <p className="text-white font-semibold">{method.estimatedDays}</p>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                                <div className="bg-white/5 rounded-lg p-3">
+                                  <p className="text-white/40 text-xs mb-1">Phí cơ bản</p>
+                                  <p className="text-white font-semibold">{formatPrice(parseFloat(method.baseCost))}</p>
+                                </div>
+                                <div className="bg-white/5 rounded-lg p-3">
+                                  <p className="text-white/40 text-xs mb-1">Phí / km</p>
+                                  <p className="text-white font-semibold">{formatPrice(parseFloat(method.costPerKm))}</p>
+                                </div>
+                                <div className="bg-white/5 rounded-lg p-3">
+                                  <p className="text-white/40 text-xs mb-1">Freeship từ</p>
+                                  <p className="text-white font-semibold">{formatPrice(parseFloat(method.freeThreshold))}</p>
+                                </div>
+                                <div className="bg-white/5 rounded-lg p-3">
+                                  <p className="text-white/40 text-xs mb-1">Thời gian</p>
+                                  <p className="text-white font-semibold">{method.estimatedDays}</p>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <div className="flex gap-2 ml-4">
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => toast.info('Tính năng chỉnh sửa đang phát triển')}
-                              className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => toast.warning('Tính năng xóa đang phát triển')}
-                              className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </motion.button>
+                            <div className="flex gap-2 ml-4">
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => openShippingModal(method)}
+                                className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => handleDeleteShipping(method.id)}
+                                className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </motion.button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-8 p-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl border border-blue-500/20">
-                    <h3 className="text-lg font-bold text-white mb-2">✅ Backend API đã sẵn sàng!</h3>
-                    <p className="text-white/60 mb-3">
-                      API endpoints cho Shipping Management đã được triển khai đầy đủ tại <code className="bg-black/30 px-2 py-1 rounded text-orange-400">/api/shipping</code>
-                    </p>
-                    <ul className="space-y-1 text-white/60 text-sm">
-                      <li>• GET /api/shipping - Lấy danh sách phương thức vận chuyển</li>
-                      <li>• POST /api/shipping - Tạo phương thức mới (Admin)</li>
-                      <li>• PUT /api/shipping/:id - Cập nhật phương thức (Admin)</li>
-                      <li>• DELETE /api/shipping/:id - Xóa phương thức (Admin)</li>
-                      <li>• POST /api/shipping/calculate - Tính phí vận chuyển</li>
-                    </ul>
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </motion.div>
               )}
 
@@ -1303,220 +1390,351 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => toast.success('Tính năng lưu cài đặt đang phát triển')}
+                      onClick={handleSaveSettings}
                       className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all"
                     >
                       Lưu cài đặt
                     </motion.button>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Site Information */}
-                    <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
-                      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-purple-400" />
-                        Thông tin website
-                      </h3>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-white/60 text-sm mb-2">Tên website</label>
-                          <input
-                            type="text"
-                            defaultValue="Guitar NOVA"
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
-                          />
+                  {!siteSettings ? (
+                    <div className="text-center py-16 text-white/40">Đang tải cài đặt...</div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Site Information */}
+                      <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
+                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                          <FileText className="w-5 h-5 text-purple-400" />
+                          Thông tin website
+                        </h3>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-white/60 text-sm mb-2">Tên website</label>
+                            <input
+                              type="text"
+                              value={siteSettings.siteName || ''}
+                              onChange={e => setSiteSettings((s: any) => ({ ...s, siteName: e.target.value }))}
+                              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-white/60 text-sm mb-2">Slogan</label>
+                            <input
+                              type="text"
+                              value={siteSettings.slogan || ''}
+                              onChange={e => setSiteSettings((s: any) => ({ ...s, slogan: e.target.value }))}
+                              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-white/60 text-sm mb-2">Logo URL</label>
+                            <input
+                              type="text"
+                              value={siteSettings.logo || ''}
+                              onChange={e => setSiteSettings((s: any) => ({ ...s, logo: e.target.value }))}
+                              placeholder="https://..."
+                              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-white/60 text-sm mb-2">Favicon URL</label>
+                            <input
+                              type="text"
+                              value={siteSettings.favicon || ''}
+                              onChange={e => setSiteSettings((s: any) => ({ ...s, favicon: e.target.value }))}
+                              placeholder="https://..."
+                              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <label className="block text-white/60 text-sm mb-2">Slogan</label>
-                          <input
-                            type="text"
-                            defaultValue="Nơi Đam Mê Âm Nhạc Thăng Hoa"
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
-                          />
+                      </div>
+
+                      {/* Contact Information */}
+                      <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
+                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                          <Users className="w-5 h-5 text-blue-400" />
+                          Thông tin liên hệ
+                        </h3>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-white/60 text-sm mb-2">Email</label>
+                            <input
+                              type="email"
+                              value={siteSettings.email || ''}
+                              onChange={e => setSiteSettings((s: any) => ({ ...s, email: e.target.value }))}
+                              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-white/60 text-sm mb-2">Số điện thoại</label>
+                            <input
+                              type="text"
+                              value={siteSettings.phone || ''}
+                              onChange={e => setSiteSettings((s: any) => ({ ...s, phone: e.target.value }))}
+                              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-white/60 text-sm mb-2">Địa chỉ</label>
+                            <textarea
+                              value={siteSettings.address || ''}
+                              onChange={e => setSiteSettings((s: any) => ({ ...s, address: e.target.value }))}
+                              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:outline-none resize-none"
+                              rows={3}
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <label className="block text-white/60 text-sm mb-2">Logo URL</label>
-                          <input
-                            type="text"
-                            placeholder="https://..."
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
-                          />
+                      </div>
+
+                      {/* Social Media */}
+                      <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
+                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                          <Image className="w-5 h-5 text-pink-400" />
+                          Mạng xã hội
+                        </h3>
+                        <div className="space-y-4">
+                          {[
+                            { key: 'facebookUrl', label: 'Facebook', placeholder: 'https://facebook.com/...' },
+                            { key: 'instagramUrl', label: 'Instagram', placeholder: 'https://instagram.com/...' },
+                            { key: 'youtubeUrl', label: 'YouTube', placeholder: 'https://youtube.com/...' },
+                            { key: 'tiktokUrl', label: 'TikTok', placeholder: 'https://tiktok.com/@...' },
+                          ].map(({ key, label, placeholder }) => (
+                            <div key={key}>
+                              <label className="block text-white/60 text-sm mb-2">{label}</label>
+                              <input
+                                type="url"
+                                value={siteSettings[key] || ''}
+                                onChange={e => setSiteSettings((s: any) => ({ ...s, [key]: e.target.value }))}
+                                placeholder={placeholder}
+                                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-pink-500 focus:outline-none"
+                              />
+                            </div>
+                          ))}
                         </div>
-                        <div>
-                          <label className="block text-white/60 text-sm mb-2">Favicon URL</label>
-                          <input
-                            type="text"
-                            placeholder="https://..."
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
-                          />
+                      </div>
+
+                      {/* SEO Settings */}
+                      <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
+                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                          <TrendingUp className="w-5 h-5 text-green-400" />
+                          SEO Settings
+                        </h3>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-white/60 text-sm mb-2">Meta Title</label>
+                            <input
+                              type="text"
+                              value={siteSettings.metaTitle || ''}
+                              onChange={e => setSiteSettings((s: any) => ({ ...s, metaTitle: e.target.value }))}
+                              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-green-500 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-white/60 text-sm mb-2">Meta Description</label>
+                            <textarea
+                              value={siteSettings.metaDescription || ''}
+                              onChange={e => setSiteSettings((s: any) => ({ ...s, metaDescription: e.target.value }))}
+                              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-green-500 focus:outline-none resize-none"
+                              rows={3}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-white/60 text-sm mb-2">Meta Keywords</label>
+                            <input
+                              type="text"
+                              value={siteSettings.metaKeywords || ''}
+                              onChange={e => setSiteSettings((s: any) => ({ ...s, metaKeywords: e.target.value }))}
+                              placeholder="guitar, music, instruments..."
+                              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-green-500 focus:outline-none"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
-
-                    {/* Contact Information */}
-                    <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
-                      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                        <Users className="w-5 h-5 text-blue-400" />
-                        Thông tin liên hệ
-                      </h3>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-white/60 text-sm mb-2">Email</label>
-                          <input
-                            type="email"
-                            defaultValue="contact@guitarnova.com"
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-white/60 text-sm mb-2">Số điện thoại</label>
-                          <input
-                            type="text"
-                            defaultValue="1900-GUITAR"
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-white/60 text-sm mb-2">Địa chỉ</label>
-                          <textarea
-                            defaultValue="123 Music Street, Ho Chi Minh City, Vietnam"
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:outline-none resize-none"
-                            rows={3}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Social Media */}
-                    <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
-                      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                        <Image className="w-5 h-5 text-pink-400" />
-                        Mạng xã hội
-                      </h3>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-white/60 text-sm mb-2">Facebook</label>
-                          <input
-                            type="url"
-                            placeholder="https://facebook.com/..."
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-pink-500 focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-white/60 text-sm mb-2">Instagram</label>
-                          <input
-                            type="url"
-                            placeholder="https://instagram.com/..."
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-pink-500 focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-white/60 text-sm mb-2">YouTube</label>
-                          <input
-                            type="url"
-                            placeholder="https://youtube.com/..."
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-pink-500 focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-white/60 text-sm mb-2">TikTok</label>
-                          <input
-                            type="url"
-                            placeholder="https://tiktok.com/@..."
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-pink-500 focus:outline-none"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* SEO Settings */}
-                    <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
-                      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                        <TrendingUp className="w-5 h-5 text-green-400" />
-                        SEO Settings
-                      </h3>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-white/60 text-sm mb-2">Meta Title</label>
-                          <input
-                            type="text"
-                            defaultValue="Guitar NOVA - Premium Guitar Store"
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-green-500 focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-white/60 text-sm mb-2">Meta Description</label>
-                          <textarea
-                            defaultValue="Cửa hàng guitar chính hãng, chất lượng cao"
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-green-500 focus:outline-none resize-none"
-                            rows={3}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-white/60 text-sm mb-2">Meta Keywords (comma separated)</label>
-                          <input
-                            type="text"
-                            placeholder="guitar, music, instruments..."
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-green-500 focus:outline-none"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Payment Methods */}
-                    <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
-                      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                        <DollarSign className="w-5 h-5 text-yellow-400" />
-                        Phương thức thanh toán
-                      </h3>
-                      <div className="space-y-3">
-                        {['COD (Tiền mặt)', 'Chuyển khoản ngân hàng', 'Thẻ tín dụng', 'VNPay', 'MoMo', 'ZaloPay'].map((method) => (
-                          <label key={method} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">
-                            <input type="checkbox" defaultChecked={['COD (Tiền mặt)', 'Chuyển khoản ngân hàng'].includes(method)} className="w-4 h-4 text-yellow-500" />
-                            <span className="text-white">{method}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Business Hours */}
-                    <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
-                      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                        <Calendar className="w-5 h-5 text-orange-400" />
-                        Giờ làm việc
-                      </h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                          <span className="text-white">Thứ 2 - Thứ 6</span>
-                          <span className="text-white/60">8:00 - 18:00</span>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                          <span className="text-white">Thứ 7 - Chủ nhật</span>
-                          <span className="text-white/60">9:00 - 17:00</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-8 p-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl border border-blue-500/20">
-                    <h3 className="text-lg font-bold text-white mb-2">✅ Backend API đã sẵn sàng!</h3>
-                    <p className="text-white/60 mb-3">
-                      API endpoints cho Site Settings đã được triển khai đầy đủ tại <code className="bg-black/30 px-2 py-1 rounded text-purple-400">/api/settings</code>
-                    </p>
-                    <ul className="space-y-1 text-white/60 text-sm">
-                      <li>• GET /api/settings - Lấy cấu hình website</li>
-                      <li>• PUT /api/settings - Cập nhật cấu hình (Admin)</li>
-                    </ul>
-                    <p className="text-white/40 text-sm mt-4">
-                      Tất cả thông tin: siteName, slogan, logo, favicon, contact info, social media, SEO settings, payment methods, business hours đều được lưu trong database.
-                    </p>
-                  </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
         </div>
       </div>
+
+      {/* ── Brand Modal ─────────────────────────────────────────── */}
+      <AnimatePresence>
+        {isBrandModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setIsBrandModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 max-w-lg w-full border border-white/10 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white">{editingBrand ? 'Chỉnh sửa thương hiệu' : 'Thêm thương hiệu'}</h2>
+                <button onClick={() => setIsBrandModalOpen(false)} className="p-2 text-white/60 hover:text-white">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                {[
+                  { key: 'name', label: 'Tên thương hiệu *', type: 'text', onChange: (v: string) => handleBrandNameChange(v) },
+                  { key: 'slug', label: 'Slug *', type: 'text' },
+                  { key: 'logo', label: 'Logo URL', type: 'url' },
+                  { key: 'website', label: 'Website', type: 'url' },
+                  { key: 'hotline', label: 'Hotline', type: 'text' },
+                ].map(({ key, label, type, onChange }) => (
+                  <div key={key}>
+                    <label className="block text-white/80 text-sm mb-2">{label}</label>
+                    <input
+                      type={type}
+                      value={(brandForm as any)[key]}
+                      onChange={e => onChange ? onChange(e.target.value) : setBrandForm(f => ({ ...f, [key]: e.target.value }))}
+                      className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500/50"
+                    />
+                  </div>
+                ))}
+                <div>
+                  <label className="block text-white/80 text-sm mb-2">Mô tả</label>
+                  <textarea
+                    value={brandForm.description}
+                    onChange={e => setBrandForm(f => ({ ...f, description: e.target.value }))}
+                    rows={3}
+                    className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500/50 resize-none"
+                  />
+                </div>
+                <div className="flex gap-4 mt-6">
+                  <button onClick={() => setIsBrandModalOpen(false)} className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-colors">Hủy</button>
+                  <button onClick={handleSaveBrand} className="flex-1 py-3 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl transition-all">Lưu</button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Shipping Modal ──────────────────────────────────────── */}
+      <AnimatePresence>
+        {isShippingModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setIsShippingModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 max-w-lg w-full border border-white/10 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white">{editingShipping ? 'Chỉnh sửa vận chuyển' : 'Thêm phương thức vận chuyển'}</h2>
+                <button onClick={() => setIsShippingModalOpen(false)} className="p-2 text-white/60 hover:text-white">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-white/80 text-sm mb-2">Tên phương thức *</label>
+                  <input type="text" value={shippingForm.name} onChange={e => setShippingForm(f => ({ ...f, name: e.target.value }))} className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white focus:outline-none focus:border-orange-500/50" />
+                </div>
+                <div>
+                  <label className="block text-white/80 text-sm mb-2">Mô tả</label>
+                  <input type="text" value={shippingForm.description} onChange={e => setShippingForm(f => ({ ...f, description: e.target.value }))} className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white focus:outline-none focus:border-orange-500/50" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-white/80 text-sm mb-2">Phí cơ bản (₫) *</label>
+                    <input type="number" value={shippingForm.baseCost} onChange={e => setShippingForm(f => ({ ...f, baseCost: e.target.value }))} className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white focus:outline-none focus:border-orange-500/50" />
+                  </div>
+                  <div>
+                    <label className="block text-white/80 text-sm mb-2">Phí/km (₫) *</label>
+                    <input type="number" value={shippingForm.costPerKm} onChange={e => setShippingForm(f => ({ ...f, costPerKm: e.target.value }))} className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white focus:outline-none focus:border-orange-500/50" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-white/80 text-sm mb-2">Freeship từ (₫) *</label>
+                    <input type="number" value={shippingForm.freeThreshold} onChange={e => setShippingForm(f => ({ ...f, freeThreshold: e.target.value }))} className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white focus:outline-none focus:border-orange-500/50" />
+                  </div>
+                  <div>
+                    <label className="block text-white/80 text-sm mb-2">Thời gian giao *</label>
+                    <input type="text" value={shippingForm.estimatedDays} onChange={e => setShippingForm(f => ({ ...f, estimatedDays: e.target.value }))} placeholder="VD: 3-5 ngày" className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white focus:outline-none focus:border-orange-500/50" />
+                  </div>
+                </div>
+                <div className="flex gap-4 mt-6">
+                  <button onClick={() => setIsShippingModalOpen(false)} className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-colors">Hủy</button>
+                  <button onClick={handleSaveShipping} className="flex-1 py-3 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-xl transition-all">Lưu</button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Inventory Adjust Modal ──────────────────────────────── */}
+      <AnimatePresence>
+        {isAdjustModalOpen && adjustingProduct && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setIsAdjustModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 max-w-md w-full border border-white/10"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-white">Nhập thêm hàng</h2>
+                <button onClick={() => setIsAdjustModalOpen(false)} className="p-2 text-white/60 hover:text-white"><X className="w-5 h-5" /></button>
+              </div>
+              <p className="text-white/60 mb-4">{adjustingProduct.name}</p>
+              <p className="text-sm text-white/40 mb-6">Tồn kho hiện tại: <span className="text-yellow-400 font-bold">{adjustingProduct.stock}</span></p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-white/80 text-sm mb-2">Số lượng nhập *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={adjustQty}
+                    onChange={e => setAdjustQty(e.target.value)}
+                    className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white focus:outline-none focus:border-green-500/50"
+                    placeholder="VD: 10"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white/80 text-sm mb-2">Ghi chú</label>
+                  <input
+                    type="text"
+                    value={adjustNotes}
+                    onChange={e => setAdjustNotes(e.target.value)}
+                    className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white focus:outline-none focus:border-green-500/50"
+                    placeholder="Lý do nhập hàng..."
+                  />
+                </div>
+                <div className="flex gap-4 mt-6">
+                  <button onClick={() => setIsAdjustModalOpen(false)} className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl">Hủy</button>
+                  <button onClick={handleAdjustStock} className="flex-1 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl">Xác nhận nhập</button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Modal for Add/Edit */}
       <AnimatePresence>

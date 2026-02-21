@@ -264,3 +264,82 @@ export const uploadApi = {
         return data.secure_url;
     },
 };
+
+// ─── Brands API ──────────────────────────────────
+
+export const brandsApi = {
+    getAll: () => request<{ brands: any[] }>('/brands'),
+
+    create: (data: any) =>
+        request<any>('/brands', { method: 'POST', body: JSON.stringify(data) }),
+
+    update: (id: string, data: any) =>
+        request<any>(`/brands/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+    delete: (id: string) =>
+        request<any>(`/brands/${id}`, { method: 'DELETE' }),
+};
+
+// ─── Shipping API ────────────────────────────────
+
+export const shippingApi = {
+    getAdminAll: () => request<{ shippingMethods: any[] }>('/shipping/admin/all'),
+
+    create: (data: any) =>
+        request<any>('/shipping', { method: 'POST', body: JSON.stringify(data) }),
+
+    update: (id: string, data: any) =>
+        request<any>(`/shipping/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+    delete: (id: string) =>
+        request<any>(`/shipping/${id}`, { method: 'DELETE' }),
+
+    toggle: (id: string) =>
+        request<any>(`/shipping/${id}/toggle`, { method: 'PATCH' }),
+};
+
+// ─── Inventory API ───────────────────────────────
+
+export const inventoryApi = {
+    getOverview: () => request<any>('/inventory'),
+
+    getLowStock: () => request<{ products: any[] }>('/inventory/low-stock'),
+
+    getOutOfStock: () => request<{ products: any[] }>('/inventory/out-of-stock'),
+
+    adjust: (productId: string, quantity: number, type: string, notes?: string) =>
+        request<any>('/inventory/adjust', {
+            method: 'POST',
+            body: JSON.stringify({ productId, quantity, type, notes }),
+        }),
+
+    bulkUpdate: (items: { productId: string; stock: number }[]) =>
+        request<any>('/inventory/bulk-update', {
+            method: 'POST',
+            body: JSON.stringify({ items }),
+        }),
+};
+
+// ─── Settings API ────────────────────────────────
+
+export const settingsApi = {
+    get: () => request<any>('/settings'),
+
+    update: (data: any) =>
+        request<any>('/settings', { method: 'PUT', body: JSON.stringify(data) }),
+};
+
+// ─── Analytics API ───────────────────────────────
+
+export const analyticsApi = {
+    getOverview: () => request<any>('/analytics/overview'),
+
+    getRevenue: (period: string) =>
+        request<any>(`/analytics/revenue?period=${period}`),
+
+    getProducts: () => request<any>('/analytics/products'),
+
+    getCustomers: () => request<any>('/analytics/customers'),
+
+    getCategories: () => request<any>('/analytics/categories'),
+};
