@@ -43,15 +43,15 @@ export interface Banner {
 export interface User {
     id: string;
     name: string;
-    email: string;
-    phone?: string;
+    email?: string;
+    phone: string;
     avatar: string;
     points: number;
     joinDate: string;
     totalOrders: number;
     totalSpent: number;
     lastLogin: string;
-    role?: 'user' | 'admin';
+    role?: 'USER' | 'ADMIN';
 }
 
 export interface Voucher {
@@ -144,18 +144,4 @@ export interface UserData {
     tier: 'bronze' | 'silver' | 'gold' | 'platinum';
 }
 
-// ─── Re-exports ──────────────────────────────────
-// Organize commonly used type groups
 
-export type {
-    Product,
-    Review,
-    CartItem,
-    Banner,
-    User,
-    Voucher,
-    Event,
-    LandingPageData,
-    BlogPost,
-    UserData,
-};

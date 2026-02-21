@@ -3,12 +3,15 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ShoppingCart, User, LogOut, Settings, Menu, X, Star, Gift } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '@/app/context/AppContext';
+import { useAuthStore } from '@/features/auth/store/authStore';
 import { useCartStore } from '@/features/cart/store/cartStore';
 
 export const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, setUser, cart } = useApp();
+  const { cart } = useApp();
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
   const setIsCartOpen = useCartStore((state) => state.setIsOpen);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -47,8 +50,9 @@ export const Header: React.FC = () => {
   ];
 
   const handleLogout = () => {
-    setUser(null);
+    logout();
     setIsUserMenuOpen(false);
+    navigate('/');
   };
 
   return (

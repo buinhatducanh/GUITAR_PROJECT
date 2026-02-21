@@ -9,22 +9,20 @@ const router = Router();
 /** Get inventory overview (Admin only) */
 router.get('/', authenticate, requireAdmin, async (_req: Request, res: Response) => {
     try {
-        const [totalProducts, lowStockCount, outOfStockCount, totalStock] = await Promise.all([
+        const [totalProducts, outOfStockCount, totalStock, lowStockResult] = await Promise.all([
             prisma.product.count(),
-            prisma.product.count({
-                where: {
-                    stock: { gt: 0, lte: prisma.product.fields.lowStockAlert }
-                }
-            }),
             prisma.product.count({ where: { stock: 0 } }),
-            prisma.product.aggregate({
-                _sum: { stock: true }
-            })
+            prisma.product.aggregate({ _sum: { stock: true } }),
+            // Column-to-column compare not supported in Prisma where — use raw SQL
+            prisma.$queryRaw<[{ count: bigint }]>`
+                SELECT COUNT(*)::bigint AS count FROM "Product"
+                WHERE stock > 0 AND stock <= "lowStockAlert"
+            `,
         ]);
 
         res.json({
             totalProducts,
-            lowStockCount,
+            lowStockCount: Number(lowStockResult[0]?.count ?? 0),
             outOfStockCount,
             totalStock: totalStock._sum.stock || 0
         });
@@ -38,34 +36,30 @@ router.get('/low-stock', authenticate, requireAdmin, async (req: Request, res: R
     try {
         const { limit = '50' } = req.query;
 
-        const products = await prisma.product.findMany({
-            where: {
-                AND: [
-                    { stock: { gt: 0 } },
-                    {
-                        stock: {
-                            lte: prisma.product.fields.lowStockAlert
-                        }
-                    }
-                ]
-            },
-            select: {
-                id: true,
-                name: true,
-                slug: true,
-                image: true,
-                stock: true,
-                lowStockAlert: true,
-                category: {
-                    select: { name: true }
+        // Column-to-column compare not supported in Prisma where — use raw SQL for IDs
+        const lowStockIds = await prisma.$queryRaw<{ id: string }[]>`
+            SELECT id FROM "Product"
+            WHERE stock > 0 AND stock <= "lowStockAlert"
+            ORDER BY stock ASC
+            LIMIT ${parseInt(limit as string)}
+        `;
+
+        const products = lowStockIds.length > 0
+            ? await prisma.product.findMany({
+                where: { id: { in: lowStockIds.map(r => r.id) } },
+                select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    image: true,
+                    stock: true,
+                    lowStockAlert: true,
+                    category: { select: { name: true } },
+                    brand: { select: { name: true } },
                 },
-                brand: {
-                    select: { name: true }
-                }
-            },
-            orderBy: { stock: 'asc' },
-            take: parseInt(limit as string)
-        });
+                orderBy: { stock: 'asc' },
+            })
+            : [];
 
         res.json({ products });
     } catch (error) {
@@ -106,7 +100,8 @@ router.get('/out-of-stock', authenticate, requireAdmin, async (req: Request, res
 /** Adjust product stock (Admin only) */
 router.post('/adjust', authenticate, requireAdmin, async (req: AuthRequest, res: Response) => {
     try {
-        const { productId, quantity, type, reason } = req.body;
+        const { productId, quantity, type, reason, notes } = req.body;
+        const adjustReason = reason || notes; // support both field names
 
         if (!productId || quantity === undefined || !type) {
             res.status(400).json({ error: 'Missing required fields' });
@@ -156,7 +151,7 @@ router.post('/adjust', authenticate, requireAdmin, async (req: AuthRequest, res:
                     quantity: Math.abs(quantity),
                     previousQty,
                     newQty,
-                    reason,
+                    reason: adjustReason,
                     createdBy: req.userId
                 }
             })

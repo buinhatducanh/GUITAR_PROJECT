@@ -39,16 +39,17 @@ export const useAuthStore = create<AuthStore>()(
                         throw new Error('Login failed');
                     }
 
-                    const data = await response.json();
+                    const json = await response.json();
+                    const { user, token } = json.data ?? json;
 
                     set({
-                        user: data.user,
-                        token: data.token,
+                        user,
+                        token,
                         isAuthenticated: true,
                     });
 
                     // Save token to localStorage
-                    localStorage.setItem('auth_token', data.token);
+                    localStorage.setItem('auth_token', token);
                 } catch (error) {
                     console.error('Login error:', error);
                     throw error;
@@ -67,15 +68,16 @@ export const useAuthStore = create<AuthStore>()(
                         throw new Error('Registration failed');
                     }
 
-                    const data = await response.json();
+                    const json = await response.json();
+                    const { user, token } = json.data ?? json;
 
                     set({
-                        user: data.user,
-                        token: data.token,
+                        user,
+                        token,
                         isAuthenticated: true,
                     });
 
-                    localStorage.setItem('auth_token', data.token);
+                    localStorage.setItem('auth_token', token);
                 } catch (error) {
                     console.error('Registration error:', error);
                     throw error;

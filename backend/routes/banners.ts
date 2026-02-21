@@ -1,14 +1,17 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin, type AuthRequest } from '../middleware/auth.js';
+import { deleteCloudinaryImages, collectImageUrls } from '../shared/utils/cloudinary-cleanup.js';
 
 const router = Router();
 
-/** GET /api/banners — active banners ordered */
-router.get('/', async (_req, res) => {
+/** GET /api/banners — active banners (public) or all banners (admin) */
+router.get('/', async (req, res) => {
     try {
+        // If admin passes ?all=true, return all banners including inactive
+        const showAll = req.query.all === 'true';
         const banners = await prisma.banner.findMany({
-            where: { isActive: true },
+            where: showAll ? {} : { isActive: true },
             orderBy: { order: 'asc' },
         });
         res.json(banners);
@@ -46,7 +49,18 @@ router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => 
 /** DELETE /api/banners/:id */
 router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
+        const banner = await prisma.banner.findUnique({
+            where: { id: req.params.id },
+            select: { image: true },
+        });
+
         await prisma.banner.delete({ where: { id: req.params.id } });
+
+        if (banner) {
+            const urls = collectImageUrls(banner, ['image']);
+            deleteCloudinaryImages(urls).catch(() => {});
+        }
+
         res.json({ message: 'Đã xóa banner' });
     } catch (err) {
         console.error('Delete banner error:', err);

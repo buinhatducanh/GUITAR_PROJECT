@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin, type AuthRequest } from '../middleware/auth.js';
+import { deleteCloudinaryImages, collectImageUrls } from '../shared/utils/cloudinary-cleanup.js';
 
 const router = Router();
 
@@ -65,9 +66,9 @@ router.get('/', async (req, res) => {
 /** GET /api/blogs/:slug */
 router.get('/:slug', async (req, res) => {
     try {
-        const post = await prisma.blogPost.update({
+        // findUnique first to check existence, then increment views
+        const post = await prisma.blogPost.findUnique({
             where: { slug: req.params.slug },
-            data: { views: { increment: 1 } },
         });
 
         if (!post) {
@@ -75,7 +76,13 @@ router.get('/:slug', async (req, res) => {
             return;
         }
 
-        res.json(post);
+        // Increment views non-blocking
+        const updated = await prisma.blogPost.update({
+            where: { id: post.id },
+            data: { views: { increment: 1 } },
+        });
+
+        res.json(updated);
     } catch (err) {
         console.error('Get blog error:', err);
         res.status(500).json({ error: 'Lỗi server' });
@@ -142,7 +149,18 @@ router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => 
 /** DELETE /api/blogs/:id */
 router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
+        const blog = await prisma.blogPost.findUnique({
+            where: { id: req.params.id },
+            select: { coverImage: true, authorAvatar: true },
+        });
+
         await prisma.blogPost.delete({ where: { id: req.params.id } });
+
+        if (blog) {
+            const urls = collectImageUrls(blog, ['coverImage', 'authorAvatar']);
+            deleteCloudinaryImages(urls).catch(() => {});
+        }
+
         res.json({ message: 'Đã xóa bài viết' });
     } catch (err) {
         console.error('Delete blog error:', err);

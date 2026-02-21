@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { LogIn, UserPlus, ArrowLeft, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/app/context/AppContext';
+import { useAuthStore } from '../../features/auth/store/authStore';
 import { toast } from 'sonner';
 
 interface AuthProps {
@@ -11,13 +11,14 @@ interface AuthProps {
 
 export const Auth: React.FC<AuthProps> = ({ mode }) => {
   const navigate = useNavigate();
-  const { setUser } = useApp();
+  const { login, register } = useAuthStore();
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
     password: '',
     confirmPassword: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleBack = () => {
     navigate(-1);
@@ -39,7 +40,7 @@ export const Auth: React.FC<AuthProps> = ({ mode }) => {
     return phoneRegex.test(phone);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validatePhone(formData.phone)) {
@@ -53,41 +54,27 @@ export const Auth: React.FC<AuthProps> = ({ mode }) => {
         return;
       }
 
-      // Simulate registration
-      const newUser = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: formData.name,
-        email: '',
-        phone: formData.phone,
-        avatar: `https://i.pravatar.cc/150?u=${formData.phone}`,
-        points: 100,
-        joinDate: new Date().toISOString(),
-        totalOrders: 0,
-        totalSpent: 0,
-        lastLogin: new Date().toISOString(),
-        role: 'user' as const
-      };
-      setUser(newUser);
-      toast.success('Đăng ký thành công! Bạn nhận được 100 điểm tân thủ!');
-      navigate('/');
+      setIsLoading(true);
+      try {
+        await register(formData.name, formData.phone, formData.password);
+        toast.success('Đăng ký thành công!');
+        navigate('/');
+      } catch {
+        toast.error('Đăng ký thất bại! Số điện thoại có thể đã được sử dụng.');
+      } finally {
+        setIsLoading(false);
+      }
     } else {
-      // Simulate login
-      const user = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: `KH_${formData.phone.slice(-4)}`,
-        email: '',
-        phone: formData.phone,
-        avatar: `https://i.pravatar.cc/150?u=${formData.phone}`,
-        points: 2500,
-        joinDate: '2025-06-15',
-        totalOrders: 5,
-        totalSpent: 25000000,
-        lastLogin: new Date().toISOString(),
-        role: 'user' as const
-      };
-      setUser(user);
-      toast.success('Đăng nhập thành công!');
-      navigate(-1);
+      setIsLoading(true);
+      try {
+        await login(formData.phone, formData.password);
+        toast.success('Đăng nhập thành công!');
+        navigate('/');
+      } catch {
+        toast.error('Số điện thoại hoặc mật khẩu không đúng!');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -202,9 +189,12 @@ export const Auth: React.FC<AuthProps> = ({ mode }) => {
                 whileHover={{ scale: 1.02, boxShadow: '0 0 30px rgba(251, 191, 36, 0.5)' }}
                 whileTap={{ scale: 0.98 }}
                 type="submit"
-                className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-xl transition-all"
+                disabled={isLoading}
+                className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-xl transition-all disabled:opacity-50"
               >
-                {mode === 'login' ? 'Đăng nhập' : 'Đăng ký'}
+                {isLoading
+                  ? 'Đang xử lý...'
+                  : mode === 'login' ? 'Đăng nhập' : 'Đăng ký'}
               </motion.button>
             </form>
 

@@ -3,7 +3,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 // ─── Helper ─────────────────────────────────────
 
 function getAuthHeaders(): Record<string, string> {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('auth_token');
     return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -132,6 +132,7 @@ export const blogsApi = {
 
 export const bannersApi = {
     getAll: () => request<any[]>('/banners'),
+    getAllAdmin: () => request<any[]>('/banners?all=true'),
 
     create: (data: any) =>
         request<any>('/banners', { method: 'POST', body: JSON.stringify(data) }),
@@ -207,16 +208,40 @@ export const ordersApi = {
 
 // ─── Upload API ─────────────────────────────────
 
+interface UploadSignatureResponse {
+    signature: string;
+    timestamp: number;
+    folder: string;
+    cloudName: string;
+    apiKey: string;
+    publicId?: string;
+    overwrite?: boolean;
+    uniqueFilename?: boolean;
+}
+
+/** Compute SHA-256 hash of a File for deduplication */
+async function computeFileHash(file: File): Promise<string> {
+    const buffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 export const uploadApi = {
-    getSignature: (folder?: string) =>
-        request<{ signature: string; timestamp: number; folder: string; cloudName: string; apiKey: string }>(
+    getSignature: (folder?: string, hash?: string) =>
+        request<UploadSignatureResponse>(
             '/upload/signature',
-            { method: 'POST', body: JSON.stringify({ folder }) }
+            { method: 'POST', body: JSON.stringify({ folder, hash }) }
         ),
 
-    /** Upload file directly to Cloudinary using signed params */
+    /**
+     * Upload file directly to Cloudinary using signed params.
+     * Deduplicate: computes SHA-256 of file content and uses
+     * it as public_id so identical files are not uploaded twice.
+     */
     async uploadToCloudinary(file: File, folder = 'guitar-nova/general'): Promise<string> {
-        const sig = await this.getSignature(folder);
+        const hash = await computeFileHash(file);
+        const sig = await this.getSignature(folder, hash);
 
         const formData = new FormData();
         formData.append('file', file);
@@ -224,6 +249,12 @@ export const uploadApi = {
         formData.append('signature', sig.signature);
         formData.append('folder', sig.folder);
         formData.append('api_key', sig.apiKey);
+
+        if (sig.publicId) {
+            formData.append('public_id', sig.publicId);
+            formData.append('overwrite', 'false');
+            formData.append('unique_filename', 'false');
+        }
 
         const res = await fetch(
             `https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`,
@@ -233,4 +264,83 @@ export const uploadApi = {
         const data = await res.json();
         return data.secure_url;
     },
+};
+
+// ─── Brands API ──────────────────────────────────
+
+export const brandsApi = {
+    getAll: () => request<{ brands: any[] }>('/brands'),
+
+    create: (data: any) =>
+        request<any>('/brands', { method: 'POST', body: JSON.stringify(data) }),
+
+    update: (id: string, data: any) =>
+        request<any>(`/brands/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+    delete: (id: string) =>
+        request<any>(`/brands/${id}`, { method: 'DELETE' }),
+};
+
+// ─── Shipping API ────────────────────────────────
+
+export const shippingApi = {
+    getAdminAll: () => request<{ shippingMethods: any[] }>('/shipping/admin/all'),
+
+    create: (data: any) =>
+        request<any>('/shipping', { method: 'POST', body: JSON.stringify(data) }),
+
+    update: (id: string, data: any) =>
+        request<any>(`/shipping/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+    delete: (id: string) =>
+        request<any>(`/shipping/${id}`, { method: 'DELETE' }),
+
+    toggle: (id: string) =>
+        request<any>(`/shipping/${id}/toggle`, { method: 'PATCH' }),
+};
+
+// ─── Inventory API ───────────────────────────────
+
+export const inventoryApi = {
+    getOverview: () => request<any>('/inventory'),
+
+    getLowStock: () => request<{ products: any[] }>('/inventory/low-stock'),
+
+    getOutOfStock: () => request<{ products: any[] }>('/inventory/out-of-stock'),
+
+    adjust: (productId: string, quantity: number, type: string, notes?: string) =>
+        request<any>('/inventory/adjust', {
+            method: 'POST',
+            body: JSON.stringify({ productId, quantity, type, notes }),
+        }),
+
+    bulkUpdate: (items: { productId: string; stock: number }[]) =>
+        request<any>('/inventory/bulk-update', {
+            method: 'POST',
+            body: JSON.stringify({ items }),
+        }),
+};
+
+// ─── Settings API ────────────────────────────────
+
+export const settingsApi = {
+    get: () => request<any>('/settings'),
+
+    update: (data: any) =>
+        request<any>('/settings', { method: 'PUT', body: JSON.stringify(data) }),
+};
+
+// ─── Analytics API ───────────────────────────────
+
+export const analyticsApi = {
+    getOverview: () => request<any>('/analytics/overview'),
+
+    getRevenue: (period: string) =>
+        request<any>(`/analytics/revenue?period=${period}`),
+
+    getProducts: () => request<any>('/analytics/products'),
+
+    getCustomers: () => request<any>('/analytics/customers'),
+
+    getCategories: () => request<any>('/analytics/categories'),
 };

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin, type AuthRequest } from '../middleware/auth.js';
+import { deleteCloudinaryImages, collectImageUrls } from '../shared/utils/cloudinary-cleanup.js';
 
 const router = Router();
 
@@ -46,7 +47,18 @@ router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => 
 /** DELETE /api/vouchers/:id */
 router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
+        const voucher = await prisma.voucher.findUnique({
+            where: { id: req.params.id },
+            select: { image: true },
+        });
+
         await prisma.voucher.delete({ where: { id: req.params.id } });
+
+        if (voucher) {
+            const urls = collectImageUrls(voucher, ['image']);
+            deleteCloudinaryImages(urls).catch(() => {});
+        }
+
         res.json({ message: 'Đã xóa voucher' });
     } catch (err) {
         console.error('Delete voucher error:', err);
