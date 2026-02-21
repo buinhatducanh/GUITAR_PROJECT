@@ -6,16 +6,14 @@ import {
   Gift, Calendar, Award, Settings as SettingsIcon, Truck, Warehouse, AlertTriangle,
   Upload, CreditCard
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useApp, Product, Banner, Voucher, Event, UserData, Review, LandingPageData, BlogPost } from '@/app/context/AppContext';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { toast } from 'sonner';
 import { brandsApi, shippingApi, inventoryApi, settingsApi, analyticsApi, uploadApi } from '@/app/lib/api';
 
-interface AdminDashboardProps {
-  onBack: () => void;
-}
-
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
+export const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { 
     products, setProducts, 
     banners, setBanners,
@@ -353,7 +351,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         <div className="container mx-auto px-4 py-6">
           <motion.button
             whileHover={{ x: -5 }}
-            onClick={onBack}
+            onClick={() => navigate('/')}
             className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-4"
           >
             <ArrowLeft className="w-5 h-5" />
