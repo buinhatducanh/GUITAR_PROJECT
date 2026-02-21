@@ -475,17 +475,59 @@ export const AdminDashboard: React.FC = () => {
                         Biểu đồ doanh thu ({dashboardPeriod === 'day' ? 'Ngày' : dashboardPeriod === 'week' ? 'Tuần' : dashboardPeriod === 'month' ? 'Tháng' : 'Năm'})
                       </h3>
                       <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={revenueChartData.length > 0 ? revenueChartData : getRevenueData()}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                          <XAxis dataKey="name" stroke="#999" />
-                          <YAxis stroke="#999" />
-                          <Tooltip
-                            contentStyle={{ backgroundColor: '#18181b', border: '1px solid #333' }}
-                            labelStyle={{ color: '#fff' }}
-                            formatter={(value: number) => formatPrice(value)}
-                          />
-                          <Line type="monotone" dataKey="doanhthu" stroke="#f59e0b" strokeWidth={3} />
-                        </LineChart>
+                        {(dashboardPeriod === 'month' || dashboardPeriod === 'year') ? (
+                          <BarChart data={revenueChartData.length > 0 ? revenueChartData : getRevenueData()} barCategoryGap="30%">
+                            <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+                            <XAxis dataKey="name" stroke="#999" tick={{ fill: '#999', fontSize: 12 }} />
+                            <YAxis
+                              stroke="#999"
+                              tick={{ fill: '#999', fontSize: 12 }}
+                              tickFormatter={(v: number) =>
+                                v >= 1_000_000 ? `${(v / 1_000_000).toFixed(0)}tr`
+                                : v >= 1_000 ? `${(v / 1_000).toFixed(0)}k`
+                                : `${v}`
+                              }
+                              width={48}
+                            />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: '#18181b', border: '1px solid #444', borderRadius: '8px' }}
+                              labelStyle={{ color: '#fff', fontWeight: 600, marginBottom: 4 }}
+                              itemStyle={{ color: '#f59e0b' }}
+                              formatter={(value: number) => [formatPrice(value), 'Doanh thu']}
+                              cursor={{ fill: 'rgba(245,158,11,0.08)' }}
+                            />
+                            <Bar dataKey="doanhthu" fill="url(#barGradient)" radius={[4, 4, 0, 0]}>
+                              <defs>
+                                <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#f59e0b" />
+                                  <stop offset="100%" stopColor="#d97706" stopOpacity={0.7} />
+                                </linearGradient>
+                              </defs>
+                            </Bar>
+                          </BarChart>
+                        ) : (
+                          <LineChart data={revenueChartData.length > 0 ? revenueChartData : getRevenueData()}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                            <XAxis dataKey="name" stroke="#999" tick={{ fill: '#999', fontSize: 12 }} />
+                            <YAxis
+                              stroke="#999"
+                              tick={{ fill: '#999', fontSize: 12 }}
+                              tickFormatter={(v: number) =>
+                                v >= 1_000_000 ? `${(v / 1_000_000).toFixed(0)}tr`
+                                : v >= 1_000 ? `${(v / 1_000).toFixed(0)}k`
+                                : `${v}`
+                              }
+                              width={48}
+                            />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: '#18181b', border: '1px solid #444', borderRadius: '8px' }}
+                              labelStyle={{ color: '#fff', fontWeight: 600, marginBottom: 4 }}
+                              itemStyle={{ color: '#f59e0b' }}
+                              formatter={(value: number) => [formatPrice(value), 'Doanh thu']}
+                            />
+                            <Line type="monotone" dataKey="doanhthu" stroke="#f59e0b" strokeWidth={3} dot={{ fill: '#f59e0b', r: 4 }} activeDot={{ r: 6 }} />
+                          </LineChart>
+                        )}
                       </ResponsiveContainer>
                     </div>
 
@@ -507,7 +549,9 @@ export const AdminDashboard: React.FC = () => {
                             ))}
                           </Pie>
                           <Tooltip
-                            contentStyle={{ backgroundColor: '#18181b', border: '1px solid #333' }}
+                            contentStyle={{ backgroundColor: '#18181b', border: '1px solid #444', borderRadius: '8px' }}
+                            labelStyle={{ color: '#fff', fontWeight: 600 }}
+                            itemStyle={{ color: '#fff' }}
                           />
                         </PieChart>
                       </ResponsiveContainer>
