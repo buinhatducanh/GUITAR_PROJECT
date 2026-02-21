@@ -5,11 +5,13 @@ import { deleteCloudinaryImages, collectImageUrls } from '../shared/utils/cloudi
 
 const router = Router();
 
-/** GET /api/banners — active banners ordered */
-router.get('/', async (_req, res) => {
+/** GET /api/banners — active banners (public) or all banners (admin) */
+router.get('/', async (req, res) => {
     try {
+        // If admin passes ?all=true, return all banners including inactive
+        const showAll = req.query.all === 'true';
         const banners = await prisma.banner.findMany({
-            where: { isActive: true },
+            where: showAll ? {} : { isActive: true },
             orderBy: { order: 'asc' },
         });
         res.json(banners);

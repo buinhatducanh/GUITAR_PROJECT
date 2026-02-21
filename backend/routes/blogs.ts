@@ -66,9 +66,9 @@ router.get('/', async (req, res) => {
 /** GET /api/blogs/:slug */
 router.get('/:slug', async (req, res) => {
     try {
-        const post = await prisma.blogPost.update({
+        // findUnique first to check existence, then increment views
+        const post = await prisma.blogPost.findUnique({
             where: { slug: req.params.slug },
-            data: { views: { increment: 1 } },
         });
 
         if (!post) {
@@ -76,7 +76,13 @@ router.get('/:slug', async (req, res) => {
             return;
         }
 
-        res.json(post);
+        // Increment views non-blocking
+        const updated = await prisma.blogPost.update({
+            where: { id: post.id },
+            data: { views: { increment: 1 } },
+        });
+
+        res.json(updated);
     } catch (err) {
         console.error('Get blog error:', err);
         res.status(500).json({ error: 'Lỗi server' });

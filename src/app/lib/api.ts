@@ -132,6 +132,7 @@ export const blogsApi = {
 
 export const bannersApi = {
     getAll: () => request<any[]>('/banners'),
+    getAllAdmin: () => request<any[]>('/banners?all=true'),
 
     create: (data: any) =>
         request<any>('/banners', { method: 'POST', body: JSON.stringify(data) }),

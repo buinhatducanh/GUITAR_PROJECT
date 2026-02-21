@@ -165,9 +165,28 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
 /** PUT /api/products/:id — update (admin only) */
 router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
+        // Only allow safe fields to be updated
+        const { name, slug, price, oldPrice, discount, image, images, categoryId, brandId, description, specs, stock, isFeatured, isActive, lowStockAlert } = req.body;
+        const data: Record<string, any> = {};
+        if (name !== undefined) data.name = name;
+        if (slug !== undefined) data.slug = slug;
+        if (price !== undefined) data.price = price;
+        if (oldPrice !== undefined) data.oldPrice = oldPrice;
+        if (discount !== undefined) data.discount = discount;
+        if (image !== undefined) data.image = image;
+        if (images !== undefined) data.images = images;
+        if (categoryId !== undefined) data.categoryId = categoryId;
+        if (brandId !== undefined) data.brandId = brandId;
+        if (description !== undefined) data.description = description;
+        if (specs !== undefined) data.specs = specs;
+        if (stock !== undefined) data.stock = stock;
+        if (isFeatured !== undefined) data.isFeatured = isFeatured;
+        if (isActive !== undefined) data.isActive = isActive;
+        if (lowStockAlert !== undefined) data.lowStockAlert = lowStockAlert;
+
         const product = await prisma.product.update({
             where: { id: req.params.id },
-            data: req.body,
+            data,
             include: { category: { select: { id: true, name: true, slug: true } } },
         });
 
