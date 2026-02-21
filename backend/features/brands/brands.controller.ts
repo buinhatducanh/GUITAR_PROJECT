@@ -14,7 +14,7 @@ export const getAllBrands = async (req: Request, res: Response) => {
 export const getBrandBySlug = async (req: Request, res: Response) => {
     try {
         const { slug } = req.params;
-        const brand = await brandService.getBrandBySlug(slug);
+        const brand = await brandService.getBrandBySlug(slug as string);
         return successResponse(res, brand);
     } catch (error) {
         if (error instanceof Error && error.message === 'Brand not found') {
@@ -30,7 +30,7 @@ export const getBrandProducts = async (req: Request, res: Response) => {
         const { limit = '20', offset = '0' } = req.query;
 
         const result = await brandService.getBrandProducts(
-            id,
+            id as string,
             parseInt(limit as string),
             parseInt(offset as string)
         );
@@ -56,7 +56,7 @@ export const createBrand = async (req: Request, res: Response) => {
 export const updateBrand = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const brand = await brandService.updateBrand(id, req.body);
+        const brand = await brandService.updateBrand(id as string, req.body);
         return successResponse(res, brand);
     } catch (error) {
         if (error instanceof Error && error.message === 'Brand slug already exists') {
@@ -69,7 +69,7 @@ export const updateBrand = async (req: Request, res: Response) => {
 export const deleteBrand = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const result = await brandService.deleteBrand(id);
+        const result = await brandService.deleteBrand(id as string);
         return successResponse(res, result);
     } catch (error) {
         if (error instanceof Error && error.message.includes('Cannot delete brand')) {
@@ -82,7 +82,7 @@ export const deleteBrand = async (req: Request, res: Response) => {
 export const getBrandAnalytics = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const analytics = await brandService.getBrandAnalytics(id);
+        const analytics = await brandService.getBrandAnalytics(id as string);
         return successResponse(res, analytics);
     } catch (error) {
         return errorResponse(res, error);

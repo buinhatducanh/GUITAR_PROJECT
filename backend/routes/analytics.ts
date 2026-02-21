@@ -17,6 +17,11 @@ router.get('/overview', authenticate, requireAdmin, async (_req: Request, res: R
             recentOrders
         ] = await Promise.all([
             prisma.order.aggregate({
+                where: {
+                    status: {
+                        in: ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED']
+                    }
+                },
                 _sum: { totalAmount: true }
             }),
             prisma.order.count(),
@@ -171,48 +176,78 @@ router.get('/products', authenticate, requireAdmin, async (_req: Request, res: R
 /** Get customer analytics (Admin only) */
 router.get('/customers', authenticate, requireAdmin, async (_req: Request, res: Response) => {
     try {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
         const [
             totalCustomers,
             newCustomers,
             vipCustomers,
             activeCustomers,
-            topCustomers
+            topOrderStats
         ] = await Promise.all([
+            // Total customers
             prisma.user.count({ where: { role: 'USER' } }),
+
+            // New customers (registered in the last 30 days)
             prisma.user.count({
                 where: {
                     role: 'USER',
-                    segment: 'NEW'
+                    createdAt: { gte: thirtyDaysAgo }
                 }
             }),
+
+            // VIP customers (Gold or Platinum tier)
             prisma.user.count({
                 where: {
                     role: 'USER',
-                    segment: 'VIP'
+                    tier: { in: ['GOLD', 'PLATINUM'] }
                 }
             }),
+
+            // Active customers (Logged in recently)
             prisma.user.count({
                 where: {
                     role: 'USER',
-                    segment: 'ACTIVE'
+                    lastLogin: { gte: thirtyDaysAgo }
                 }
             }),
-            prisma.user.findMany({
-                where: { role: 'USER' },
-                orderBy: { totalSpent: 'desc' },
-                take: 10,
-                select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    avatar: true,
-                    totalSpent: true,
-                    orderCount: true,
-                    segment: true,
-                    tier: true
-                }
+
+            // Top customers (Group orders by user, sort by total spent)
+            prisma.order.groupBy({
+                by: ['userId'],
+                _sum: { totalAmount: true },
+                _count: { id: true },
+                where: {
+                    status: { in: ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'] }
+                },
+                orderBy: {
+                    _sum: { totalAmount: 'desc' }
+                },
+                take: 10
             })
         ]);
+
+        // Get details for the top customers
+        const topUserIds = topOrderStats.map((stat: any) => stat.userId);
+        const topUsersData = await prisma.user.findMany({
+            where: { id: { in: topUserIds } },
+            select: { id: true, name: true, email: true, avatar: true, tier: true }
+        });
+
+        const topCustomers = topOrderStats.map((stat: any) => {
+            const user = topUsersData.find((u: any) => u.id === stat.userId);
+            return {
+                id: user?.id,
+                name: user?.name,
+                email: user?.email,
+                avatar: user?.avatar,
+                tier: user?.tier,
+                totalSpent: stat._sum.totalAmount || 0,
+                orderCount: stat._count.id || 0,
+                segment: user?.tier === 'PLATINUM' || user?.tier === 'GOLD' ? 'VIP' : 'REGULAR'
+            };
+        });
 
         res.json({
             totalCustomers,
@@ -222,6 +257,7 @@ router.get('/customers', authenticate, requireAdmin, async (_req: Request, res: 
             topCustomers
         });
     } catch (error) {
+        console.error('Customer Analytics Error:', error);
         res.status(500).json({ error: 'Failed to fetch customer analytics' });
     }
 });
