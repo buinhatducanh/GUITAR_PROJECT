@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingCart, User, LogOut, Settings, Menu, X, Star, Gift } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Settings, Menu, X, Star, Gift, LayoutDashboard, Shield } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '@/app/context/AppContext';
 import { useAuthStore } from '@/features/auth/store/authStore';
@@ -17,6 +17,8 @@ export const Header: React.FC = () => {
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const isAdmin = user?.role === 'ADMIN';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -36,6 +38,16 @@ export const Header: React.FC = () => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -100,76 +112,126 @@ export const Header: React.FC = () => {
           {/* Right Actions */}
           <div className="flex items-center gap-4">
             {/* User Menu */}
-            <div className="relative">
+            <div className="relative" ref={userMenuRef}>
               {user ? (
                 <div className="flex items-center gap-3">
-                  {/* Points Display next to avatar */}
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-full"
-                  >
-                    <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                    <span className="text-sm font-semibold text-amber-400">
-                      {user.points.toLocaleString('vi-VN')}
-                    </span>
-                  </motion.div>
+                  {/* Badge: điểm cho user thường, Admin badge cho admin */}
+                  {isAdmin ? (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-500/40 rounded-full"
+                    >
+                      <Shield className="w-3.5 h-3.5 text-violet-400" />
+                      <span className="text-xs font-semibold text-violet-400 tracking-wide">ADMIN</span>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-full"
+                    >
+                      <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                      <span className="text-sm font-semibold text-amber-400">
+                        {user.points.toLocaleString('vi-VN')}
+                      </span>
+                    </motion.div>
+                  )}
 
+                  {/* Avatar button */}
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-medium"
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg ${
+                      isAdmin
+                        ? 'bg-gradient-to-br from-violet-500 to-purple-700 ring-2 ring-violet-500/50'
+                        : 'bg-gradient-to-br from-amber-500 to-orange-600'
+                    }`}
                   >
                     {user.name.charAt(0).toUpperCase()}
                   </motion.button>
 
+                  {/* Dropdown */}
                   <AnimatePresence>
                     {isUserMenuOpen && (
                       <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute right-0 mt-2 w-64 bg-zinc-900/95 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-2xl"
+                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute top-full right-0 mt-2 w-60 bg-zinc-900/98 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-2xl z-50"
+                        style={{ maxWidth: 'calc(100vw - 16px)' }}
                       >
-                        <div className="p-4 border-b border-white/10">
-                          <p className="font-medium text-white">{user.name}</p>
-                          <p className="text-sm text-white/60 mb-3">{user.phone || user.email}</p>
-                          <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-lg">
-                            <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                            <span className="text-sm font-semibold text-amber-400">
-                              {user.points.toLocaleString('vi-VN')} điểm
-                            </span>
+                        {/* Header info */}
+                        <div className={`p-4 border-b border-white/10 ${isAdmin ? 'bg-gradient-to-br from-violet-500/10 to-purple-500/5' : ''}`}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold text-white truncate">{user.name}</p>
+                            {isAdmin && (
+                              <span className="flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 bg-violet-500/20 border border-violet-500/40 rounded text-violet-400 text-xs font-bold">
+                                <Shield className="w-3 h-3" />
+                                Admin
+                              </span>
+                            )}
                           </div>
+                          <p className="text-sm text-white/50 truncate">{user.phone || user.email}</p>
+                          {/* Chỉ hiện điểm cho user thường */}
+                          {!isAdmin && (
+                            <div className="flex items-center gap-2 mt-3 px-3 py-2 bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/25 rounded-lg">
+                              <Star className="w-4 h-4 text-amber-400 fill-amber-400 flex-shrink-0" />
+                              <span className="text-sm font-semibold text-amber-400">
+                                {user.points.toLocaleString('vi-VN')} điểm
+                              </span>
+                            </div>
+                          )}
                         </div>
+
+                        {/* Menu items */}
                         <div className="p-2">
-                          <button
-                            onClick={() => {
-                              navigate('/rewards');
-                              setIsUserMenuOpen(false);
-                            }}
-                            className="w-full flex items-center gap-3 px-3 py-2 text-white/80 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                          >
-                            <Gift className="w-4 h-4" />
-                            <span>Đổi quà thưởng</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              navigate('/account');
-                              setIsUserMenuOpen(false);
-                            }}
-                            className="w-full flex items-center gap-3 px-3 py-2 text-white/80 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                          >
-                            <Settings className="w-4 h-4" />
-                            <span>Quản lý tài khoản</span>
-                          </button>
-                          <button
-                            onClick={handleLogout}
-                            className="w-full flex items-center gap-3 px-3 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                          >
-                            <LogOut className="w-4 h-4" />
-                            <span>Đăng xuất</span>
-                          </button>
+                          {isAdmin ? (
+                            <>
+                              <button
+                                onClick={() => { navigate('/admin'); setIsUserMenuOpen(false); }}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 text-violet-300 hover:text-white hover:bg-violet-500/15 rounded-lg transition-colors font-medium"
+                              >
+                                <LayoutDashboard className="w-4 h-4" />
+                                <span>Trang quản trị</span>
+                              </button>
+                              <button
+                                onClick={() => { navigate('/account'); setIsUserMenuOpen(false); }}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                              >
+                                <Settings className="w-4 h-4" />
+                                <span>Thông tin tài khoản</span>
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => { navigate('/rewards'); setIsUserMenuOpen(false); }}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                              >
+                                <Gift className="w-4 h-4" />
+                                <span>Đổi quà thưởng</span>
+                              </button>
+                              <button
+                                onClick={() => { navigate('/account'); setIsUserMenuOpen(false); }}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                              >
+                                <Settings className="w-4 h-4" />
+                                <span>Quản lý tài khoản</span>
+                              </button>
+                            </>
+                          )}
+                          <div className="mt-1 pt-1 border-t border-white/5">
+                            <button
+                              onClick={handleLogout}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                            >
+                              <LogOut className="w-4 h-4" />
+                              <span>Đăng xuất</span>
+                            </button>
+                          </div>
                         </div>
                       </motion.div>
                     )}
