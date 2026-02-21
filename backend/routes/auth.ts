@@ -9,24 +9,24 @@ const router = Router();
 /** POST /api/auth/register */
 router.post('/register', async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, phone, password, email } = req.body;
 
-        if (!name || !email || !password) {
+        if (!name || !phone || !password) {
             res.status(400).json({ error: 'Vui lòng điền đầy đủ thông tin' });
             return;
         }
 
-        const existing = await prisma.user.findUnique({ where: { email } });
+        const existing = await prisma.user.findUnique({ where: { phone } });
         if (existing) {
-            res.status(409).json({ error: 'Email đã được sử dụng' });
+            res.status(409).json({ error: 'Số điện thoại đã được sử dụng' });
             return;
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = await prisma.user.create({
-            data: { name, email, password: hashedPassword },
-            select: { id: true, name: true, email: true, avatar: true, points: true, role: true, tier: true, createdAt: true },
+            data: { name, phone, email, password: hashedPassword },
+            select: { id: true, name: true, phone: true, email: true, avatar: true, points: true, role: true, tier: true, createdAt: true },
         });
 
         const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
@@ -41,22 +41,22 @@ router.post('/register', async (req, res) => {
 /** POST /api/auth/login */
 router.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { phone, password } = req.body;
 
-        if (!email || !password) {
-            res.status(400).json({ error: 'Vui lòng nhập email và mật khẩu' });
+        if (!phone || !password) {
+            res.status(400).json({ error: 'Vui lòng nhập số điện thoại và mật khẩu' });
             return;
         }
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma.user.findUnique({ where: { phone } });
         if (!user) {
-            res.status(401).json({ error: 'Email hoặc mật khẩu không đúng' });
+            res.status(401).json({ error: 'Số điện thoại hoặc mật khẩu không đúng' });
             return;
         }
 
         const valid = await bcrypt.compare(password, user.password);
         if (!valid) {
-            res.status(401).json({ error: 'Email hoặc mật khẩu không đúng' });
+            res.status(401).json({ error: 'Số điện thoại hoặc mật khẩu không đúng' });
             return;
         }
 
@@ -72,6 +72,7 @@ router.post('/login', async (req, res) => {
             user: {
                 id: user.id,
                 name: user.name,
+                phone: user.phone,
                 email: user.email,
                 avatar: user.avatar,
                 points: user.points,
@@ -93,8 +94,8 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
         const user = await prisma.user.findUnique({
             where: { id: req.userId },
             select: {
-                id: true, name: true, email: true, avatar: true, points: true,
-                role: true, tier: true, lastLogin: true, createdAt: true,
+                id: true, name: true, phone: true, email: true, avatar: true,
+                points: true, role: true, tier: true, lastLogin: true, createdAt: true,
             },
         });
 

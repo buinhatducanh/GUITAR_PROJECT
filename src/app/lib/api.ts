@@ -3,7 +3,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 // ─── Helper ─────────────────────────────────────
 
 function getAuthHeaders(): Record<string, string> {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('auth_token');
     return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
