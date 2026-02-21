@@ -333,7 +333,7 @@ export const settingsApi = {
 // ─── Analytics API ───────────────────────────────
 
 export const analyticsApi = {
-    getOverview: () => request<any>('/analytics/overview'),
+    getOverview: (period = 'month') => request<any>(`/analytics/overview?period=${period}`),
 
     getRevenue: (period: string) =>
         request<any>(`/analytics/revenue?period=${period}`),

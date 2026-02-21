@@ -306,6 +306,8 @@ model SiteSettings {
   slogan          String?
   logo            String?
   favicon         String?
+  cardTitle       String?
+  cardLogo        String?
   email           String?
   phone           String?
   address         String?
