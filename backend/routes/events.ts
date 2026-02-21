@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin, type AuthRequest } from '../middleware/auth.js';
+import { deleteCloudinaryImages, collectImageUrls } from '../shared/utils/cloudinary-cleanup.js';
 
 const router = Router();
 
@@ -45,7 +46,18 @@ router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => 
 /** DELETE /api/events/:id */
 router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
+        const event = await prisma.event.findUnique({
+            where: { id: req.params.id },
+            select: { image: true },
+        });
+
         await prisma.event.delete({ where: { id: req.params.id } });
+
+        if (event) {
+            const urls = collectImageUrls(event, ['image']);
+            deleteCloudinaryImages(urls).catch(() => {});
+        }
+
         res.json({ message: 'Đã xóa sự kiện' });
     } catch (err) {
         console.error('Delete event error:', err);

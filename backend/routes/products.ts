@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin, type AuthRequest } from '../middleware/auth.js';
+import { deleteCloudinaryImages, collectImageUrls } from '../shared/utils/cloudinary-cleanup.js';
 
 const router = Router();
 
@@ -180,7 +181,20 @@ router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => 
 /** DELETE /api/products/:id — delete (admin only) */
 router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
+        // Fetch product to get image URLs before deleting
+        const product = await prisma.product.findUnique({
+            where: { id: req.params.id },
+            select: { image: true, images: true },
+        });
+
         await prisma.product.delete({ where: { id: req.params.id } });
+
+        // Clean up Cloudinary images (non-blocking)
+        if (product) {
+            const urls = collectImageUrls(product, ['image', 'images']);
+            deleteCloudinaryImages(urls).catch(() => {});
+        }
+
         res.json({ message: 'Đã xóa sản phẩm' });
     } catch (err) {
         console.error('Delete product error:', err);

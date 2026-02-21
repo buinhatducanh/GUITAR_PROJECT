@@ -207,16 +207,40 @@ export const ordersApi = {
 
 // ─── Upload API ─────────────────────────────────
 
+interface UploadSignatureResponse {
+    signature: string;
+    timestamp: number;
+    folder: string;
+    cloudName: string;
+    apiKey: string;
+    publicId?: string;
+    overwrite?: boolean;
+    uniqueFilename?: boolean;
+}
+
+/** Compute SHA-256 hash of a File for deduplication */
+async function computeFileHash(file: File): Promise<string> {
+    const buffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 export const uploadApi = {
-    getSignature: (folder?: string) =>
-        request<{ signature: string; timestamp: number; folder: string; cloudName: string; apiKey: string }>(
+    getSignature: (folder?: string, hash?: string) =>
+        request<UploadSignatureResponse>(
             '/upload/signature',
-            { method: 'POST', body: JSON.stringify({ folder }) }
+            { method: 'POST', body: JSON.stringify({ folder, hash }) }
         ),
 
-    /** Upload file directly to Cloudinary using signed params */
+    /**
+     * Upload file directly to Cloudinary using signed params.
+     * Deduplicate: computes SHA-256 of file content and uses
+     * it as public_id so identical files are not uploaded twice.
+     */
     async uploadToCloudinary(file: File, folder = 'guitar-nova/general'): Promise<string> {
-        const sig = await this.getSignature(folder);
+        const hash = await computeFileHash(file);
+        const sig = await this.getSignature(folder, hash);
 
         const formData = new FormData();
         formData.append('file', file);
@@ -224,6 +248,12 @@ export const uploadApi = {
         formData.append('signature', sig.signature);
         formData.append('folder', sig.folder);
         formData.append('api_key', sig.apiKey);
+
+        if (sig.publicId) {
+            formData.append('public_id', sig.publicId);
+            formData.append('overwrite', 'false');
+            formData.append('unique_filename', 'false');
+        }
 
         const res = await fetch(
             `https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`,

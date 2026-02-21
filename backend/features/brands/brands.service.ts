@@ -1,5 +1,6 @@
 import { prisma } from '../../shared/lib/prisma.js';
 import { CreateBrandDto, UpdateBrandDto, BrandQuery } from './brands.types.js';
+import { deleteCloudinaryImages, collectImageUrls } from '../../shared/utils/cloudinary-cleanup.js';
 
 export const getAllBrands = async (query: BrandQuery) => {
     const { active } = query;
@@ -109,7 +110,18 @@ export const deleteBrand = async (id: string) => {
         throw new Error(`Cannot delete brand with ${productCount} products. Please reassign or delete products first.`);
     }
 
+    const brand = await prisma.brand.findUnique({
+        where: { id },
+        select: { logo: true },
+    });
+
     await prisma.brand.delete({ where: { id } });
+
+    // Clean up Cloudinary logo (non-blocking)
+    if (brand) {
+        const urls = collectImageUrls(brand, ['logo']);
+        deleteCloudinaryImages(urls).catch(() => {});
+    }
 
     return { message: 'Brand deleted successfully' };
 };
