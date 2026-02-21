@@ -7,8 +7,32 @@ const router = Router();
 // ─── Admin Routes ─────────────────────────────────────────
 
 /** Get overview analytics (Admin only) */
-router.get('/overview', authenticate, requireAdmin, async (_req: Request, res: Response) => {
+router.get('/overview', authenticate, requireAdmin, async (req: Request, res: Response) => {
     try {
+        const { period = 'month' } = req.query;
+
+        // Compute start of the current period
+        const now = new Date();
+        let startDate: Date;
+        switch (period) {
+            case 'day':
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                break;
+            case 'week':
+                // Monday of current week
+                const day = now.getDay() === 0 ? 6 : now.getDay() - 1;
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+                break;
+            case 'year':
+                startDate = new Date(now.getFullYear(), 0, 1);
+                break;
+            case 'month':
+            default:
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        }
+
+        const periodFilter = { createdAt: { gte: startDate } };
+
         const [
             totalRevenue,
             totalOrders,
@@ -18,23 +42,18 @@ router.get('/overview', authenticate, requireAdmin, async (_req: Request, res: R
         ] = await Promise.all([
             prisma.order.aggregate({
                 where: {
-                    status: {
-                        in: ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED']
-                    }
+                    status: { in: ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'] },
+                    ...periodFilter
                 },
                 _sum: { totalAmount: true }
             }),
-            prisma.order.count(),
-            prisma.user.count({ where: { role: 'USER' } }),
-            prisma.product.count(),
+            prisma.order.count({ where: { ...periodFilter } }),
+            prisma.user.count({ where: { role: 'USER', ...periodFilter } }),
+            prisma.product.count(),   // tổng sản phẩm trong catalog, không lọc theo kỳ
             prisma.order.findMany({
                 take: 5,
                 orderBy: { createdAt: 'desc' },
-                include: {
-                    user: {
-                        select: { name: true, email: true }
-                    }
-                }
+                include: { user: { select: { name: true, email: true } } }
             })
         ]);
 
@@ -43,7 +62,9 @@ router.get('/overview', authenticate, requireAdmin, async (_req: Request, res: R
             totalOrders,
             totalCustomers,
             totalProducts,
-            recentOrders
+            recentOrders,
+            period,
+            startDate
         });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch overview analytics' });

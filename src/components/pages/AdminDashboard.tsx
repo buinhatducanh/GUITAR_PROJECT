@@ -177,12 +177,9 @@ export const AdminDashboard: React.FC = () => {
 
   // ── useEffects ────────────────────────────────────────────
   useEffect(() => {
-    analyticsApi.getOverview()
+    analyticsApi.getOverview(dashboardPeriod)
       .then(d => setAnalyticsOverview(d))
       .catch(() => {});
-  }, []);
-
-  useEffect(() => {
     analyticsApi.getRevenue(dashboardPeriod)
       .then(d => { if (d?.data) setRevenueChartData(mapRevenueData(d.data)); })
       .catch(() => {});
@@ -422,51 +419,56 @@ export const AdminDashboard: React.FC = () => {
                   </div>
 
                   {/* Stats Cards */}
-                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/30 rounded-2xl p-6 border border-blue-500/20">
-                      <div className="flex items-center justify-between mb-4">
-                        <DollarSign className="w-10 h-10 text-blue-400" />
-                        <TrendingUp className="w-5 h-5 text-green-400" />
+                  {(() => {
+                    const periodLabel = dashboardPeriod === 'day' ? 'hôm nay' : dashboardPeriod === 'week' ? 'tuần này' : dashboardPeriod === 'month' ? 'tháng này' : 'năm nay';
+                    return (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                      <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/30 rounded-2xl p-6 border border-blue-500/20">
+                        <div className="flex items-center justify-between mb-4">
+                          <DollarSign className="w-10 h-10 text-blue-400" />
+                          <TrendingUp className="w-5 h-5 text-green-400" />
+                        </div>
+                        <p className="text-blue-200 text-sm mb-1">Doanh thu {periodLabel}</p>
+                        <p className="text-2xl font-bold text-white">
+                          {analyticsOverview ? formatPrice(analyticsOverview.totalRevenue) : '—'}
+                        </p>
                       </div>
-                      <p className="text-blue-200 text-sm mb-1">Tổng doanh thu</p>
-                      <p className="text-2xl font-bold text-white">
-                        {analyticsOverview ? formatPrice(analyticsOverview.totalRevenue) : '—'}
-                      </p>
-                    </div>
 
-                    <div className="bg-gradient-to-br from-green-900/30 to-green-800/30 rounded-2xl p-6 border border-green-500/20">
-                      <div className="flex items-center justify-between mb-4">
-                        <ShoppingCart className="w-10 h-10 text-green-400" />
-                        <TrendingUp className="w-5 h-5 text-green-400" />
+                      <div className="bg-gradient-to-br from-green-900/30 to-green-800/30 rounded-2xl p-6 border border-green-500/20">
+                        <div className="flex items-center justify-between mb-4">
+                          <ShoppingCart className="w-10 h-10 text-green-400" />
+                          <TrendingUp className="w-5 h-5 text-green-400" />
+                        </div>
+                        <p className="text-green-200 text-sm mb-1">Đơn hàng {periodLabel}</p>
+                        <p className="text-2xl font-bold text-white">
+                          {analyticsOverview ? analyticsOverview.totalOrders : '—'}
+                        </p>
                       </div>
-                      <p className="text-green-200 text-sm mb-1">Tổng đơn hàng</p>
-                      <p className="text-2xl font-bold text-white">
-                        {analyticsOverview ? analyticsOverview.totalOrders : '—'}
-                      </p>
-                    </div>
 
-                    <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/30 rounded-2xl p-6 border border-purple-500/20">
-                      <div className="flex items-center justify-between mb-4">
-                        <Package className="w-10 h-10 text-purple-400" />
-                        <TrendingUp className="w-5 h-5 text-purple-400" />
+                      <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/30 rounded-2xl p-6 border border-purple-500/20">
+                        <div className="flex items-center justify-between mb-4">
+                          <Package className="w-10 h-10 text-purple-400" />
+                          <TrendingUp className="w-5 h-5 text-purple-400" />
+                        </div>
+                        <p className="text-purple-200 text-sm mb-1">Tổng sản phẩm</p>
+                        <p className="text-2xl font-bold text-white">
+                          {analyticsOverview?.totalProducts ?? '—'}
+                        </p>
                       </div>
-                      <p className="text-purple-200 text-sm mb-1">Sản phẩm</p>
-                      <p className="text-2xl font-bold text-white">
-                        {analyticsOverview?.totalProducts ?? '—'}
-                      </p>
-                    </div>
 
-                    <div className="bg-gradient-to-br from-orange-900/30 to-orange-800/30 rounded-2xl p-6 border border-orange-500/20">
-                      <div className="flex items-center justify-between mb-4">
-                        <Users className="w-10 h-10 text-orange-400" />
-                        <TrendingUp className="w-5 h-5 text-orange-400" />
+                      <div className="bg-gradient-to-br from-orange-900/30 to-orange-800/30 rounded-2xl p-6 border border-orange-500/20">
+                        <div className="flex items-center justify-between mb-4">
+                          <Users className="w-10 h-10 text-orange-400" />
+                          <TrendingUp className="w-5 h-5 text-orange-400" />
+                        </div>
+                        <p className="text-orange-200 text-sm mb-1">KH mới {periodLabel}</p>
+                        <p className="text-2xl font-bold text-white">
+                          {analyticsOverview?.totalCustomers ?? '—'}
+                        </p>
                       </div>
-                      <p className="text-orange-200 text-sm mb-1">Khách hàng</p>
-                      <p className="text-2xl font-bold text-white">
-                        {analyticsOverview?.totalCustomers ?? '—'}
-                      </p>
                     </div>
-                  </div>
+                    );
+                  })()}
 
                   {/* Charts */}
                   <div className="grid lg:grid-cols-2 gap-6">
