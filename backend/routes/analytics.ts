@@ -39,7 +39,7 @@ router.get('/overview', authenticate, requireAdmin, async (_req: Request, res: R
         ]);
 
         res.json({
-            totalRevenue: totalRevenue._sum.totalAmount || 0,
+            totalRevenue: parseFloat((totalRevenue._sum.totalAmount || 0).toString()),
             totalOrders,
             totalCustomers,
             totalProducts,

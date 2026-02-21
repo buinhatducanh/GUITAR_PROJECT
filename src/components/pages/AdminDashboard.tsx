@@ -448,11 +448,11 @@ export const AdminDashboard: React.FC = () => {
                     <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/30 rounded-2xl p-6 border border-purple-500/20">
                       <div className="flex items-center justify-between mb-4">
                         <Package className="w-10 h-10 text-purple-400" />
-                        <span className="text-purple-400 text-sm font-medium">{analyticsOverview?.totalProducts ?? products.length}</span>
+                        <TrendingUp className="w-5 h-5 text-purple-400" />
                       </div>
                       <p className="text-purple-200 text-sm mb-1">Sản phẩm</p>
                       <p className="text-2xl font-bold text-white">
-                        {analyticsOverview?.totalProducts ?? products.length}
+                        {analyticsOverview?.totalProducts ?? '—'}
                       </p>
                     </div>
 
@@ -463,7 +463,7 @@ export const AdminDashboard: React.FC = () => {
                       </div>
                       <p className="text-orange-200 text-sm mb-1">Khách hàng</p>
                       <p className="text-2xl font-bold text-white">
-                        {analyticsOverview?.totalCustomers ?? users.length}
+                        {analyticsOverview?.totalCustomers ?? '—'}
                       </p>
                     </div>
                   </div>
