@@ -55,7 +55,7 @@ router.post('/signature', authenticate, async (req: AuthRequest, res) => {
 router.get('/orphans', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
         // 1. Collect all image URLs from all tables
-        const [products, banners, blogs, vouchers, events, reviews, users, brands] = await Promise.all([
+        const [products, banners, blogs, vouchers, events, reviews, users] = await Promise.all([
             prisma.product.findMany({ select: { image: true, images: true } }),
             prisma.banner.findMany({ select: { image: true } }),
             prisma.blogPost.findMany({ select: { coverImage: true, authorAvatar: true } }),
@@ -63,7 +63,6 @@ router.get('/orphans', authenticate, requireAdmin, async (req: AuthRequest, res)
             prisma.event.findMany({ select: { image: true } }),
             prisma.review.findMany({ select: { images: true } }),
             prisma.user.findMany({ select: { avatar: true } }),
-            prisma.brand.findMany({ select: { logo: true } }),
         ]);
 
         const dbPublicIds = new Set<string>();
@@ -84,7 +83,6 @@ router.get('/orphans', authenticate, requireAdmin, async (req: AuthRequest, res)
         for (const e of events) addUrl(e.image);
         for (const r of reviews) if (r.images) r.images.forEach(addUrl);
         for (const u of users) addUrl(u.avatar);
-        for (const b of brands) addUrl(b.logo);
 
         // 2. List all resources in Cloudinary guitar-nova/ folder
         const cloudinaryImages: { publicId: string; url: string; createdAt: string; bytes: number }[] = [];
@@ -156,7 +154,7 @@ router.post('/orphans/cleanup', authenticate, requireAdmin, async (req: AuthRequ
 });
 
 /** DELETE /api/upload/:publicId — delete image from Cloudinary */
-router.delete('/:publicId(*)', authenticate, async (req: AuthRequest, res) => {
+router.delete('/*publicId', authenticate, async (req: AuthRequest, res) => {
     try {
         const publicId = Array.isArray(req.params.publicId)
             ? req.params.publicId.join('/')
