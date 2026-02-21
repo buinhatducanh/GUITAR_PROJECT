@@ -3,12 +3,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowLeft, BarChart3, Package, Users, FileText, Image,
   Star, Plus, Edit, Trash2, X, DollarSign, TrendingUp, ShoppingCart,
-  Gift, Calendar, Award, Settings as SettingsIcon, Truck, Warehouse, AlertTriangle
+  Gift, Calendar, Award, Settings as SettingsIcon, Truck, Warehouse, AlertTriangle,
+  Upload, CreditCard
 } from 'lucide-react';
 import { useApp, Product, Banner, Voucher, Event, UserData, Review, LandingPageData, BlogPost } from '@/app/context/AppContext';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { toast } from 'sonner';
-import { brandsApi, shippingApi, inventoryApi, settingsApi, analyticsApi } from '@/app/lib/api';
+import { brandsApi, shippingApi, inventoryApi, settingsApi, analyticsApi, uploadApi } from '@/app/lib/api';
 
 interface AdminDashboardProps {
   onBack: () => void;
@@ -1426,26 +1427,158 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                               className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
                             />
                           </div>
+                          {/* Logo upload */}
                           <div>
-                            <label className="block text-white/60 text-sm mb-2">Logo URL</label>
+                            <label className="block text-white/60 text-sm mb-2">Logo cửa hàng</label>
+                            <div className="flex items-start gap-4">
+                              {siteSettings.logo && (
+                                <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-white/10 flex-shrink-0 bg-white/5">
+                                  <img src={siteSettings.logo} alt="Logo" className="w-full h-full object-contain" />
+                                  <button
+                                    type="button"
+                                    onClick={() => setSiteSettings((s: any) => ({ ...s, logo: '' }))}
+                                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
+                                  >
+                                    <X className="w-3 h-3 text-white" />
+                                  </button>
+                                </div>
+                              )}
+                              <label className="flex-1 flex flex-col items-center justify-center gap-2 px-4 py-4 border-2 border-dashed border-white/20 rounded-lg cursor-pointer hover:border-purple-500/50 transition-colors">
+                                <Upload className="w-6 h-6 text-white/40" />
+                                <span className="text-white/40 text-sm">{siteSettings.logo ? 'Thay đổi logo' : 'Tải lên logo'}</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    try {
+                                      toast.loading('Đang tải lên logo...', { id: 'upload-logo' });
+                                      const url = await uploadApi.uploadToCloudinary(file, 'guitar-nova/settings');
+                                      setSiteSettings((s: any) => ({ ...s, logo: url }));
+                                      toast.success('Tải lên logo thành công', { id: 'upload-logo' });
+                                    } catch {
+                                      toast.error('Lỗi tải lên logo', { id: 'upload-logo' });
+                                    }
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          </div>
+                          {/* Favicon upload */}
+                          <div>
+                            <label className="block text-white/60 text-sm mb-2">Favicon</label>
+                            <div className="flex items-start gap-4">
+                              {siteSettings.favicon && (
+                                <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-white/10 flex-shrink-0 bg-white/5">
+                                  <img src={siteSettings.favicon} alt="Favicon" className="w-full h-full object-contain" />
+                                  <button
+                                    type="button"
+                                    onClick={() => setSiteSettings((s: any) => ({ ...s, favicon: '' }))}
+                                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
+                                  >
+                                    <X className="w-3 h-3 text-white" />
+                                  </button>
+                                </div>
+                              )}
+                              <label className="flex-1 flex flex-col items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-white/20 rounded-lg cursor-pointer hover:border-purple-500/50 transition-colors">
+                                <Upload className="w-5 h-5 text-white/40" />
+                                <span className="text-white/40 text-xs">{siteSettings.favicon ? 'Thay đổi favicon' : 'Tải lên favicon'}</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    try {
+                                      toast.loading('Đang tải lên favicon...', { id: 'upload-favicon' });
+                                      const url = await uploadApi.uploadToCloudinary(file, 'guitar-nova/settings');
+                                      setSiteSettings((s: any) => ({ ...s, favicon: url }));
+                                      toast.success('Tải lên favicon thành công', { id: 'upload-favicon' });
+                                    } catch {
+                                      toast.error('Lỗi tải lên favicon', { id: 'upload-favicon' });
+                                    }
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card Settings (Tiêu đề thẻ - Logo thẻ) */}
+                      <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
+                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                          <CreditCard className="w-5 h-5 text-amber-400" />
+                          Cài đặt thẻ
+                        </h3>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-white/60 text-sm mb-2">Tiêu đề thẻ</label>
                             <input
                               type="text"
-                              value={siteSettings.logo || ''}
-                              onChange={e => setSiteSettings((s: any) => ({ ...s, logo: e.target.value }))}
-                              placeholder="https://..."
-                              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
+                              value={siteSettings.cardTitle || ''}
+                              onChange={e => setSiteSettings((s: any) => ({ ...s, cardTitle: e.target.value }))}
+                              placeholder="VD: Guitar NOVA Member Card"
+                              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-amber-500 focus:outline-none"
                             />
                           </div>
+                          {/* Card Logo upload */}
                           <div>
-                            <label className="block text-white/60 text-sm mb-2">Favicon URL</label>
-                            <input
-                              type="text"
-                              value={siteSettings.favicon || ''}
-                              onChange={e => setSiteSettings((s: any) => ({ ...s, favicon: e.target.value }))}
-                              placeholder="https://..."
-                              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
-                            />
+                            <label className="block text-white/60 text-sm mb-2">Logo thẻ</label>
+                            <div className="flex items-start gap-4">
+                              {siteSettings.cardLogo && (
+                                <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-white/10 flex-shrink-0 bg-white/5">
+                                  <img src={siteSettings.cardLogo} alt="Card Logo" className="w-full h-full object-contain" />
+                                  <button
+                                    type="button"
+                                    onClick={() => setSiteSettings((s: any) => ({ ...s, cardLogo: '' }))}
+                                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
+                                  >
+                                    <X className="w-3 h-3 text-white" />
+                                  </button>
+                                </div>
+                              )}
+                              <label className="flex-1 flex flex-col items-center justify-center gap-2 px-4 py-4 border-2 border-dashed border-white/20 rounded-lg cursor-pointer hover:border-amber-500/50 transition-colors">
+                                <Upload className="w-6 h-6 text-white/40" />
+                                <span className="text-white/40 text-sm">{siteSettings.cardLogo ? 'Thay đổi logo thẻ' : 'Tải lên logo thẻ'}</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    try {
+                                      toast.loading('Đang tải lên logo thẻ...', { id: 'upload-card-logo' });
+                                      const url = await uploadApi.uploadToCloudinary(file, 'guitar-nova/settings');
+                                      setSiteSettings((s: any) => ({ ...s, cardLogo: url }));
+                                      toast.success('Tải lên logo thẻ thành công', { id: 'upload-card-logo' });
+                                    } catch {
+                                      toast.error('Lỗi tải lên logo thẻ', { id: 'upload-card-logo' });
+                                    }
+                                  }}
+                                />
+                              </label>
+                            </div>
                           </div>
+                          {/* Card Preview */}
+                          {(siteSettings.cardTitle || siteSettings.cardLogo) && (
+                            <div>
+                              <label className="block text-white/60 text-sm mb-2">Xem trước thẻ</label>
+                              <div className="relative w-full aspect-[1.6/1] max-w-xs rounded-xl overflow-hidden bg-gradient-to-br from-amber-600 via-amber-500 to-yellow-400 p-4 flex flex-col justify-between shadow-lg">
+                                {siteSettings.cardLogo && (
+                                  <img src={siteSettings.cardLogo} alt="Card Logo" className="w-12 h-12 object-contain" />
+                                )}
+                                <div>
+                                  <p className="text-white font-bold text-sm">{siteSettings.cardTitle || 'Tiêu đề thẻ'}</p>
+                                  <p className="text-white/70 text-xs mt-1">{siteSettings.siteName || 'Guitar NOVA'}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -1514,12 +1647,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                       </div>
 
                       {/* SEO Settings */}
-                      <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10">
+                      <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10 lg:col-span-2">
                         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                           <TrendingUp className="w-5 h-5 text-green-400" />
                           SEO Settings
                         </h3>
-                        <div className="space-y-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-white/60 text-sm mb-2">Meta Title</label>
                             <input
@@ -1530,15 +1663,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                             />
                           </div>
                           <div>
-                            <label className="block text-white/60 text-sm mb-2">Meta Description</label>
-                            <textarea
-                              value={siteSettings.metaDescription || ''}
-                              onChange={e => setSiteSettings((s: any) => ({ ...s, metaDescription: e.target.value }))}
-                              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-green-500 focus:outline-none resize-none"
-                              rows={3}
-                            />
-                          </div>
-                          <div>
                             <label className="block text-white/60 text-sm mb-2">Meta Keywords</label>
                             <input
                               type="text"
@@ -1546,6 +1670,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                               onChange={e => setSiteSettings((s: any) => ({ ...s, metaKeywords: e.target.value }))}
                               placeholder="guitar, music, instruments..."
                               className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-green-500 focus:outline-none"
+                            />
+                          </div>
+                          <div className="lg:col-span-2">
+                            <label className="block text-white/60 text-sm mb-2">Meta Description</label>
+                            <textarea
+                              value={siteSettings.metaDescription || ''}
+                              onChange={e => setSiteSettings((s: any) => ({ ...s, metaDescription: e.target.value }))}
+                              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-green-500 focus:outline-none resize-none"
+                              rows={3}
                             />
                           </div>
                         </div>
