@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, CreditCard, CheckCircle2, Phone } from 'lucide-react';
+import { ArrowLeft, CreditCard, CheckCircle2, Phone, MapPin, Store } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/app/context/AppContext';
 import { toast } from 'sonner';
@@ -13,10 +13,13 @@ export const Checkout: React.FC = () => {
     phone: user?.phone || '',
     address: '',
     city: '',
-    paymentMethod: 'cod'
+    paymentMethod: 'cod',
+    deliveryMethod: 'delivery' // 'delivery' | 'pickup'
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const isPickup = formData.deliveryMethod === 'pickup';
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -26,8 +29,9 @@ export const Checkout: React.FC = () => {
   };
 
   const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const shipping = 50000;
-  const total = subtotal + shipping;
+  // Phí ship = 0 nếu nhận tại cửa hàng, còn giao hàng sẽ do nhân viên xác nhận qua SĐT
+  const shipping = isPickup ? 0 : null;
+  const total = subtotal + (shipping ?? 0);
 
   const validatePhone = (phone: string): boolean => {
     const phoneRegex = /^(0[3|5|7|8|9])\d{8}$/;
@@ -135,11 +139,87 @@ export const Checkout: React.FC = () => {
               className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 border border-white/10 space-y-6"
             >
               <div>
-                <h2 className="text-2xl font-semibold text-white mb-6">Thông tin giao hàng</h2>
+                <h2 className="text-2xl font-semibold text-white mb-6">Phương thức nhận hàng</h2>
+
+                {/* Delivery method selector */}
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  <label
+                    className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-colors ${
+                      formData.deliveryMethod === 'delivery'
+                        ? 'border-amber-500 bg-amber-500/10'
+                        : 'border-white/10 bg-black/30 hover:border-white/30'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="deliveryMethod"
+                      value="delivery"
+                      checked={formData.deliveryMethod === 'delivery'}
+                      onChange={handleChange}
+                      className="w-4 h-4 text-amber-500"
+                    />
+                    <MapPin className="w-5 h-5 text-amber-500 shrink-0" />
+                    <div>
+                      <p className="text-white font-medium text-sm">Giao hàng tận nơi</p>
+                      <p className="text-white/40 text-xs">Nhân viên xác nhận phí sau</p>
+                    </div>
+                  </label>
+
+                  <label
+                    className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-colors ${
+                      formData.deliveryMethod === 'pickup'
+                        ? 'border-amber-500 bg-amber-500/10'
+                        : 'border-white/10 bg-black/30 hover:border-white/30'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="deliveryMethod"
+                      value="pickup"
+                      checked={formData.deliveryMethod === 'pickup'}
+                      onChange={handleChange}
+                      className="w-4 h-4 text-amber-500"
+                    />
+                    <Store className="w-5 h-5 text-amber-500 shrink-0" />
+                    <div>
+                      <p className="text-white font-medium text-sm">Nhận tại cửa hàng</p>
+                      <p className="text-green-400 text-xs font-medium">Miễn phí vận chuyển</p>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Store address info when pickup */}
+                {isPickup && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-xl"
+                  >
+                    <p className="text-green-400 font-medium text-sm mb-1">Địa chỉ cửa hàng Guitar NOVA</p>
+                    <p className="text-white/70 text-sm">123 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh</p>
+                    <p className="text-white/50 text-xs mt-1">Giờ mở cửa: 8:00 – 21:00 hàng ngày</p>
+                  </motion.div>
+                )}
+
+                {/* Shipping info when delivery */}
+                {!isPickup && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl"
+                  >
+                    <p className="text-amber-400 font-medium text-sm mb-1">Phí vận chuyển</p>
+                    <p className="text-white/70 text-sm">
+                      Nhân viên Guitar NOVA sẽ liên hệ qua SĐT để xác nhận phí ship dựa trên khoảng cách từ cửa hàng tới địa chỉ của bạn.
+                    </p>
+                  </motion.div>
+                )}
+
+                <h2 className="text-2xl font-semibold text-white mb-6">Thông tin liên hệ</h2>
 
                 {!user && (
-                  <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
-                    <p className="text-amber-400 text-sm">
+                  <div className="mb-6 p-4 bg-white/5 border border-white/10 rounded-xl">
+                    <p className="text-white/60 text-sm">
                       Bạn chưa đăng nhập. Tài khoản sẽ được tạo tự động khi đặt hàng với số điện thoại của bạn.
                     </p>
                   </div>
@@ -175,31 +255,36 @@ export const Checkout: React.FC = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-white/80 mb-2">Thành phố</label>
-                    <input
-                      type="text"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500/50 transition-colors"
-                      placeholder="Hà Nội"
-                    />
-                  </div>
+                  {/* Address fields only shown for delivery */}
+                  {!isPickup && (
+                    <>
+                      <div>
+                        <label className="block text-white/80 mb-2">Thành phố</label>
+                        <input
+                          type="text"
+                          name="city"
+                          value={formData.city}
+                          onChange={handleChange}
+                          required
+                          className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500/50 transition-colors"
+                          placeholder="Hà Nội"
+                        />
+                      </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-white/80 mb-2">Địa chỉ</label>
-                    <textarea
-                      name="address"
-                      value={formData.address}
-                      onChange={handleChange}
-                      required
-                      rows={3}
-                      className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500/50 transition-colors resize-none"
-                      placeholder="Số nhà, tên đường, phường/xã"
-                    />
-                  </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-white/80 mb-2">Địa chỉ giao hàng</label>
+                        <textarea
+                          name="address"
+                          value={formData.address}
+                          onChange={handleChange}
+                          required
+                          rows={3}
+                          className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500/50 transition-colors resize-none"
+                          placeholder="Số nhà, tên đường, phường/xã"
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -253,7 +338,11 @@ export const Checkout: React.FC = () => {
                 disabled={isProcessing}
                 className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isProcessing ? 'Đang xử lý...' : `Thanh toán ${formatPrice(total)}`}
+                {isProcessing
+                  ? 'Đang xử lý...'
+                  : isPickup
+                    ? `Đặt hàng — ${formatPrice(total)}`
+                    : `Đặt hàng — ${formatPrice(total)} + phí ship`}
               </motion.button>
             </motion.form>
           </div>
@@ -293,16 +382,23 @@ export const Checkout: React.FC = () => {
                 </div>
                 <div className="flex justify-between text-white/60">
                   <span>Phí vận chuyển</span>
-                  <span>{formatPrice(shipping)}</span>
+                  {isPickup ? (
+                    <span className="text-green-400 font-medium">Miễn phí</span>
+                  ) : (
+                    <span className="text-amber-400/80 text-sm italic">Xác nhận sau qua SĐT</span>
+                  )}
                 </div>
               </div>
 
               <div className="flex justify-between text-2xl font-bold text-white mt-6">
-                <span>Tổng cộng</span>
+                <span>{isPickup ? 'Tổng cộng' : 'Tạm tính'}</span>
                 <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
                   {formatPrice(total)}
                 </span>
               </div>
+              {!isPickup && (
+                <p className="text-white/40 text-xs mt-2">* Tổng cuối cùng chưa bao gồm phí vận chuyển</p>
+              )}
             </motion.div>
           </div>
         </div>

@@ -19,8 +19,6 @@ export const Cart: React.FC = () => {
   };
 
   const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const shipping = subtotal > 0 ? 50000 : 0;
-  const total = subtotal + shipping;
 
   const handleCheckout = () => {
     setIsOpen(false);
@@ -147,12 +145,12 @@ export const Cart: React.FC = () => {
                   </div>
                   <div className="flex justify-between text-white/60">
                     <span>Phí vận chuyển</span>
-                    <span>{formatPrice(shipping)}</span>
+                    <span className="text-amber-400/80 text-sm italic">Tính khi thanh toán</span>
                   </div>
                   <div className="flex justify-between text-xl font-bold text-white pt-2 border-t border-white/10">
-                    <span>Tổng cộng</span>
+                    <span>Tạm tính</span>
                     <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
-                      {formatPrice(total)}
+                      {formatPrice(subtotal)}
                     </span>
                   </div>
                 </div>
