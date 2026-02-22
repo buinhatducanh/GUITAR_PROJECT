@@ -24,7 +24,18 @@ router.get('/', async (req, res) => {
 /** POST /api/banners */
 router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
-        const banner = await prisma.banner.create({ data: req.body });
+        const { image, title, subtitle, link, order, isActive } = req.body;
+
+        const banner = await prisma.banner.create({
+            data: {
+                image,
+                title,
+                subtitle: subtitle || '',
+                link: link || '/products',
+                order: typeof order === 'string' ? parseInt(order) || 0 : (order || 0),
+                isActive: isActive ?? true,
+            },
+        });
         res.status(201).json(banner);
     } catch (err) {
         console.error('Create banner error:', err);
@@ -35,10 +46,37 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
 /** PUT /api/banners/:id */
 router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
+        const { image, title, subtitle, link, order, isActive } = req.body;
+
+        const oldBanner = await prisma.banner.findUnique({
+            where: { id: req.params.id },
+            select: { image: true },
+        });
+
+        if (!oldBanner) {
+            res.status(404).json({ error: 'Banner không tồn tại' });
+            return;
+        }
+
+        // Build update data with only allowed fields
+        const data: any = {};
+        if (image !== undefined) data.image = image;
+        if (title !== undefined) data.title = title;
+        if (subtitle !== undefined) data.subtitle = subtitle;
+        if (link !== undefined) data.link = link;
+        if (order !== undefined) data.order = typeof order === 'string' ? parseInt(order) || 0 : order;
+        if (isActive !== undefined) data.isActive = isActive;
+
         const banner = await prisma.banner.update({
             where: { id: req.params.id },
-            data: req.body,
+            data,
         });
+
+        // Cleanup old Cloudinary image if replaced
+        if (image !== undefined && oldBanner.image && oldBanner.image !== image) {
+            deleteCloudinaryImages([oldBanner.image]).catch(() => {});
+        }
+
         res.json(banner);
     } catch (err) {
         console.error('Update banner error:', err);

@@ -38,6 +38,8 @@ export interface Banner {
   title: string;
   subtitle: string;
   link: string;
+  order: number;
+  isActive: boolean;
 }
 
 export interface User {
