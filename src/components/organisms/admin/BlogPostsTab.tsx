@@ -49,12 +49,15 @@ export const BlogPostsTab: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const toSlug = (str: string) =>
+    str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
   const handleTitleChange = (title: string) => {
-    const slug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const slug = toSlug(title);
     setForm(f => ({
       ...f,
       title,
-      slug: f.slug === '' || f.slug === (f.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')) ? slug : f.slug,
+      slug: f.slug === '' || f.slug === toSlug(f.title) ? slug : f.slug,
     }));
   };
 
@@ -78,7 +81,8 @@ export const BlogPostsTab: React.FC = () => {
     } catch (e: any) { toast.error(e.message || 'Lỗi khi lưu bài viết'); }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, title: string) => {
+    if (!window.confirm(`Xóa bài viết "${title}"? Hành động này không thể hoàn tác.`)) return;
     try {
       await blogsApi.delete(id);
       toast.success('Đã xóa bài viết');
@@ -129,7 +133,7 @@ export const BlogPostsTab: React.FC = () => {
                   <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => openModal(post)} className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors">
                     <Edit className="w-4 h-4" />
                   </motion.button>
-                  <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleDelete(post.id)} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                  <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleDelete(post.id, post.title)} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </motion.button>
                 </div>
