@@ -135,10 +135,56 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
 /** PUT /api/blogs/:id */
 router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
+        const { title, excerpt, content, coverImage, authorName, authorAvatar, category, tags, readTime, isPublished, slug } = req.body;
+
+        // Fetch old record to compare images for Cloudinary cleanup
+        const oldPost = await prisma.blogPost.findUnique({
+            where: { id: req.params.id },
+            select: { coverImage: true, authorAvatar: true, isPublished: true, publishedDate: true },
+        });
+
+        if (!oldPost) {
+            res.status(404).json({ error: 'Bài viết không tồn tại' });
+            return;
+        }
+
+        // Build update data with only allowed fields
+        const data: any = {};
+        if (title !== undefined) data.title = title;
+        if (slug !== undefined) data.slug = slug;
+        if (excerpt !== undefined) data.excerpt = excerpt;
+        if (content !== undefined) data.content = content;
+        if (coverImage !== undefined) data.coverImage = coverImage;
+        if (authorName !== undefined) data.authorName = authorName;
+        if (authorAvatar !== undefined) data.authorAvatar = authorAvatar;
+        if (category !== undefined) data.category = category;
+        if (tags !== undefined) data.tags = tags;
+        if (readTime !== undefined) data.readTime = typeof readTime === 'string' ? parseInt(readTime) || 5 : readTime;
+        if (isPublished !== undefined) {
+            data.isPublished = isPublished;
+            // Set publishedDate when first publishing
+            if (isPublished && !oldPost.publishedDate) {
+                data.publishedDate = new Date();
+            }
+        }
+
         const post = await prisma.blogPost.update({
             where: { id: req.params.id },
-            data: req.body,
+            data,
         });
+
+        // Cleanup old Cloudinary images if they were replaced
+        const oldUrls: string[] = [];
+        if (coverImage !== undefined && oldPost.coverImage && oldPost.coverImage !== coverImage) {
+            oldUrls.push(oldPost.coverImage);
+        }
+        if (authorAvatar !== undefined && oldPost.authorAvatar && oldPost.authorAvatar !== authorAvatar) {
+            oldUrls.push(oldPost.authorAvatar);
+        }
+        if (oldUrls.length > 0) {
+            deleteCloudinaryImages(oldUrls).catch(() => {});
+        }
+
         res.json(post);
     } catch (err) {
         console.error('Update blog error:', err);
