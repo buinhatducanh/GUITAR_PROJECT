@@ -69,17 +69,54 @@ async function main() {
     ]);
     console.log(`✅ ${users.length} users seeded`);
 
+    // ─── Brands ─────────────────────────────────────
+    const brands = await Promise.all([
+        prisma.brand.upsert({
+            where: { slug: 'fender' }, update: {},
+            create: { name: 'Fender', slug: 'fender', description: 'Thương hiệu guitar điện huyền thoại của Mỹ, sáng lập năm 1946 bởi Leo Fender. Nổi tiếng với Stratocaster và Telecaster.', website: 'https://www.fender.com', hotline: '1800-FENDER', order: 1 },
+        }),
+        prisma.brand.upsert({
+            where: { slug: 'gibson' }, update: {},
+            create: { name: 'Gibson', slug: 'gibson', description: 'Thương hiệu guitar Mỹ hơn 120 năm lịch sử. Biểu tượng của rock với Les Paul, SG và ES-335.', website: 'https://www.gibson.com', hotline: '1800-GIBSON', order: 2 },
+        }),
+        prisma.brand.upsert({
+            where: { slug: 'yamaha' }, update: {},
+            create: { name: 'Yamaha', slug: 'yamaha', description: 'Tập đoàn nhạc cụ Nhật Bản hàng đầu thế giới. Sản xuất đa dạng từ guitar acoustic, piano đến thiết bị âm thanh chuyên nghiệp.', website: 'https://www.yamaha.com', hotline: '1800-YAMAHA', order: 3 },
+        }),
+        prisma.brand.upsert({
+            where: { slug: 'marshall' }, update: {},
+            create: { name: 'Marshall', slug: 'marshall', description: 'Thương hiệu ampli guitar Anh Quốc huyền thoại từ 1962. Marshall là linh hồn của âm thanh rock cổ điển.', website: 'https://www.marshall.com', hotline: '1800-MARSHALL', order: 4 },
+        }),
+        prisma.brand.upsert({
+            where: { slug: 'boss' }, update: {},
+            create: { name: 'Boss', slug: 'boss', description: 'Thương hiệu pedal và effects processor hàng đầu từ Roland Corporation Nhật Bản. Boss là tiêu chuẩn vàng trong thế giới hiệu ứng guitar.', website: 'https://www.boss.info', hotline: '1800-BOSS', order: 5 },
+        }),
+        prisma.brand.upsert({
+            where: { slug: 'daddario' }, update: {},
+            create: { name: "D'Addario", slug: 'daddario', description: 'Nhà sản xuất dây đàn số 1 thế giới từ New York, Mỹ. Hơn 150 năm cung cấp dây đàn chất lượng cho nghệ sĩ toàn cầu.', website: 'https://www.daddario.com', hotline: '1800-DADDARIO', order: 6 },
+        }),
+        prisma.brand.upsert({
+            where: { slug: 'taylor' }, update: {},
+            create: { name: 'Taylor', slug: 'taylor', description: 'Thương hiệu guitar acoustic cao cấp Mỹ, sáng lập 1974 tại California. Taylor nổi tiếng với âm thanh sáng, rõ ràng và workmanship xuất sắc.', website: 'https://www.taylorguitars.com', hotline: '1800-TAYLOR', order: 7 },
+        }),
+    ]);
+    console.log(`✅ ${brands.length} brands seeded`);
+
+    const brandMap: Record<string, string> = {};
+    brands.forEach(b => { brandMap[b.name] = b.id; });
+
     // ─── Products ───────────────────────────────────
     const products = await Promise.all([
         prisma.product.upsert({
             where: { slug: 'fender-stratocaster-american-professional-ii' },
-            update: {},
+            update: { brandId: brandMap['Fender'] },
             create: {
                 name: 'Fender Stratocaster American Professional II',
                 slug: 'fender-stratocaster-american-professional-ii',
                 price: 45900000, oldPrice: 52000000, discount: 12,
                 image: 'https://images.unsplash.com/photo-1763162603999-8a1958b13cf1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhY291c3RpYyUyMGd1aXRhciUyMHByZW1pdW0lMjB3b29kfGVufDF8fHx8MTc3MDQxMTY3NXww&ixlib=rb-4.1.0&q=80&w=1080',
                 categoryId: catMap['Electric Guitar'],
+                brandId: brandMap['Fender'],
                 description: 'Guitar điện cao cấp với âm thanh đặc trưng Fender. Thiết kế classic với công nghệ hiện đại.',
                 specs: ['Body: Alder', 'Neck: Maple', 'Fretboard: Rosewood', 'Pickups: V-Mod II Single-Coil'],
                 rating: 4.9, stock: 15, isFeatured: true,
@@ -87,13 +124,14 @@ async function main() {
         }),
         prisma.product.upsert({
             where: { slug: 'gibson-les-paul-standard-60s' },
-            update: {},
+            update: { brandId: brandMap['Gibson'] },
             create: {
                 name: 'Gibson Les Paul Standard 60s',
                 slug: 'gibson-les-paul-standard-60s',
                 price: 68500000, oldPrice: 75000000, discount: 9,
                 image: 'https://images.unsplash.com/photo-1692501735268-30251c6a30e3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx2aW50YWdlJTIwZ3VpdGFyJTIwY29sbGVjdGlvbnxlbnwxfHx8fDE3NzA0MTE2Nzl8MA&ixlib=rb-4.1.0&q=80&w=1080',
                 categoryId: catMap['Electric Guitar'],
+                brandId: brandMap['Gibson'],
                 description: 'Biểu tượng của rock với âm thanh ấm áp, thick và sustain tuyệt vời.',
                 specs: ['Body: Mahogany', 'Top: Maple', 'Neck: Mahogany', 'Pickups: BurstBucker 61'],
                 rating: 5.0, stock: 8, isFeatured: true,
@@ -101,13 +139,14 @@ async function main() {
         }),
         prisma.product.upsert({
             where: { slug: 'yamaha-fg800-acoustic' },
-            update: {},
+            update: { brandId: brandMap['Yamaha'] },
             create: {
                 name: 'Yamaha FG800 Acoustic',
                 slug: 'yamaha-fg800-acoustic',
                 price: 8900000, oldPrice: 10500000, discount: 15,
                 image: 'https://images.unsplash.com/photo-1763162603999-8a1958b13cf1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhY291c3RpYyUyMGd1aXRhciUyMHByZW1pdW0lMjB3b29kfGVufDF8fHx8MTc3MDQxMTY3NXww&ixlib=rb-4.1.0&q=80&w=1080',
                 categoryId: catMap['Acoustic Guitar'],
+                brandId: brandMap['Yamaha'],
                 description: 'Guitar acoustic phổ biến nhất cho người mới bắt đầu và chuyên nghiệp.',
                 specs: ['Top: Solid Spruce', 'Back/Sides: Nato', 'Neck: Nato', 'Finish: Natural'],
                 rating: 4.7, stock: 30, isFeatured: true,
@@ -115,13 +154,14 @@ async function main() {
         }),
         prisma.product.upsert({
             where: { slug: 'fender-precision-bass' },
-            update: {},
+            update: { brandId: brandMap['Fender'] },
             create: {
                 name: 'Fender Precision Bass',
                 slug: 'fender-precision-bass',
                 price: 42000000,
                 image: 'https://images.unsplash.com/photo-1695192577284-fd1b10529579?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiYXNzJTIwZ3VpdGFyJTIwcHJvZmVzc2lvbmFsfGVufDF8fHx8MTc3MDQxMTY3NXww&ixlib=rb-4.1.0&q=80&w=1080',
                 categoryId: catMap['Bass Guitar'],
+                brandId: brandMap['Fender'],
                 description: 'Bass guitar legendary với âm thanh punchy và định nghĩa rõ ràng.',
                 specs: ['Body: Alder', 'Neck: Maple', 'Fretboard: Pau Ferro', 'Pickups: Split Single-Coil'],
                 rating: 4.8, stock: 12,
@@ -129,13 +169,14 @@ async function main() {
         }),
         prisma.product.upsert({
             where: { slug: 'marshall-dsl40cr-amplifier' },
-            update: {},
+            update: { brandId: brandMap['Marshall'] },
             create: {
                 name: 'Marshall DSL40CR Amplifier',
                 slug: 'marshall-dsl40cr-amplifier',
                 price: 24500000, oldPrice: 28000000, discount: 13,
                 image: 'https://images.unsplash.com/photo-1565829073670-cd08d8c63643?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxndWl0YXIlMjBhbXBsaWZpZXIlMjBzdHVkaW8lMjB2aW50YWdlfGVufDF8fHx8MTc3MDQxMTY3Nnww&ixlib=rb-4.1.0&q=80&w=1080',
                 categoryId: catMap['Amplifier'],
+                brandId: brandMap['Marshall'],
                 description: 'Ampli all-tube 40W với classic Marshall tone và hiệu ứng reverb.',
                 specs: ['Power: 40W', 'Channels: 2', 'Effects: Reverb', 'Speaker: 12" Celestion'],
                 rating: 4.9, stock: 10, isFeatured: true,
@@ -143,13 +184,14 @@ async function main() {
         }),
         prisma.product.upsert({
             where: { slug: 'boss-gt-1000-effects-processor' },
-            update: {},
+            update: { brandId: brandMap['Boss'] },
             create: {
                 name: 'Boss GT-1000 Effects Processor',
                 slug: 'boss-gt-1000-effects-processor',
                 price: 18900000,
                 image: 'https://images.unsplash.com/photo-1662434243640-42988ab42db8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxndWl0YXIlMjBwZWRhbCUyMGVmZmVjdHMlMjBib2FyZHxlbnwxfHx8fDE3NzA0MTE2ODB8MA&ixlib=rb-4.1.0&q=80&w=1080',
                 categoryId: catMap['Effects'],
+                brandId: brandMap['Boss'],
                 description: 'Bộ xử lý hiệu ứng flagship với công nghệ AIRD và amp modeling.',
                 specs: ['DSP: BOSS flagship', 'Presets: 250+', 'Effects: 200+', 'Interface: USB Audio'],
                 rating: 4.8, stock: 20,
@@ -157,13 +199,14 @@ async function main() {
         }),
         prisma.product.upsert({
             where: { slug: 'daddario-nyxl-strings' },
-            update: {},
+            update: { brandId: brandMap["D'Addario"] },
             create: {
                 name: "D'Addario NYXL Strings",
                 slug: 'daddario-nyxl-strings',
                 price: 280000, oldPrice: 350000, discount: 20,
                 image: 'https://images.unsplash.com/photo-1674485146230-d654464e477c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxndWl0YXIlMjBzdHJpbmdzJTIwY2xvc2V1cHxlbnwxfHx8fDE3NzA0MTE2NzZ8MA&ixlib=rb-4.1.0&q=80&w=1080',
                 categoryId: catMap['Accessories'],
+                brandId: brandMap["D'Addario"],
                 description: 'Dây đàn cao cấp với độ bền gấp đôi và tuning stability tốt nhất.',
                 specs: ['Gauge: 10-46', 'Material: Nickel Wound', 'Core: High Carbon Steel', 'Coating: NYXL'],
                 rating: 4.6, stock: 100,
@@ -171,13 +214,14 @@ async function main() {
         }),
         prisma.product.upsert({
             where: { slug: 'taylor-814ce-grand-auditorium' },
-            update: {},
+            update: { brandId: brandMap['Taylor'] },
             create: {
                 name: 'Taylor 814ce Grand Auditorium',
                 slug: 'taylor-814ce-grand-auditorium',
                 price: 89000000, oldPrice: 95000000, discount: 6,
                 image: 'https://images.unsplash.com/photo-1741701862902-01b463d10435?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpYyUyMHN0dWRpbyUyMGd1aXRhciUyMHdhbGx8ZW58MXx8fHwxNzcwNDExNjc2fDA&ixlib=rb-4.1.0&q=80&w=1080',
                 categoryId: catMap['Acoustic Guitar'],
+                brandId: brandMap['Taylor'],
                 description: 'Acoustic guitar cao cấp với âm thanh cân bằng hoàn hảo.',
                 specs: ['Top: Solid Sitka Spruce', 'Back/Sides: Indian Rosewood', 'Electronics: ES2', 'Cutaway: Venetian'],
                 rating: 5.0, stock: 5, isFeatured: true,
