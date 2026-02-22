@@ -3,14 +3,16 @@ import { motion } from 'motion/react';
 import { ChevronLeft, ChevronRight, Star, ShoppingCart, Trophy, Zap, Tag, Gift, Sparkles, ArrowRight, Calendar, TrendingUp, Award, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp, Product } from '@/app/context/AppContext';
-import { useCartStore } from '@/features/cart/store/cartStore';
 import { ProductCard } from '@/components/organisms/ProductCard';
 import { HeroBanner } from '@/components/organisms/HeroBanner';
+import { useSettingsStore } from '@/features/settings/store/settingsStore';
+import { useCartStore } from '@/features/cart/store/cartStore';
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
   const { products, events, vouchers, landingPages, blogPosts } = useApp();
   const addItem = useCartStore((state) => state.addItem);
+  const settings = useSettingsStore((state) => state.settings);
 
   const featuredProducts = products.slice(0, 4);
   const newProducts = products.slice(4, 8);
@@ -124,7 +126,7 @@ export const Home: React.FC = () => {
               Sản Phẩm Nổi Bật
             </h2>
             <p className="text-xl text-white/60">
-              Những cây đàn được yêu thích nhất tại Guitar NOVA
+              Những cây đàn được yêu thích nhất tại {settings?.siteName || 'Guitar NOVA'}
             </p>
           </motion.div>
 
@@ -453,7 +455,7 @@ export const Home: React.FC = () => {
                 Khám Phá Thêm
               </h2>
               <p className="text-xl text-white/60">
-                Những bộ sưu tập và câu chuyện đặc biệt từ Guitar NOVA
+                Những bộ sưu tập và câu chuyện đặc biệt từ {settings?.siteName || 'Guitar NOVA'}
               </p>
             </motion.div>
 

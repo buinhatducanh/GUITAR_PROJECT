@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Award, Heart, Users, Zap } from 'lucide-react';
+import { useSettingsStore } from '@/features/settings/store/settingsStore';
 
 interface LandingPagesProps {
   page: string;
@@ -9,6 +10,7 @@ interface LandingPagesProps {
 }
 
 export const LandingPages: React.FC<LandingPagesProps> = ({ page, onBack, onNavigate }) => {
+  const settings = useSettingsStore((state) => state.settings);
   if (page === '/landing/collection-2026') {
     return (
       <div className="min-h-screen bg-black pt-24 pb-16">
@@ -113,7 +115,7 @@ export const LandingPages: React.FC<LandingPagesProps> = ({ page, onBack, onNavi
               Thương Hiệu
               <br />
               <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
-                Guitar NOVA
+                {settings?.siteName || 'Guitar NOVA'}
               </span>
             </h1>
 
@@ -121,7 +123,7 @@ export const LandingPages: React.FC<LandingPagesProps> = ({ page, onBack, onNavi
               <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 border border-white/10">
                 <h2 className="text-2xl font-semibold text-white mb-4">Câu chuyện của chúng tôi</h2>
                 <p className="text-white/70 leading-relaxed mb-4">
-                  Được thành lập từ năm 2016, Guitar NOVA đã trở thành một trong những cửa hàng guitar
+                  Được thành lập từ năm 2016, {settings?.siteName || 'Guitar NOVA'} đã trở thành một trong những cửa hàng guitar
                   hàng đầu tại Việt Nam. Với niềm đam mê âm nhạc và sự tận tâm với chất lượng,
                   chúng tôi mang đến cho khách hàng những sản phẩm guitar cao cấp nhất từ các thương hiệu
                   nổi tiếng trên thế giới.

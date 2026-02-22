@@ -19,6 +19,7 @@ import { ShippingTab } from '@/components/organisms/admin/ShippingTab';
 import { SettingsTab } from '@/components/organisms/admin/SettingsTab';
 import { LandingPagesTab } from '@/components/organisms/admin/LandingPagesTab';
 import { BlogPostsTab } from '@/components/organisms/admin/BlogPostsTab';
+import { useSettingsStore } from '@/features/settings/store/settingsStore';
 
 const tabAnimation = {
   initial: { opacity: 0, y: 20 },
@@ -28,6 +29,7 @@ const tabAnimation = {
 
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const settings = useSettingsStore((state) => state.settings);
   const {
     products, setProducts,
     vouchers, setVouchers,
@@ -59,7 +61,7 @@ export const AdminDashboard: React.FC = () => {
             <span>Quay lại trang chủ</span>
           </motion.button>
           <h1 className="text-4xl font-bold text-white mb-2">Admin Dashboard</h1>
-          <p className="text-purple-300">Quản lý toàn bộ hệ thống Guitar NOVA</p>
+          <p className="text-purple-300">Quản lý toàn bộ hệ thống {settings?.siteName || 'Guitar NOVA'}</p>
         </div>
       </div>
 

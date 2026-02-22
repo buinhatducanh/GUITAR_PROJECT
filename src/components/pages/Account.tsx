@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, User, Mail, Calendar, Star, ShoppingBag, Award, TrendingUp, Gift } from 'lucide-react';
 import { useApp } from '@/app/context/AppContext';
+import { useSettingsStore } from '@/features/settings/store/settingsStore';
 
 interface AccountProps {
   onBack: () => void;
@@ -10,6 +11,7 @@ interface AccountProps {
 
 export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
   const { user, userVouchers, vouchers } = useApp();
+  const settings = useSettingsStore((state) => state.settings);
   const [activeTab, setActiveTab] = useState<'info' | 'orders' | 'vouchers'>('info');
 
   if (!user) {
@@ -152,11 +154,10 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
         <div className="flex gap-4 mb-8 border-b border-white/10">
           <button
             onClick={() => setActiveTab('info')}
-            className={`px-6 py-3 font-medium transition-all relative ${
-              activeTab === 'info'
+            className={`px-6 py-3 font-medium transition-all relative ${activeTab === 'info'
                 ? 'text-purple-400'
                 : 'text-white/60 hover:text-white'
-            }`}
+              }`}
           >
             Thông tin
             {activeTab === 'info' && (
@@ -169,11 +170,10 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
 
           <button
             onClick={() => setActiveTab('orders')}
-            className={`px-6 py-3 font-medium transition-all relative ${
-              activeTab === 'orders'
+            className={`px-6 py-3 font-medium transition-all relative ${activeTab === 'orders'
                 ? 'text-purple-400'
                 : 'text-white/60 hover:text-white'
-            }`}
+              }`}
           >
             Đơn hàng
             {activeTab === 'orders' && (
@@ -186,11 +186,10 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
 
           <button
             onClick={() => setActiveTab('vouchers')}
-            className={`px-6 py-3 font-medium transition-all relative ${
-              activeTab === 'vouchers'
+            className={`px-6 py-3 font-medium transition-all relative ${activeTab === 'vouchers'
                 ? 'text-purple-400'
                 : 'text-white/60 hover:text-white'
-            }`}
+              }`}
           >
             Voucher ({myVouchers.length})
             {activeTab === 'vouchers' && (
@@ -210,7 +209,7 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
             className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 border border-white/10"
           >
             <h2 className="text-2xl font-bold text-white mb-6">Thông tin cá nhân</h2>
-            
+
             <div className="space-y-4">
               <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl">
                 <User className="w-5 h-5 text-purple-400" />
@@ -255,7 +254,7 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
           >
             <ShoppingBag className="w-16 h-16 text-white/20 mx-auto mb-4" />
             <h3 className="text-xl text-white mb-2">Chưa có đơn hàng nào</h3>
-            <p className="text-white/60 mb-6">Bạn chưa mua sản phẩm nào từ Guitar NOVA</p>
+            <p className="text-white/60 mb-6">Bạn chưa mua sản phẩm nào từ {settings?.siteName || 'Guitar NOVA'}</p>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

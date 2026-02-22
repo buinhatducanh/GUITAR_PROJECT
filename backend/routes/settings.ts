@@ -27,6 +27,7 @@ router.get('/', async (_req: Request, res: Response) => {
 
         res.json(settings);
     } catch (error) {
+        console.error('❌ Settings GET error:', error);
         res.status(500).json({ error: 'Failed to fetch settings' });
     }
 });
@@ -116,6 +117,7 @@ router.put('/', authenticate, requireAdmin, async (req: Request, res: Response) 
 
         res.json(settings);
     } catch (error) {
+        console.error('❌ Settings PUT error:', error);
         res.status(500).json({ error: 'Failed to update settings' });
     }
 });

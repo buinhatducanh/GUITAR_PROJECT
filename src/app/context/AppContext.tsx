@@ -298,21 +298,27 @@ const initialBanners: Banner[] = [
     image: 'https://images.unsplash.com/photo-1626406512368-ae4ad84da00f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxndWl0YXIlMjBtdXNpY2lhbiUyMGNvbmNlcnQlMjBzdGFnZXxlbnwxfHx8fDE3NzA0MTE2Nzl8MA&ixlib=rb-4.1.0&q=80&w=1080',
     title: 'Bộ Sưu Tập Mới 2026',
     subtitle: 'Khám phá các mẫu guitar premium mới nhất từ các thương hiệu hàng đầu thế giới',
-    link: '/landing/collection-2026'
+    link: '/landing/collection-2026',
+    order: 1,
+    isActive: true
   },
   {
     id: 'b2',
     image: 'https://images.unsplash.com/photo-1692501735268-30251c6a30e3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx2aW50YWdlJTIwZ3VpdGFyJTIwY29sbGVjdGlvbnxlbnwxfHx8fDE3NzA0MTE2Nzl8MA&ixlib=rb-4.1.0&q=80&w=1080',
     title: 'Giảm Giá Đến 30%',
     subtitle: 'Sale lớn nhất năm - Đừng bỏ lỡ cơ hội sở hữu guitar mơ ước',
-    link: '/promo'
+    link: '/promo',
+    order: 2,
+    isActive: true
   },
   {
     id: 'b3',
     image: 'https://images.unsplash.com/photo-1741701862902-01b463d10435?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpYyUyMHN0dWRpbyUyMGd1aXRhciUyMHdhbGx8ZW58MXx8fHwxNzcwNDExNjc2fDA&ixlib=rb-4.1.0&q=80&w=1080',
     title: 'Thương Hiệu Guitar NOVA',
     subtitle: 'Hơn 10 năm mang âm nhạc đến gần hơn với bạn',
-    link: '/landing/about'
+    link: '/landing/about',
+    order: 3,
+    isActive: true
   }
 ];
 
@@ -796,7 +802,7 @@ const initialReviews: Review[] = [
     productId: '1',
     productName: 'Fender Stratocaster American Professional II',
     rating: 5,
-    comment: 'Chất lượng premium, giao hàng nhanh. Rất hài lòng với dịch vụ của Guitar NOVA.',
+    comment: 'Chất lượng premium, giao hàng nhanh. Rất hài lòng với dịch vụ của cửa hàng.',
     date: '2026-01-20',
     images: []
   },

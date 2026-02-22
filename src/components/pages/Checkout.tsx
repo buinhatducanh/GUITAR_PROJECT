@@ -3,11 +3,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, CreditCard, CheckCircle2, Phone, MapPin, Store } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/app/context/AppContext';
+import { useSettingsStore } from '@/features/settings/store/settingsStore';
 import { toast } from 'sonner';
 
 export const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const { cart, user, setUser, clearCart } = useApp();
+  const settings = useSettingsStore((state) => state.settings);
   const [formData, setFormData] = useState({
     fullName: user?.name || '',
     phone: user?.phone || '',
@@ -64,7 +66,7 @@ export const Checkout: React.FC = () => {
         totalOrders: 1,
         totalSpent: total,
         lastLogin: new Date().toISOString(),
-        role: 'user' as const
+        role: 'USER' as const
       };
       setUser(newUser);
       toast.success(`Tài khoản đã được tạo tự động với SĐT: ${formData.phone}`);
@@ -144,11 +146,10 @@ export const Checkout: React.FC = () => {
                 {/* Delivery method selector */}
                 <div className="grid grid-cols-2 gap-3 mb-6">
                   <label
-                    className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-colors ${
-                      formData.deliveryMethod === 'delivery'
-                        ? 'border-amber-500 bg-amber-500/10'
-                        : 'border-white/10 bg-black/30 hover:border-white/30'
-                    }`}
+                    className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-colors ${formData.deliveryMethod === 'delivery'
+                      ? 'border-amber-500 bg-amber-500/10'
+                      : 'border-white/10 bg-black/30 hover:border-white/30'
+                      }`}
                   >
                     <input
                       type="radio"
@@ -166,11 +167,10 @@ export const Checkout: React.FC = () => {
                   </label>
 
                   <label
-                    className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-colors ${
-                      formData.deliveryMethod === 'pickup'
-                        ? 'border-amber-500 bg-amber-500/10'
-                        : 'border-white/10 bg-black/30 hover:border-white/30'
-                    }`}
+                    className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-colors ${formData.deliveryMethod === 'pickup'
+                      ? 'border-amber-500 bg-amber-500/10'
+                      : 'border-white/10 bg-black/30 hover:border-white/30'
+                      }`}
                   >
                     <input
                       type="radio"
@@ -195,9 +195,9 @@ export const Checkout: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-xl"
                   >
-                    <p className="text-green-400 font-medium text-sm mb-1">Địa chỉ cửa hàng Guitar NOVA</p>
-                    <p className="text-white/70 text-sm">123 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh</p>
-                    <p className="text-white/50 text-xs mt-1">Giờ mở cửa: 8:00 – 21:00 hàng ngày</p>
+                    <p className="text-green-400 font-medium text-sm mb-1">Địa chỉ cửa hàng {settings?.siteName || 'Guitar NOVA'}</p>
+                    <p className="text-white/70 text-sm">{settings?.address || '123 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh'}</p>
+                    <p className="text-white/50 text-xs mt-1">Giờ mở cửa: {settings?.businessHours || '8:00 – 21:00 hàng ngày'}</p>
                   </motion.div>
                 )}
 
@@ -210,7 +210,7 @@ export const Checkout: React.FC = () => {
                   >
                     <p className="text-amber-400 font-medium text-sm mb-1">Phí vận chuyển</p>
                     <p className="text-white/70 text-sm">
-                      Nhân viên Guitar NOVA sẽ liên hệ qua SĐT để xác nhận phí ship dựa trên khoảng cách từ cửa hàng tới địa chỉ của bạn.
+                      {settings?.shippingInfo || `Nhân viên ${settings?.siteName || 'Guitar NOVA'} sẽ liên hệ qua SĐT để xác nhận phí ship dựa trên khoảng cách từ cửa hàng tới địa chỉ của bạn.`}
                     </p>
                   </motion.div>
                 )}
@@ -428,7 +428,7 @@ export const Checkout: React.FC = () => {
               </motion.div>
 
               <h2 className="text-3xl font-bold text-white mb-4">Đặt hàng thành công!</h2>
-              <p className="text-white/60 mb-2">Cảm ơn bạn đã mua hàng tại Guitar NOVA</p>
+              <p className="text-white/60 mb-2">Cảm ơn bạn đã mua hàng tại {settings?.siteName || 'Guitar NOVA'}</p>
               <p className="text-white/60 mb-2">Chúng tôi sẽ liên hệ qua SĐT: <span className="text-amber-400 font-medium">{formData.phone}</span></p>
               <p className="text-white/40 text-sm">Đơn hàng của bạn đang được xử lý...</p>
             </motion.div>

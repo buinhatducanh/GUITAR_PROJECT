@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '@/app/context/AppContext';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { useCartStore } from '@/features/cart/store/cartStore';
+import { useSettingsStore } from '@/features/settings/store/settingsStore';
 
 export const Header: React.FC = () => {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ export const Header: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const setIsCartOpen = useCartStore((state) => state.setIsOpen);
+  const settings = useSettingsStore((state) => state.settings);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -82,9 +84,13 @@ export const Header: React.FC = () => {
             className="cursor-pointer"
             onClick={() => navigate('/')}
           >
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 bg-clip-text text-transparent">
-              Guitar NOVA
-            </h1>
+            {settings?.logo ? (
+              <img src={settings.logo} alt={settings.siteName || 'Logo'} className="h-8 md:h-10 object-contain" />
+            ) : (
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 bg-clip-text text-transparent">
+                {settings?.siteName || 'Guitar NOVA'}
+              </h1>
+            )}
           </motion.div>
 
           {/* Desktop Navigation */}
@@ -143,11 +149,10 @@ export const Header: React.FC = () => {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg ${
-                      isAdmin
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg ${isAdmin
                         ? 'bg-gradient-to-br from-violet-500 to-purple-700 ring-2 ring-violet-500/50'
                         : 'bg-gradient-to-br from-amber-500 to-orange-600'
-                    }`}
+                      }`}
                   >
                     {user.name.charAt(0).toUpperCase()}
                   </motion.button>

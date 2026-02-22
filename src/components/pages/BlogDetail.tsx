@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Clock, Eye, Calendar, User, Tag, Share2, Heart } from 'lucide-react';
 import { BlogPost, useApp } from '@/app/context/AppContext';
+import { useSettingsStore } from '@/features/settings/store/settingsStore';
 
 interface BlogDetailProps {
   post: BlogPost;
@@ -10,10 +11,11 @@ interface BlogDetailProps {
 
 export const BlogDetail: React.FC<BlogDetailProps> = ({ post, onBack }) => {
   const { blogPosts, setBlogPosts } = useApp();
+  const settings = useSettingsStore((state) => state.settings);
 
   useEffect(() => {
     // Increment view count when viewing post
-    const updatedPosts = blogPosts.map(p => 
+    const updatedPosts = blogPosts.map(p =>
       p.id === post.id ? { ...p, views: p.views + 1 } : p
     );
     setBlogPosts(updatedPosts);
@@ -135,7 +137,7 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ post, onBack }) => {
             <p className="text-xl text-white/90 font-medium mb-8">
               {post.excerpt}
             </p>
-            
+
             <div className="space-y-4 text-white/70">
               {post.content.split('\n\n').map((paragraph, idx) => (
                 <p key={idx} className="leading-relaxed">
@@ -188,7 +190,7 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ post, onBack }) => {
                 {post.author.name}
               </h3>
               <p className="text-white/60 text-sm mb-3">
-                Chuyên gia tư vấn guitar tại Guitar NOVA
+                Chuyên gia tư vấn guitar tại {settings?.siteName || 'Guitar NOVA'}
               </p>
               <div className="flex gap-2">
                 <motion.button
