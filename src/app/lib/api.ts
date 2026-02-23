@@ -202,6 +202,9 @@ export const ordersApi = {
     create: (data: { items: any[]; address: string; phone: string; notes?: string; totalAmount: number }) =>
         request<any>('/orders', { method: 'POST', body: JSON.stringify(data) }),
 
+    createGuest: (data: { guestName: string; phone: string; items: any[]; address: string; notes?: string; totalAmount: number }) =>
+        request<any>('/orders/guest', { method: 'POST', body: JSON.stringify(data) }),
+
     updateStatus: (id: string, status: string) =>
         request<any>(`/orders/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
 };

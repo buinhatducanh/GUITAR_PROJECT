@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 
 export const Checkout: React.FC = () => {
   const navigate = useNavigate();
-  const { cart, user, setUser, clearCart } = useApp();
+  const { cart, user, clearCart } = useApp();
   const settings = useSettingsStore((state) => state.settings);
   const [formData, setFormData] = useState({
     fullName: user?.name || '',
@@ -52,56 +52,46 @@ export const Checkout: React.FC = () => {
 
     setIsProcessing(true);
 
-    // If user is not logged in, auto-create account from phone number
-    if (!user) {
-      const newUser = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: formData.fullName || `KH_${formData.phone.slice(-4)}`,
-        email: '',
-        phone: formData.phone,
-        avatar: `https://i.pravatar.cc/150?u=${formData.phone}`,
-        points: 100,
-        joinDate: new Date().toISOString(),
-        totalOrders: 1,
-        totalSpent: total,
-        lastLogin: new Date().toISOString(),
-        role: 'USER' as const
-      };
-      setUser(newUser);
-      toast.success(`Tài khoản đã được tạo tự động với SĐT: ${formData.phone}`);
-    }
-
     // Save order to database
-    if (user) {
-      try {
-        const address = isPickup
-          ? `Nhận tại cửa hàng`
-          : `${formData.address}, ${formData.city}`;
+    try {
+      const address = isPickup
+        ? `Nhận tại cửa hàng`
+        : `${formData.address}, ${formData.city}`;
 
-        const orderItems = cart.map(item => ({
-          productId: item.product.id,
-          name: item.product.name,
-          price: item.product.price,
-          quantity: item.quantity,
-        }));
+      const orderItems = cart.map(item => ({
+        productId: item.product.id,
+        name: item.product.name,
+        price: item.product.price,
+        quantity: item.quantity,
+      }));
 
-        const methodLabel = formData.paymentMethod === 'cod'
-          ? 'COD' : formData.paymentMethod === 'card'
-          ? 'Thẻ tín dụng' : 'Chuyển khoản';
+      const methodLabel = formData.paymentMethod === 'cod'
+        ? 'COD' : formData.paymentMethod === 'card'
+        ? 'Thẻ tín dụng' : 'Chuyển khoản';
 
-        const result = await ordersApi.create({
-          items: orderItems,
-          address,
-          phone: formData.phone,
-          notes: `Thanh toán: ${methodLabel}. Họ tên: ${formData.fullName}`,
-          totalAmount: total,
-        });
+      const notes = `Thanh toán: ${methodLabel}. Họ tên: ${formData.fullName}`;
 
-        setOrderNumber(result.orderNumber);
-      } catch (err) {
-        console.error('Failed to create order:', err);
-        // Continue to show success modal — staff will confirm via phone
-      }
+      const result = user
+        ? await ordersApi.create({
+            items: orderItems,
+            address,
+            phone: formData.phone,
+            notes,
+            totalAmount: total,
+          })
+        : await ordersApi.createGuest({
+            guestName: formData.fullName,
+            phone: formData.phone,
+            items: orderItems,
+            address,
+            notes,
+            totalAmount: total,
+          });
+
+      setOrderNumber(result.orderNumber);
+    } catch (err) {
+      console.error('Failed to create order:', err);
+      // Continue to show success modal — staff will confirm via phone
     }
 
     setIsProcessing(false);

@@ -3,7 +3,6 @@ import { motion } from 'motion/react';
 import { ChevronLeft, ChevronRight, Star, ShoppingCart, Trophy, Zap, Tag, Gift, Sparkles, ArrowRight, Calendar, TrendingUp, Award, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp, Product, BlogPost } from '@/app/context/AppContext';
-import { useCartStore } from '@/features/cart/store/cartStore';
 import { ProductCard } from '@/components/organisms/ProductCard';
 import { HeroBanner } from '@/components/organisms/HeroBanner';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
@@ -12,7 +11,6 @@ import { blogsApi } from '@/app/lib/api';
 export const Home: React.FC = () => {
   const navigate = useNavigate();
   const { products, events, vouchers, landingPages } = useApp();
-  const addItem = useCartStore((state) => state.addItem);
   const settings = useSettingsStore((state) => state.settings);
   const [publishedBlogs, setPublishedBlogs] = useState<BlogPost[]>([]);
 
