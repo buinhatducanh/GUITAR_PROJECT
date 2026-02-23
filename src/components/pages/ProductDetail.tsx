@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { motion } from 'motion/react';
-import { ArrowLeft, ShoppingCart, Zap, Star } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { ArrowLeft, ShoppingCart, Zap, Star, X, ZoomIn } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '@/app/context/AppContext';
 import { toast } from 'sonner';
@@ -11,6 +11,16 @@ export const ProductDetail: React.FC = () => {
   const { addToCart, products } = useApp();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [isZoomed, setIsZoomed] = useState(false);
+
+  const closeZoom = useCallback(() => setIsZoomed(false), []);
+
+  useEffect(() => {
+    if (!isZoomed) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeZoom(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isZoomed, closeZoom]);
 
   // Find product by slug (using id as slug fallback)
   const product = products.find(p => p.id === slug || p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') === slug);
@@ -81,7 +91,10 @@ export const ProductDetail: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             className="space-y-4"
           >
-            <div className="relative aspect-square rounded-2xl overflow-hidden bg-zinc-900 border border-white/10">
+            <div
+              className="relative aspect-square rounded-2xl overflow-hidden bg-zinc-900 border border-white/10 cursor-zoom-in"
+              onClick={() => setIsZoomed(true)}
+            >
               <motion.img
                 key={selectedImage}
                 initial={{ opacity: 0, scale: 1.1 }}
@@ -92,7 +105,8 @@ export const ProductDetail: React.FC = () => {
               />
 
               {/* Zoom Indicator */}
-              <div className="absolute top-4 right-4 px-3 py-1 bg-black/50 backdrop-blur-sm text-white text-sm rounded-full">
+              <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1 bg-black/50 backdrop-blur-sm text-white text-sm rounded-full pointer-events-none">
+                <ZoomIn className="w-4 h-4" />
                 Click to zoom
               </div>
             </div>
@@ -265,6 +279,38 @@ export const ProductDetail: React.FC = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* Zoom Lightbox */}
+      <AnimatePresence>
+        {isZoomed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm cursor-zoom-out"
+            onClick={closeZoom}
+          >
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-10"
+              onClick={closeZoom}
+            >
+              <X className="w-6 h-6" />
+            </motion.button>
+            <motion.img
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 25 }}
+              src={images[selectedImage]}
+              alt={product.name}
+              className="max-w-[90vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
