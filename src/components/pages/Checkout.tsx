@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, CreditCard, CheckCircle2, Phone, MapPin, Store } from 'lucide-react';
+import { ArrowLeft, CreditCard, CheckCircle2, Phone, MapPin, Store, Hash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/app/context/AppContext';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
+import { ordersApi } from '@/app/lib/api';
 import { toast } from 'sonner';
 
 export const Checkout: React.FC = () => {
@@ -20,6 +21,7 @@ export const Checkout: React.FC = () => {
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [orderNumber, setOrderNumber] = useState<string | null>(null);
 
   const isPickup = formData.deliveryMethod === 'pickup';
 
@@ -50,9 +52,6 @@ export const Checkout: React.FC = () => {
 
     setIsProcessing(true);
 
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
     // If user is not logged in, auto-create account from phone number
     if (!user) {
       const newUser = {
@@ -70,6 +69,39 @@ export const Checkout: React.FC = () => {
       };
       setUser(newUser);
       toast.success(`Tài khoản đã được tạo tự động với SĐT: ${formData.phone}`);
+    }
+
+    // Save order to database
+    if (user) {
+      try {
+        const address = isPickup
+          ? `Nhận tại cửa hàng`
+          : `${formData.address}, ${formData.city}`;
+
+        const orderItems = cart.map(item => ({
+          productId: item.product.id,
+          name: item.product.name,
+          price: item.product.price,
+          quantity: item.quantity,
+        }));
+
+        const methodLabel = formData.paymentMethod === 'cod'
+          ? 'COD' : formData.paymentMethod === 'card'
+          ? 'Thẻ tín dụng' : 'Chuyển khoản';
+
+        const result = await ordersApi.create({
+          items: orderItems,
+          address,
+          phone: formData.phone,
+          notes: `Thanh toán: ${methodLabel}. Họ tên: ${formData.fullName}`,
+          totalAmount: total,
+        });
+
+        setOrderNumber(result.orderNumber);
+      } catch (err) {
+        console.error('Failed to create order:', err);
+        // Continue to show success modal — staff will confirm via phone
+      }
     }
 
     setIsProcessing(false);
@@ -428,6 +460,12 @@ export const Checkout: React.FC = () => {
               </motion.div>
 
               <h2 className="text-3xl font-bold text-white mb-4">Đặt hàng thành công!</h2>
+              {orderNumber && (
+                <div className="flex items-center justify-center gap-2 mb-4 px-4 py-2 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                  <Hash className="w-4 h-4 text-amber-400" />
+                  <span className="text-amber-400 font-mono font-bold">{orderNumber}</span>
+                </div>
+              )}
               <p className="text-white/60 mb-2">Cảm ơn bạn đã mua hàng tại {settings?.siteName || 'Guitar NOVA'}</p>
               <p className="text-white/60 mb-2">Chúng tôi sẽ liên hệ qua SĐT: <span className="text-amber-400 font-medium">{formData.phone}</span></p>
               <p className="text-white/40 text-sm">Đơn hàng của bạn đang được xử lý...</p>
