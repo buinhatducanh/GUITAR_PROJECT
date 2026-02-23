@@ -8,11 +8,36 @@ const router = Router();
 /** POST /api/orders/guest — create order without auth (guest checkout) */
 router.post('/guest', async (req, res) => {
     try {
-        const { guestName, phone, items, address, notes, totalAmount } = req.body;
+        const { guestName, phone, items, address, notes, totalAmount, voucherCode } = req.body;
 
         if (!phone || !items?.length || !address || !totalAmount) {
             res.status(400).json({ error: 'Thiếu thông tin đơn hàng' });
             return;
+        }
+
+        const numericTotal = Number(totalAmount);
+        let finalAmount = numericTotal;
+        let discountAmount = 0;
+        let validVoucherId: string | undefined;
+
+        // Verify voucher if provided (Guest can only use Event vouchers)
+        if (voucherCode) {
+            const normalizedCode = voucherCode.toUpperCase();
+            const activeEvents = await prisma.event.findMany({
+                where: { isActive: true, startDate: { lte: new Date() }, endDate: { gte: new Date() } }
+            });
+            for (const ev of activeEvents) {
+                const conditions = ev.conditions as any || {};
+                if (conditions.requireCoupleCode && normalizedCode === 'COUPLE') {
+                    if (!conditions.minPurchase || numericTotal >= conditions.minPurchase) {
+                        if (ev.rewardType === 'DISCOUNT') {
+                            discountAmount = (numericTotal * ev.rewardValue) / 100;
+                            discountAmount = Math.min(discountAmount, numericTotal);
+                            finalAmount -= discountAmount;
+                        }
+                    }
+                }
+            }
         }
 
         // Find or create user by phone
@@ -33,10 +58,13 @@ router.post('/guest', async (req, res) => {
             data: {
                 orderNumber,
                 userId: user.id,
-                totalAmount,
+                totalAmount: finalAmount,
                 address,
                 phone,
                 notes,
+                voucherCode: voucherCode || undefined,
+                discountAmount: discountAmount || undefined,
+                voucherId: validVoucherId || undefined,
                 items: {
                     create: items.map((item: any) => ({
                         productId: item.productId,
@@ -50,9 +78,10 @@ router.post('/guest', async (req, res) => {
         });
 
         res.status(201).json(order);
-    } catch (err) {
-        console.error('Create guest order error:', err);
-        res.status(500).json({ error: 'Lỗi server' });
+    } catch (err: any) {
+        console.error('Create guest order error:', err?.message || err);
+        console.error('Full error:', JSON.stringify(err, null, 2));
+        res.status(500).json({ error: 'Lỗi server', detail: err?.message });
     }
 });
 
@@ -80,28 +109,98 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
 /** POST /api/orders — create order */
 router.post('/', authenticate, async (req: AuthRequest, res) => {
     try {
-        const { items, address, phone, notes, totalAmount } = req.body;
+        const { items, address, phone, notes, totalAmount, voucherCode } = req.body;
+
+        const numericTotal = Number(totalAmount);
+        let finalAmount = numericTotal;
+        let discountAmount = 0;
+        let validVoucherId: string | undefined;
+        let isPointVoucher = false;
+
+        if (voucherCode) {
+            const normalizedCode = voucherCode.toUpperCase();
+
+            // 1. Try Voucher
+            const voucher = await prisma.voucher.findUnique({ where: { code: normalizedCode } });
+            if (voucher && voucher.isActive && new Date(voucher.expiryDate) >= new Date() && voucher.usedCount < voucher.usageLimit) {
+                if (numericTotal >= Number(voucher.minPurchase)) {
+                    const userVoucher = await prisma.userVoucher.findUnique({
+                        where: { userId_voucherId: { userId: req.userId!, voucherId: voucher.id } }
+                    });
+
+                    if (userVoucher && !userVoucher.isUsed) {
+                        if (voucher.discountType === 'PERCENTAGE') {
+                            discountAmount = (numericTotal * voucher.discountValue) / 100;
+                            if (voucher.maxDiscount && discountAmount > Number(voucher.maxDiscount)) {
+                                discountAmount = Number(voucher.maxDiscount);
+                            }
+                        } else {
+                            discountAmount = voucher.discountValue;
+                        }
+                        discountAmount = Math.min(discountAmount, numericTotal);
+                        finalAmount -= discountAmount;
+                        validVoucherId = voucher.id;
+                        isPointVoucher = true;
+                    }
+                }
+            } else {
+                // 2. Try Event
+                const activeEvents = await prisma.event.findMany({
+                    where: { isActive: true, startDate: { lte: new Date() }, endDate: { gte: new Date() } }
+                });
+                for (const ev of activeEvents) {
+                    const conditions = ev.conditions as any || {};
+                    if (conditions.requireCoupleCode && normalizedCode === 'COUPLE') {
+                        if (!conditions.minPurchase || numericTotal >= conditions.minPurchase) {
+                            if (ev.rewardType === 'DISCOUNT') {
+                                discountAmount = (numericTotal * ev.rewardValue) / 100;
+                                discountAmount = Math.min(discountAmount, numericTotal);
+                                finalAmount -= discountAmount;
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         const orderNumber = `GN-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
-        const order = await prisma.order.create({
-            data: {
-                orderNumber,
-                userId: req.userId!,
-                totalAmount,
-                address,
-                phone,
-                notes,
-                items: {
-                    create: items.map((item: any) => ({
-                        productId: item.productId,
-                        name: item.name,
-                        price: item.price,
-                        quantity: item.quantity,
-                    })),
+        const order = await prisma.$transaction(async (tx) => {
+            const newOrder = await tx.order.create({
+                data: {
+                    orderNumber,
+                    userId: req.userId!,
+                    totalAmount: finalAmount,
+                    address,
+                    phone,
+                    notes,
+                    voucherCode: voucherCode || undefined,
+                    discountAmount: discountAmount || undefined,
+                    voucherId: validVoucherId || undefined,
+                    items: {
+                        create: items.map((item: any) => ({
+                            productId: item.productId,
+                            name: item.name,
+                            price: item.price,
+                            quantity: item.quantity,
+                        })),
+                    },
                 },
-            },
-            include: { items: true },
+                include: { items: true },
+            });
+
+            if (isPointVoucher && validVoucherId) {
+                await tx.userVoucher.update({
+                    where: { userId_voucherId: { userId: req.userId!, voucherId: validVoucherId } },
+                    data: { isUsed: true }
+                });
+                await tx.voucher.update({
+                    where: { id: validVoucherId },
+                    data: { usedCount: { increment: 1 } }
+                });
+            }
+
+            return newOrder;
         });
 
         res.status(201).json(order);
@@ -115,7 +214,7 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
 router.put('/:id/status', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
         const order = await prisma.order.update({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
             data: { status: req.body.status },
             include: { items: true },
         });
