@@ -4,6 +4,7 @@ import { Plus, Edit, Trash2, FileText, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { blogsApi } from '@/app/lib/api';
 import { AdminModal } from '@/components/molecules/AdminModal';
+import { ImageUploadField } from '@/components/molecules/ImageUploadField';
 
 const formatDate = (date: string) =>
   new Date(date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -18,7 +19,7 @@ export const BlogPostsTab: React.FC = () => {
 
   const load = async () => {
     try {
-      const data = await blogsApi.getAll({ limit: 100 });
+      const data = await blogsApi.getAll({ limit: 100, published: 'false' });
       setPosts(data.posts || []);
     } catch { toast.error('Không thể tải danh sách bài viết'); }
   };
@@ -48,12 +49,15 @@ export const BlogPostsTab: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const toSlug = (str: string) =>
+    str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
   const handleTitleChange = (title: string) => {
-    const slug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const slug = toSlug(title);
     setForm(f => ({
       ...f,
       title,
-      slug: f.slug === '' || f.slug === (f.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')) ? slug : f.slug,
+      slug: f.slug === '' || f.slug === toSlug(f.title) ? slug : f.slug,
     }));
   };
 
@@ -77,7 +81,8 @@ export const BlogPostsTab: React.FC = () => {
     } catch (e: any) { toast.error(e.message || 'Lỗi khi lưu bài viết'); }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, title: string) => {
+    if (!window.confirm(`Xóa bài viết "${title}"? Hành động này không thể hoàn tác.`)) return;
     try {
       await blogsApi.delete(id);
       toast.success('Đã xóa bài viết');
@@ -128,7 +133,7 @@ export const BlogPostsTab: React.FC = () => {
                   <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => openModal(post)} className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors">
                     <Edit className="w-4 h-4" />
                   </motion.button>
-                  <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleDelete(post.id)} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                  <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleDelete(post.id, post.title)} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </motion.button>
                 </div>
@@ -157,10 +162,7 @@ export const BlogPostsTab: React.FC = () => {
             <textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} rows={6} className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-purple-500/50 resize-none" placeholder="Nội dung bài viết..." />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-white/80 text-sm mb-2">Ảnh bìa (URL)</label>
-              <input type="url" value={form.coverImage} onChange={e => setForm(f => ({ ...f, coverImage: e.target.value }))} className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-purple-500/50" placeholder="https://..." />
-            </div>
+            <ImageUploadField value={form.coverImage} onChange={url => setForm(f => ({ ...f, coverImage: url }))} label="Ảnh bìa" folder="guitar-nova/blogs" />
             <div>
               <label className="block text-white/80 text-sm mb-2">Danh mục</label>
               <input type="text" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-purple-500/50" placeholder="VD: Hướng dẫn" />
@@ -176,6 +178,7 @@ export const BlogPostsTab: React.FC = () => {
               <input type="number" value={form.readTime} onChange={e => setForm(f => ({ ...f, readTime: e.target.value }))} className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-purple-500/50" placeholder="5" />
             </div>
           </div>
+          <ImageUploadField value={form.authorAvatar} onChange={url => setForm(f => ({ ...f, authorAvatar: url }))} label="Avatar tác giả" folder="guitar-nova/blogs" size="sm" />
           <div>
             <label className="block text-white/80 text-sm mb-2">Tags (phân cách bằng dấu phẩy)</label>
             <input type="text" value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-purple-500/50" placeholder="guitar, hướng dẫn, tips" />

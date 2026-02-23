@@ -19,6 +19,7 @@ import { ShippingTab } from '@/components/organisms/admin/ShippingTab';
 import { SettingsTab } from '@/components/organisms/admin/SettingsTab';
 import { LandingPagesTab } from '@/components/organisms/admin/LandingPagesTab';
 import { BlogPostsTab } from '@/components/organisms/admin/BlogPostsTab';
+import { useSettingsStore } from '@/features/settings/store/settingsStore';
 
 const tabAnimation = {
   initial: { opacity: 0, y: 20 },
@@ -28,9 +29,9 @@ const tabAnimation = {
 
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const settings = useSettingsStore((state) => state.settings);
   const {
     products, setProducts,
-    banners, setBanners,
     vouchers, setVouchers,
     events, setEvents,
     users, setUsers,
@@ -60,7 +61,7 @@ export const AdminDashboard: React.FC = () => {
             <span>Quay lại trang chủ</span>
           </motion.button>
           <h1 className="text-4xl font-bold text-white mb-2">Admin Dashboard</h1>
-          <p className="text-purple-300">Quản lý toàn bộ hệ thống Guitar NOVA</p>
+          <p className="text-purple-300">Quản lý toàn bộ hệ thống {settings?.siteName || 'Guitar NOVA'}</p>
         </div>
       </div>
 
@@ -74,7 +75,7 @@ export const AdminDashboard: React.FC = () => {
               {activeTab === 'products' && <motion.div key="products" {...tabAnimation}><ProductsTab products={products} onDelete={deleteFrom(products, setProducts, 'sản phẩm')} onEdit={stubEdit} onAdd={stubAdd} /></motion.div>}
               {activeTab === 'brands' && <motion.div key="brands" {...tabAnimation}><BrandsTab /></motion.div>}
               {activeTab === 'inventory' && <motion.div key="inventory" {...tabAnimation}><InventoryTab /></motion.div>}
-              {activeTab === 'banners' && <motion.div key="banners" {...tabAnimation}><BannersTab banners={banners} onDelete={deleteFrom(banners, setBanners, 'banner')} onEdit={stubEdit} onAdd={stubAdd} /></motion.div>}
+              {activeTab === 'banners' && <motion.div key="banners" {...tabAnimation}><BannersTab /></motion.div>}
               {activeTab === 'users' && <motion.div key="users" {...tabAnimation}><UsersTab users={users} onDelete={deleteFrom(users, setUsers, 'người dùng')} /></motion.div>}
               {activeTab === 'reviews' && <motion.div key="reviews" {...tabAnimation}><ReviewsTab reviews={allReviews} onDelete={deleteFrom(allReviews, setAllReviews, 'đánh giá')} /></motion.div>}
               {activeTab === 'vouchers' && <motion.div key="vouchers" {...tabAnimation}><VouchersTab vouchers={vouchers} onDelete={deleteFrom(vouchers, setVouchers, 'voucher')} onEdit={stubEdit} onAdd={stubAdd} /></motion.div>}

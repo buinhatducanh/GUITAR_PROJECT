@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Clock, Eye, Calendar, User, Tag, Search } from 'lucide-react';
-import { useApp, BlogPost } from '@/app/context/AppContext';
+import { ArrowLeft, Clock, Eye, Calendar, Tag, Search, Loader2 } from 'lucide-react';
+import { blogsApi } from '@/app/lib/api';
+import { BlogPost } from '@/app/context/AppContext';
 
 interface BlogListProps {
   onBack: () => void;
@@ -9,17 +10,45 @@ interface BlogListProps {
 }
 
 export const BlogList: React.FC<BlogListProps> = ({ onBack, onSelectPost }) => {
-  const { blogPosts } = useApp();
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  const publishedPosts = blogPosts.filter(post => post.isPublished);
-  
-  // Get unique categories
-  const categories = ['all', ...Array.from(new Set(publishedPosts.map(post => post.category)))];
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        setLoading(true);
+        const res = await blogsApi.getAll({ published: 'true', limit: 100 });
+        const mapped: BlogPost[] = res.posts.map((p: any) => ({
+          id: p.id,
+          slug: p.slug,
+          title: p.title,
+          excerpt: p.excerpt ?? '',
+          content: p.content ?? '',
+          coverImage: p.coverImage ?? '',
+          authorName: p.authorName ?? '',
+          authorAvatar: p.authorAvatar ?? '',
+          category: p.category ?? '',
+          tags: Array.isArray(p.tags) ? p.tags : [],
+          publishedDate: p.publishedDate ?? null,
+          readTime: p.readTime ?? 5,
+          views: p.views ?? 0,
+          isPublished: p.isPublished ?? true,
+        }));
+        setPosts(mapped);
+      } catch (err) {
+        console.error('Failed to fetch blog posts:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPosts();
+  }, []);
 
-  // Filter posts
-  const filteredPosts = publishedPosts.filter(post => {
+  const categories = ['all', ...Array.from(new Set(posts.map(post => post.category).filter(Boolean)))];
+
+  const filteredPosts = posts.filter(post => {
     const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -27,12 +56,14 @@ export const BlogList: React.FC<BlogListProps> = ({ onBack, onSelectPost }) => {
     return matchesSearch && matchesCategory;
   });
 
-  // Sort by date (newest first)
-  const sortedPosts = [...filteredPosts].sort((a, b) => 
-    new Date(b.publishedDate).getTime() - new Date(a.publishedDate).getTime()
-  );
+  const sortedPosts = [...filteredPosts].sort((a, b) => {
+    if (!a.publishedDate) return 1;
+    if (!b.publishedDate) return -1;
+    return new Date(b.publishedDate).getTime() - new Date(a.publishedDate).getTime();
+  });
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '';
     return new Date(dateString).toLocaleDateString('vi-VN', {
       year: 'numeric',
       month: 'long',
@@ -62,7 +93,6 @@ export const BlogList: React.FC<BlogListProps> = ({ onBack, onSelectPost }) => {
       <div className="container mx-auto px-4">
         {/* Search & Filter */}
         <div className="mb-8 space-y-4">
-          {/* Search Bar */}
           <div className="relative max-w-2xl">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
             <input
@@ -74,7 +104,6 @@ export const BlogList: React.FC<BlogListProps> = ({ onBack, onSelectPost }) => {
             />
           </div>
 
-          {/* Category Filter */}
           <div className="flex gap-2 flex-wrap">
             {categories.map((category) => (
               <motion.button
@@ -95,7 +124,11 @@ export const BlogList: React.FC<BlogListProps> = ({ onBack, onSelectPost }) => {
         </div>
 
         {/* Blog Posts Grid */}
-        {sortedPosts.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-10 h-10 text-emerald-400 animate-spin" />
+          </div>
+        ) : sortedPosts.length === 0 ? (
           <div className="text-center py-20">
             <Tag className="w-20 h-20 text-white/20 mx-auto mb-4" />
             <p className="text-xl text-white/60">Không tìm thấy bài viết nào</p>
@@ -114,39 +147,43 @@ export const BlogList: React.FC<BlogListProps> = ({ onBack, onSelectPost }) => {
               >
                 {/* Cover Image */}
                 <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={post.coverImage}
-                    alt={post.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
+                  {post.coverImage ? (
+                    <img
+                      src={post.coverImage}
+                      alt={post.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-emerald-900/30" />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-                  
-                  {/* Category Badge */}
-                  <div className="absolute top-4 left-4">
-                    <span className="px-3 py-1 bg-emerald-500/90 backdrop-blur-sm text-white text-xs font-semibold rounded-full">
-                      {post.category}
-                    </span>
-                  </div>
+
+                  {post.category && (
+                    <div className="absolute top-4 left-4">
+                      <span className="px-3 py-1 bg-emerald-500/90 backdrop-blur-sm text-white text-xs font-semibold rounded-full">
+                        {post.category}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Content */}
                 <div className="p-6">
-                  {/* Title */}
                   <h3 className="text-xl font-bold text-white mb-2 line-clamp-2 group-hover:text-emerald-400 transition-colors">
                     {post.title}
                   </h3>
 
-                  {/* Excerpt */}
                   <p className="text-white/60 text-sm mb-4 line-clamp-2">
                     {post.excerpt}
                   </p>
 
-                  {/* Meta Info */}
                   <div className="flex items-center gap-4 text-xs text-white/40 mb-4">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>{formatDate(post.publishedDate)}</span>
-                    </div>
+                    {post.publishedDate && (
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>{formatDate(post.publishedDate)}</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5" />
                       <span>{post.readTime} phút đọc</span>
@@ -160,15 +197,16 @@ export const BlogList: React.FC<BlogListProps> = ({ onBack, onSelectPost }) => {
                   {/* Author */}
                   <div className="flex items-center justify-between pt-4 border-t border-white/10">
                     <div className="flex items-center gap-2">
-                      <img
-                        src={post.author.avatar}
-                        alt={post.author.name}
-                        className="w-8 h-8 rounded-full"
-                      />
-                      <span className="text-sm text-white/80">{post.author.name}</span>
+                      {post.authorAvatar && (
+                        <img
+                          src={post.authorAvatar}
+                          alt={post.authorName}
+                          className="w-8 h-8 rounded-full"
+                        />
+                      )}
+                      <span className="text-sm text-white/80">{post.authorName}</span>
                     </div>
 
-                    {/* Tags */}
                     <div className="flex gap-1">
                       {post.tags.slice(0, 2).map((tag, i) => (
                         <span
@@ -193,7 +231,7 @@ export const BlogList: React.FC<BlogListProps> = ({ onBack, onSelectPost }) => {
           className="mt-16 bg-gradient-to-r from-emerald-900/30 via-teal-900/30 to-emerald-900/30 rounded-3xl p-12 text-center relative overflow-hidden border border-emerald-500/20"
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(16,185,129,0.15),transparent_70%)]" />
-          
+
           <div className="relative">
             <h2 className="text-4xl font-bold text-white mb-4">
               Muốn cập nhật tin tức mới nhất?

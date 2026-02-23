@@ -1,7 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, User, Mail, Calendar, Star, ShoppingBag, Award, TrendingUp, Gift } from 'lucide-react';
+import { ArrowLeft, User, Mail, Calendar, Star, ShoppingBag, Award, TrendingUp, Gift, Clock, CheckCircle, Truck, XCircle, Loader2 } from 'lucide-react';
 import { useApp } from '@/app/context/AppContext';
+import { useSettingsStore } from '@/features/settings/store/settingsStore';
+import { ordersApi } from '@/app/lib/api';
+
+interface Order {
+  id: string;
+  orderNumber: string;
+  status: string;
+  totalAmount: number;
+  address: string;
+  phone: string;
+  notes?: string;
+  createdAt: string;
+  items: { id: string; name: string; price: number; quantity: number }[];
+}
 
 interface AccountProps {
   onBack: () => void;
@@ -10,7 +24,46 @@ interface AccountProps {
 
 export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
   const { user, userVouchers, vouchers } = useApp();
+  const settings = useSettingsStore((state) => state.settings);
   const [activeTab, setActiveTab] = useState<'info' | 'orders' | 'vouchers'>('info');
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'orders' && user) {
+      setLoadingOrders(true);
+      ordersApi.getAll().then(data => {
+        setOrders(data as Order[]);
+      }).catch(() => {}).finally(() => setLoadingOrders(false));
+    }
+  }, [activeTab, user]);
+
+  const getStatusLabel = (status: string) => {
+    const map: Record<string, string> = {
+      PENDING: 'Chờ xác nhận',
+      CONFIRMED: 'Đã xác nhận',
+      PROCESSING: 'Đang xử lý',
+      SHIPPED: 'Đang giao',
+      DELIVERED: 'Đã giao',
+      CANCELLED: 'Đã hủy',
+    };
+    return map[status] ?? status;
+  };
+
+  const getStatusIcon = (status: string) => {
+    if (status === 'DELIVERED') return <CheckCircle className="w-4 h-4 text-green-400" />;
+    if (status === 'SHIPPED') return <Truck className="w-4 h-4 text-blue-400" />;
+    if (status === 'CANCELLED') return <XCircle className="w-4 h-4 text-red-400" />;
+    return <Clock className="w-4 h-4 text-amber-400" />;
+  };
+
+  const getStatusColor = (status: string) => {
+    if (status === 'DELIVERED') return 'text-green-400 bg-green-400/10 border-green-400/20';
+    if (status === 'SHIPPED') return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
+    if (status === 'CANCELLED') return 'text-red-400 bg-red-400/10 border-red-400/20';
+    if (status === 'CONFIRMED') return 'text-purple-400 bg-purple-400/10 border-purple-400/20';
+    return 'text-amber-400 bg-amber-400/10 border-amber-400/20';
+  };
 
   if (!user) {
     return (
@@ -152,11 +205,10 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
         <div className="flex gap-4 mb-8 border-b border-white/10">
           <button
             onClick={() => setActiveTab('info')}
-            className={`px-6 py-3 font-medium transition-all relative ${
-              activeTab === 'info'
+            className={`px-6 py-3 font-medium transition-all relative ${activeTab === 'info'
                 ? 'text-purple-400'
                 : 'text-white/60 hover:text-white'
-            }`}
+              }`}
           >
             Thông tin
             {activeTab === 'info' && (
@@ -169,11 +221,10 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
 
           <button
             onClick={() => setActiveTab('orders')}
-            className={`px-6 py-3 font-medium transition-all relative ${
-              activeTab === 'orders'
+            className={`px-6 py-3 font-medium transition-all relative ${activeTab === 'orders'
                 ? 'text-purple-400'
                 : 'text-white/60 hover:text-white'
-            }`}
+              }`}
           >
             Đơn hàng
             {activeTab === 'orders' && (
@@ -186,11 +237,10 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
 
           <button
             onClick={() => setActiveTab('vouchers')}
-            className={`px-6 py-3 font-medium transition-all relative ${
-              activeTab === 'vouchers'
+            className={`px-6 py-3 font-medium transition-all relative ${activeTab === 'vouchers'
                 ? 'text-purple-400'
                 : 'text-white/60 hover:text-white'
-            }`}
+              }`}
           >
             Voucher ({myVouchers.length})
             {activeTab === 'vouchers' && (
@@ -210,7 +260,7 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
             className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 border border-white/10"
           >
             <h2 className="text-2xl font-bold text-white mb-6">Thông tin cá nhân</h2>
-            
+
             <div className="space-y-4">
               <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl">
                 <User className="w-5 h-5 text-purple-400" />
@@ -248,22 +298,77 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
         )}
 
         {activeTab === 'orders' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 border border-white/10 text-center"
-          >
-            <ShoppingBag className="w-16 h-16 text-white/20 mx-auto mb-4" />
-            <h3 className="text-xl text-white mb-2">Chưa có đơn hàng nào</h3>
-            <p className="text-white/60 mb-6">Bạn chưa mua sản phẩm nào từ Guitar NOVA</p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => onNavigate('products')}
-              className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-xl"
-            >
-              Khám phá sản phẩm
-            </motion.button>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            {loadingOrders ? (
+              <div className="flex justify-center py-20">
+                <Loader2 className="w-10 h-10 text-purple-400 animate-spin" />
+              </div>
+            ) : orders.length === 0 ? (
+              <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 border border-white/10 text-center">
+                <ShoppingBag className="w-16 h-16 text-white/20 mx-auto mb-4" />
+                <h3 className="text-xl text-white mb-2">Chưa có đơn hàng nào</h3>
+                <p className="text-white/60 mb-6">Bạn chưa mua sản phẩm nào từ {settings?.siteName || 'Guitar NOVA'}</p>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => onNavigate('products')}
+                  className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-xl"
+                >
+                  Khám phá sản phẩm
+                </motion.button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {orders.map(order => (
+                  <div
+                    key={order.id}
+                    className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-6 border border-white/10"
+                  >
+                    {/* Order Header */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                      <div>
+                        <p className="text-white/40 text-xs mb-1">Mã đơn hàng</p>
+                        <p className="text-amber-400 font-mono font-bold">{order.orderNumber}</p>
+                      </div>
+                      <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium ${getStatusColor(order.status)}`}>
+                        {getStatusIcon(order.status)}
+                        {getStatusLabel(order.status)}
+                      </div>
+                    </div>
+
+                    {/* Order Items */}
+                    <div className="space-y-2 mb-4">
+                      {order.items.map(item => (
+                        <div key={item.id} className="flex justify-between text-sm">
+                          <span className="text-white/70 line-clamp-1 flex-1 pr-4">
+                            {item.name} <span className="text-white/40">×{item.quantity}</span>
+                          </span>
+                          <span className="text-white/60 shrink-0">
+                            {formatPrice(item.price * item.quantity)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Order Footer */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-white/10">
+                      <div className="text-xs text-white/40">
+                        {new Date(order.createdAt).toLocaleDateString('vi-VN', {
+                          day: '2-digit', month: '2-digit', year: 'numeric',
+                          hour: '2-digit', minute: '2-digit'
+                        })}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-white/40 mb-0.5">Tổng cộng</p>
+                        <p className="text-lg font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
+                          {formatPrice(order.totalAmount)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </motion.div>
         )}
 

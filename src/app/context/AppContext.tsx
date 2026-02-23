@@ -38,6 +38,8 @@ export interface Banner {
   title: string;
   subtitle: string;
   link: string;
+  order: number;
+  isActive: boolean;
 }
 
 export interface User {
@@ -118,13 +120,11 @@ export interface BlogPost {
   excerpt: string;
   content: string;
   coverImage: string;
-  author: {
-    name: string;
-    avatar: string;
-  };
+  authorName: string;
+  authorAvatar: string;
   category: string;
   tags: string[];
-  publishedDate: string;
+  publishedDate: string | null;
   readTime: number;
   views: number;
   isPublished: boolean;
@@ -296,21 +296,27 @@ const initialBanners: Banner[] = [
     image: 'https://images.unsplash.com/photo-1626406512368-ae4ad84da00f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxndWl0YXIlMjBtdXNpY2lhbiUyMGNvbmNlcnQlMjBzdGFnZXxlbnwxfHx8fDE3NzA0MTE2Nzl8MA&ixlib=rb-4.1.0&q=80&w=1080',
     title: 'Bộ Sưu Tập Mới 2026',
     subtitle: 'Khám phá các mẫu guitar premium mới nhất từ các thương hiệu hàng đầu thế giới',
-    link: '/landing/collection-2026'
+    link: '/landing/collection-2026',
+    order: 1,
+    isActive: true
   },
   {
     id: 'b2',
     image: 'https://images.unsplash.com/photo-1692501735268-30251c6a30e3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx2aW50YWdlJTIwZ3VpdGFyJTIwY29sbGVjdGlvbnxlbnwxfHx8fDE3NzA0MTE2Nzl8MA&ixlib=rb-4.1.0&q=80&w=1080',
     title: 'Giảm Giá Đến 30%',
     subtitle: 'Sale lớn nhất năm - Đừng bỏ lỡ cơ hội sở hữu guitar mơ ước',
-    link: '/promo'
+    link: '/promo',
+    order: 2,
+    isActive: true
   },
   {
     id: 'b3',
     image: 'https://images.unsplash.com/photo-1741701862902-01b463d10435?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpYyUyMHN0dWRpbyUyMGd1aXRhciUyMHdhbGx8ZW58MXx8fHwxNzcwNDExNjc2fDA&ixlib=rb-4.1.0&q=80&w=1080',
     title: 'Thương Hiệu Guitar NOVA',
     subtitle: 'Hơn 10 năm mang âm nhạc đến gần hơn với bạn',
-    link: '/landing/about'
+    link: '/landing/about',
+    order: 3,
+    isActive: true
   }
 ];
 
@@ -612,98 +618,7 @@ const initialLandingPages: LandingPageData[] = [
   }
 ];
 
-const initialBlogPosts: BlogPost[] = [
-  {
-    id: 'bp1',
-    slug: '/blog/guitar-cho-nguoi-moi-bat-dau',
-    title: 'Guitar cho Người Mới Bắt Đầu',
-    excerpt: 'Hướng dẫn chọn guitar phù hợp cho người mới bắt đầu chơi đàn.',
-    content: 'Đây là một bài viết hướng dẫn chi tiết về cách chọn guitar phù hợp cho người mới bắt đầu chơi đàn. Chúng tôi sẽ đề cập đến các loại guitar, đặc điểm kỹ thuật và các yếu tố cần xem xét khi mua guitar đầu tiên.\n\nViệc chọn guitar đầu tiên là một quyết định quan trọng. Bạn cần xem xét nhiều yếu tố như loại nhạc bạn muốn chơi, ngân sách, và kích thước guitar phù hợp với cơ thể.\n\nGuitar acoustic thường được khuyên dùng cho người mới vì không cần thiết bị phụ trợ, trong khi guitar điện yêu cầu amplifier và các phụ kiện khác.\n\nHãy thử guitar trực tiếp trước khi mua để đảm bảo bạn cảm thấy thoải mái khi chơi.',
-    coverImage: 'https://images.unsplash.com/photo-1692501735268-30251c6a30e3?w=1200',
-    author: {
-      name: 'Nguyễn Văn An',
-      avatar: 'https://i.pravatar.cc/150?img=12'
-    },
-    category: 'Hướng dẫn',
-    tags: ['guitar', 'mới bắt đầu', 'hướng dẫn'],
-    publishedDate: '2026-02-01',
-    readTime: 5,
-    views: 1200,
-    isPublished: true
-  },
-  {
-    id: 'bp2',
-    slug: '/blog/top-5-guitar-electric-hot-nhat-2026',
-    title: 'Top 5 Guitar Điện Hot Nhất 2026',
-    excerpt: 'Danh sách các mẫu guitar điện được yêu thích nhất năm 2026.',
-    content: 'Đây là danh sách top 5 guitar điện được yêu thích nhất năm 2026. Chúng tôi đã tổng hợp các đánh giá và nhận xét từ người dùng để đưa ra danh sách này.\n\n1. Fender Stratocaster American Professional II - Âm thanh classic Fender với công nghệ hiện đại\n2. Gibson Les Paul Standard - Biểu tượng của rock music\n3. PRS Custom 24 - Sự kết hợp hoàn hảo giữa Fender và Gibson\n4. Ibanez RG Series - Lựa chọn tốt nhất cho metal và shred\n5. Telecaster Deluxe - Vintage tone với modern playability\n\nMỗi cây đàn đều có đặc điểm riêng phù hợp với từng phong cách chơi.',
-    coverImage: 'https://images.unsplash.com/photo-1626406512368-ae4ad84da00f?w=1200',
-    author: {
-      name: 'Trần Thị Bình',
-      avatar: 'https://i.pravatar.cc/150?img=45'
-    },
-    category: 'Đánh giá',
-    tags: ['guitar điện', 'top 5', '2026'],
-    publishedDate: '2026-02-05',
-    readTime: 7,
-    views: 2400,
-    isPublished: true
-  },
-  {
-    id: 'bp3',
-    slug: '/blog/cach-bao-quan-guitar',
-    title: 'Cách Bảo Quản Guitar Đúng Cách',
-    excerpt: 'Hướng dẫn bảo quản và chăm sóc guitar để giữ âm thanh tốt nhất.',
-    content: 'Bảo quản guitar đúng cách là yếu tố quan trọng để duy trì chất lượng âm thanh và tuổi thọ của cây đàn.\n\nĐộ ẩm là yếu tố quan trọng nhất - guitar cần được giữ ở độ ẩm 45-55%. Quá khô hoặc quá ẩm đều có thể làm hỏng gỗ.\n\nVệ sinh thường xuyên bằng vải mềm và dầu bảo dưỡng chuyên dụng. Nới dây khi không sử dụng lâu ngày.\n\nBảo quản trong case hoặc stand, tránh ánh nắng trực tiếp và nhiệt độ cực đoan.',
-    coverImage: 'https://images.unsplash.com/photo-1763162603999-8a1958b13cf1?w=1200',
-    author: {
-      name: 'Lê Minh Cường',
-      avatar: 'https://i.pravatar.cc/150?img=33'
-    },
-    category: 'Hướng dẫn',
-    tags: ['bảo quản', 'chăm sóc', 'guitar'],
-    publishedDate: '2026-02-08',
-    readTime: 6,
-    views: 980,
-    isPublished: true
-  },
-  {
-    id: 'bp4',
-    slug: '/blog/lich-su-guitar-fender',
-    title: 'Lịch Sử Huyền Thoại Fender',
-    excerpt: 'Câu chuyện về thương hiệu guitar Fender - biểu tượng của âm nhạc hiện đại.',
-    content: 'Fender Musical Instruments Corporation được thành lập bởi Leo Fender vào năm 1946. Đây là một trong những thương hiệu guitar nổi tiếng nhất thế giới.\n\nNăm 1950, Fender ra mắt Telecaster - cây guitar điện solid-body đầu tiên được sản xuất hàng loạt. Đây là một cuộc cách mạng trong ngành công nghiệp nhạc cụ.\n\nNăm 1954, Stratocaster ra đời với thiết kế mang tính biểu tượng - ba pickup, tremolo bridge, và body cong mượt mà.\n\nFender đã định hình âm thanh của rock, blues, jazz và nhiều thể loại nhạc khác trong hơn 70 năm qua.',
-    coverImage: 'https://images.unsplash.com/photo-1695192577284-fd1b10529579?w=1200',
-    author: {
-      name: 'Nguyễn Văn An',
-      avatar: 'https://i.pravatar.cc/150?img=12'
-    },
-    category: 'Lịch sử',
-    tags: ['Fender', 'lịch sử', 'guitar điện'],
-    publishedDate: '2026-02-03',
-    readTime: 8,
-    views: 1560,
-    isPublished: true
-  },
-  {
-    id: 'bp5',
-    slug: '/blog/kien-thuc-co-ban-ve-am-thanh-guitar',
-    title: 'Kiến Thức Cơ Bản Về Âm Thanh Guitar',
-    excerpt: 'Tìm hiểu về các yếu tố ảnh hưởng đến âm thanh của guitar.',
-    content: 'Âm thanh guitar phụ thuộc vào nhiều yếu tố khác nhau, từ loại gỗ đến pickup và amplifier.\n\nGỗ body ảnh hưởng lớn đến tone: Alder cho âm balanced, Mahogany cho âm ấm và thick, Ash cho âm bright và punchy.\n\nPickup là "tai" của guitar điện - Single-coil cho âm sáng và rõ ràng, Humbucker cho âm dày và ít noise.\n\nScale length cũng quan trọng - scale dài cho tension cao và clarity tốt hơn, scale ngắn dễ chơi và âm ấm hơn.\n\nHiểu rõ các yếu tố này giúp bạn chọn được guitar phù hợp với phong cách âm nhạc của mình.',
-    coverImage: 'https://images.unsplash.com/photo-1565829073670-cd08d8c63643?w=1200',
-    author: {
-      name: 'Trần Thị Bình',
-      avatar: 'https://i.pravatar.cc/150?img=45'
-    },
-    category: 'Kiến thức',
-    tags: ['âm thanh', 'tone', 'kiến thức'],
-    publishedDate: '2026-02-09',
-    readTime: 9,
-    views: 1890,
-    isPublished: true
-  }
-];
+const initialBlogPosts: BlogPost[] = [];
 
 const initialUsers: UserData[] = [
   {
@@ -794,7 +709,7 @@ const initialReviews: Review[] = [
     productId: '1',
     productName: 'Fender Stratocaster American Professional II',
     rating: 5,
-    comment: 'Chất lượng premium, giao hàng nhanh. Rất hài lòng với dịch vụ của Guitar NOVA.',
+    comment: 'Chất lượng premium, giao hàng nhanh. Rất hài lòng với dịch vụ của cửa hàng.',
     date: '2026-01-20',
     images: []
   },

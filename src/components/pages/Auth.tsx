@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { LogIn, UserPlus, ArrowLeft, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../features/auth/store/authStore';
+import { useSettingsStore } from '@/features/settings/store/settingsStore';
 import { toast } from 'sonner';
 
 interface AuthProps {
@@ -12,6 +13,7 @@ interface AuthProps {
 export const Auth: React.FC<AuthProps> = ({ mode }) => {
   const navigate = useNavigate();
   const { login, register } = useAuthStore();
+  const settings = useSettingsStore((state) => state.settings);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -119,8 +121,8 @@ export const Auth: React.FC<AuthProps> = ({ mode }) => {
               </h1>
               <p className="text-white/60">
                 {mode === 'login'
-                  ? 'Chào mừng bạn quay lại Guitar NOVA'
-                  : 'Tạo tài khoản mới tại Guitar NOVA'}
+                  ? `Chào mừng bạn quay lại ${settings?.siteName || 'Guitar NOVA'}`
+                  : `Tạo tài khoản mới tại ${settings?.siteName || 'Guitar NOVA'}`}
               </p>
             </div>
 

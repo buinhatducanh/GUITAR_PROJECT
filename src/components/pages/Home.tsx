@@ -2,15 +2,41 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { ChevronLeft, ChevronRight, Star, ShoppingCart, Trophy, Zap, Tag, Gift, Sparkles, ArrowRight, Calendar, TrendingUp, Award, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useApp, Product } from '@/app/context/AppContext';
+import { useApp, Product, BlogPost } from '@/app/context/AppContext';
 import { useCartStore } from '@/features/cart/store/cartStore';
 import { ProductCard } from '@/components/organisms/ProductCard';
 import { HeroBanner } from '@/components/organisms/HeroBanner';
+import { useSettingsStore } from '@/features/settings/store/settingsStore';
+import { blogsApi } from '@/app/lib/api';
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { products, events, vouchers, landingPages, blogPosts } = useApp();
+  const { products, events, vouchers, landingPages } = useApp();
   const addItem = useCartStore((state) => state.addItem);
+  const settings = useSettingsStore((state) => state.settings);
+  const [publishedBlogs, setPublishedBlogs] = useState<BlogPost[]>([]);
+
+  useEffect(() => {
+    blogsApi.getAll({ published: 'true', limit: 3 }).then(res => {
+      const mapped: BlogPost[] = res.posts.map((p: any) => ({
+        id: p.id,
+        slug: p.slug,
+        title: p.title,
+        excerpt: p.excerpt ?? '',
+        content: p.content ?? '',
+        coverImage: p.coverImage ?? '',
+        authorName: p.authorName ?? '',
+        authorAvatar: p.authorAvatar ?? '',
+        category: p.category ?? '',
+        tags: Array.isArray(p.tags) ? p.tags : [],
+        publishedDate: p.publishedDate ?? null,
+        readTime: p.readTime ?? 5,
+        views: p.views ?? 0,
+        isPublished: p.isPublished ?? true,
+      }));
+      setPublishedBlogs(mapped);
+    }).catch(() => {});
+  }, []);
 
   const featuredProducts = products.slice(0, 4);
   const newProducts = products.slice(4, 8);
@@ -18,7 +44,6 @@ export const Home: React.FC = () => {
   const activeEvents = events.filter(e => e.isActive).slice(0, 2);
   const topVouchers = vouchers.filter(v => v.isActive).slice(0, 3);
   const publishedLandingPages = landingPages.filter(lp => lp.isPublished).slice(0, 2);
-  const publishedBlogs = blogPosts.filter(bp => bp.isPublished).slice(0, 3);
 
   const onViewProduct = (product: Product) => {
     navigate(`/products/${product.id}`);
@@ -124,7 +149,7 @@ export const Home: React.FC = () => {
               Sản Phẩm Nổi Bật
             </h2>
             <p className="text-xl text-white/60">
-              Những cây đàn được yêu thích nhất tại Guitar NOVA
+              Những cây đàn được yêu thích nhất tại {settings?.siteName || 'Guitar NOVA'}
             </p>
           </motion.div>
 
@@ -453,7 +478,7 @@ export const Home: React.FC = () => {
                 Khám Phá Thêm
               </h2>
               <p className="text-xl text-white/60">
-                Những bộ sưu tập và câu chuyện đặc biệt từ Guitar NOVA
+                Những bộ sưu tập và câu chuyện đặc biệt từ {settings?.siteName || 'Guitar NOVA'}
               </p>
             </motion.div>
 
@@ -603,15 +628,17 @@ export const Home: React.FC = () => {
                     {/* Author & Date */}
                     <div className="flex items-center justify-between pt-4 border-t border-white/10">
                       <div className="flex items-center gap-2">
-                        <img
-                          src={blog.author.avatar}
-                          alt={blog.author.name}
-                          className="w-8 h-8 rounded-full"
-                        />
-                        <span className="text-sm text-white/60">{blog.author.name}</span>
+                        {blog.authorAvatar && (
+                          <img
+                            src={blog.authorAvatar}
+                            alt={blog.authorName}
+                            className="w-8 h-8 rounded-full"
+                          />
+                        )}
+                        <span className="text-sm text-white/60">{blog.authorName}</span>
                       </div>
                       <span className="text-xs text-white/40">
-                        {new Date(blog.publishedDate).toLocaleDateString('vi-VN')}
+                        {blog.publishedDate ? new Date(blog.publishedDate).toLocaleDateString('vi-VN') : ''}
                       </span>
                     </div>
                   </div>

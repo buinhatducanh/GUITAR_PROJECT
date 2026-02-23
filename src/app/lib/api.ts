@@ -105,7 +105,7 @@ export const categoriesApi = {
 // ─── Blogs API ──────────────────────────────────
 
 export const blogsApi = {
-    getAll: (params?: { page?: number; limit?: number; category?: string; search?: string }) => {
+    getAll: (params?: { page?: number; limit?: number; category?: string; search?: string; published?: string }) => {
         const searchParams = new URLSearchParams();
         if (params) {
             Object.entries(params).forEach(([key, value]) => {
