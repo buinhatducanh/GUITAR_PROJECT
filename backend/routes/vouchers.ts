@@ -2,6 +2,8 @@ import { Router } from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin, type AuthRequest } from '../middleware/auth.js';
 import { deleteCloudinaryImages, collectImageUrls } from '../shared/utils/cloudinary-cleanup.js';
+import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../shared/middleware/auth.js';
 
 const router = Router();
 
@@ -34,7 +36,7 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
 router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
         const voucher = await prisma.voucher.update({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
             data: req.body,
         });
         res.json(voucher);
@@ -48,15 +50,15 @@ router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => 
 router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
         const voucher = await prisma.voucher.findUnique({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
             select: { image: true },
         });
 
-        await prisma.voucher.delete({ where: { id: req.params.id } });
+        await prisma.voucher.delete({ where: { id: req.params.id as string } });
 
         if (voucher) {
             const urls = collectImageUrls(voucher, ['image']);
-            deleteCloudinaryImages(urls).catch(() => {});
+            deleteCloudinaryImages(urls).catch(() => { });
         }
 
         res.json({ message: 'Đã xóa voucher' });
@@ -69,7 +71,7 @@ router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) 
 /** POST /api/vouchers/:id/redeem — user redeems voucher */
 router.post('/:id/redeem', authenticate, async (req: AuthRequest, res) => {
     try {
-        const voucher = await prisma.voucher.findUnique({ where: { id: req.params.id } });
+        const voucher = await prisma.voucher.findUnique({ where: { id: req.params.id as string } });
         if (!voucher) {
             res.status(404).json({ error: 'Voucher không tồn tại' });
             return;
@@ -113,6 +115,129 @@ router.post('/:id/redeem', authenticate, async (req: AuthRequest, res) => {
         res.json({ message: 'Đổi voucher thành công', points: updatedUser.points });
     } catch (err) {
         console.error('Redeem voucher error:', err);
+        res.status(500).json({ error: 'Lỗi server' });
+    }
+});
+
+/** POST /api/vouchers/validate — validate voucher/event code */
+router.post('/validate', async (req, res) => {
+    try {
+        const { code, subtotal } = req.body;
+        if (!code) {
+            res.json({ valid: false, message: 'Vui lòng nhập mã' });
+            return;
+        }
+
+        const numericSubtotal = Number(subtotal) || 0;
+        const normalizedCode = code.toUpperCase();
+
+        // Extract user ID from token if present
+        let userId: string | undefined;
+        const authHeader = req.headers.authorization;
+        if (authHeader?.startsWith('Bearer ')) {
+            try {
+                const token = authHeader.split(' ')[1];
+                const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+                userId = decoded.userId;
+            } catch { }
+        }
+
+        // 1. Try to find a voucher
+        const voucher = await prisma.voucher.findUnique({
+            where: { code: normalizedCode }
+        });
+
+        if (voucher) {
+            if (!voucher.isActive) {
+                res.json({ valid: false, message: 'Mã không hoạt động' });
+                return;
+            }
+            if (new Date(voucher.expiryDate) < new Date()) {
+                res.json({ valid: false, message: 'Mã đã hết hạn' });
+                return;
+            }
+            if (voucher.usedCount >= voucher.usageLimit) {
+                res.json({ valid: false, message: 'Mã đã hết lượt sử dụng' });
+                return;
+            }
+            if (numericSubtotal < Number(voucher.minPurchase)) {
+                res.json({ valid: false, message: `Đơn hàng tối thiểu ${Number(voucher.minPurchase).toLocaleString('vi-VN')}đ` });
+                return;
+            }
+
+            // Must be owned by the user and not used
+            if (!userId) {
+                res.json({ valid: false, message: 'Vui lòng đăng nhập để sử dụng mã này' });
+                return;
+            }
+            const userVoucher = await prisma.userVoucher.findUnique({
+                where: { userId_voucherId: { userId, voucherId: voucher.id } }
+            });
+            if (!userVoucher) {
+                res.json({ valid: false, message: 'Bạn chưa đổi mã này' });
+                return;
+            }
+            if (userVoucher.isUsed) {
+                res.json({ valid: false, message: 'Mã này đã được sử dụng' });
+                return;
+            }
+
+            let discountAmount = 0;
+            if (voucher.discountType === 'PERCENTAGE') {
+                discountAmount = (numericSubtotal * voucher.discountValue) / 100;
+                if (voucher.maxDiscount && discountAmount > Number(voucher.maxDiscount)) {
+                    discountAmount = Number(voucher.maxDiscount);
+                }
+            } else {
+                discountAmount = voucher.discountValue;
+            }
+            discountAmount = Math.min(discountAmount, numericSubtotal);
+
+            res.json({
+                valid: true,
+                discountType: voucher.discountType,
+                discountValue: voucher.discountValue,
+                discountAmount,
+                voucherId: voucher.id,
+                message: 'Áp dụng mã thành công'
+            });
+            return;
+        }
+
+        // 2. Try to find an event if voucher not found
+        const activeEvents = await prisma.event.findMany({
+            where: { isActive: true, startDate: { lte: new Date() }, endDate: { gte: new Date() } }
+        });
+
+        for (const ev of activeEvents) {
+            const conditions = ev.conditions as any || {};
+            // If the event specifically requires a couple code and this matches
+            if (conditions.requireCoupleCode && normalizedCode === 'COUPLE') {
+                if (conditions.minPurchase && numericSubtotal < conditions.minPurchase) {
+                    res.json({ valid: false, message: `Đơn hàng tối thiểu ${Number(conditions.minPurchase).toLocaleString('vi-VN')}đ` });
+                    return;
+                }
+
+                let discountAmount = 0;
+                if (ev.rewardType === 'DISCOUNT') {
+                    discountAmount = (numericSubtotal * ev.rewardValue) / 100;
+                    discountAmount = Math.min(discountAmount, numericSubtotal);
+                    res.json({
+                        valid: true,
+                        discountType: 'PERCENTAGE',
+                        discountValue: ev.rewardValue,
+                        discountAmount,
+                        eventId: ev.id,
+                        message: 'Áp dụng mã sự kiện thành công'
+                    });
+                    return;
+                }
+            }
+        }
+
+        res.json({ valid: false, message: 'Mã không hợp lệ' });
+    } catch (err) {
+        console.error('Validate voucher error:', err);
         res.status(500).json({ error: 'Lỗi server' });
     }
 });

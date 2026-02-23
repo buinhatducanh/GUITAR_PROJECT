@@ -158,6 +158,9 @@ export const vouchersApi = {
     delete: (id: string) =>
         request<any>(`/vouchers/${id}`, { method: 'DELETE' }),
 
+    validate: (code: string, subtotal: number) =>
+        request<{ valid: boolean; discountType: string; discountValue: number; discountAmount: number; voucherId?: string; eventId?: string; message: string }>('/vouchers/validate', { method: 'POST', body: JSON.stringify({ code, subtotal }) }),
+
     redeem: (id: string) =>
         request<any>(`/vouchers/${id}/redeem`, { method: 'POST' }),
 };
@@ -199,10 +202,10 @@ export const landingPagesApi = {
 export const ordersApi = {
     getAll: () => request<any[]>('/orders'),
 
-    create: (data: { items: any[]; address: string; phone: string; notes?: string; totalAmount: number }) =>
+    create: (data: { items: any[]; address: string; phone: string; notes?: string; totalAmount: number; voucherCode?: string }) =>
         request<any>('/orders', { method: 'POST', body: JSON.stringify(data) }),
 
-    createGuest: (data: { guestName: string; phone: string; items: any[]; address: string; notes?: string; totalAmount: number }) =>
+    createGuest: (data: { guestName: string; phone: string; items: any[]; address: string; notes?: string; totalAmount: number; voucherCode?: string }) =>
         request<any>('/orders/guest', { method: 'POST', body: JSON.stringify(data) }),
 
     updateStatus: (id: string, status: string) =>

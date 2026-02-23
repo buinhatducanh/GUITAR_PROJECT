@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, CreditCard, CheckCircle2, Phone, MapPin, Store, Hash } from 'lucide-react';
+import { ArrowLeft, CreditCard, CheckCircle2, Phone, MapPin, Store, Hash, Ticket, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/app/context/AppContext';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
-import { ordersApi } from '@/app/lib/api';
+import { ordersApi, vouchersApi } from '@/app/lib/api';
 import { toast } from 'sonner';
 
 export const Checkout: React.FC = () => {
@@ -23,6 +23,11 @@ export const Checkout: React.FC = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
 
+  const [voucherInput, setVoucherInput] = useState('');
+  const [appliedVoucher, setAppliedVoucher] = useState<{ code: string; discountAmount: number; message: string } | null>(null);
+  const [voucherError, setVoucherError] = useState('');
+  const [isValidatingVoucher, setIsValidatingVoucher] = useState(false);
+
   const isPickup = formData.deliveryMethod === 'pickup';
 
   const formatPrice = (price: number) => {
@@ -35,7 +40,8 @@ export const Checkout: React.FC = () => {
   const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   // Phí ship = 0 nếu nhận tại cửa hàng, còn giao hàng sẽ do nhân viên xác nhận qua SĐT
   const shipping = isPickup ? 0 : null;
-  const total = subtotal + (shipping ?? 0);
+  const discountAmount = appliedVoucher ? appliedVoucher.discountAmount : 0;
+  const total = Math.max(0, subtotal + (shipping ?? 0) - discountAmount);
 
   const validatePhone = (phone: string): boolean => {
     const phoneRegex = /^(0[3|5|7|8|9])\d{8}$/;
@@ -67,26 +73,28 @@ export const Checkout: React.FC = () => {
 
       const methodLabel = formData.paymentMethod === 'cod'
         ? 'COD' : formData.paymentMethod === 'card'
-        ? 'Thẻ tín dụng' : 'Chuyển khoản';
+          ? 'Thẻ tín dụng' : 'Chuyển khoản';
 
       const notes = `Thanh toán: ${methodLabel}. Họ tên: ${formData.fullName}`;
 
       const result = user
         ? await ordersApi.create({
-            items: orderItems,
-            address,
-            phone: formData.phone,
-            notes,
-            totalAmount: total,
-          })
+          items: orderItems,
+          address,
+          phone: formData.phone,
+          notes,
+          totalAmount: total,
+          voucherCode: appliedVoucher?.code,
+        })
         : await ordersApi.createGuest({
-            guestName: formData.fullName,
-            phone: formData.phone,
-            items: orderItems,
-            address,
-            notes,
-            totalAmount: total,
-          });
+          guestName: formData.fullName,
+          phone: formData.phone,
+          items: orderItems,
+          address,
+          notes,
+          totalAmount: total,
+          voucherCode: appliedVoucher?.code,
+        });
 
       setOrderNumber(result.orderNumber);
     } catch (err) {
@@ -109,6 +117,38 @@ export const Checkout: React.FC = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  const handleValidateVoucher = async () => {
+    if (!voucherInput.trim()) {
+      setVoucherError('Vui lòng nhập mã');
+      return;
+    }
+    setIsValidatingVoucher(true);
+    setVoucherError('');
+    try {
+      const res = await vouchersApi.validate(voucherInput.trim(), subtotal);
+      if (res.valid) {
+        setAppliedVoucher({
+          code: voucherInput.trim(),
+          discountAmount: res.discountAmount,
+          message: res.message
+        });
+        toast.success(res.message);
+      } else {
+        setVoucherError(res.message || 'Mã không hợp lệ');
+      }
+    } catch (err: any) {
+      setVoucherError(err.message || 'Mã không hợp lệ');
+    } finally {
+      setIsValidatingVoucher(false);
+    }
+  };
+
+  const handleRemoveVoucher = () => {
+    setAppliedVoucher(null);
+    setVoucherInput('');
+    setVoucherError('');
   };
 
   // Redirect if cart is empty and not showing success
@@ -397,7 +437,57 @@ export const Checkout: React.FC = () => {
                 ))}
               </div>
 
-              <div className="space-y-3 py-6 border-y border-white/10">
+              {/* Voucher Section */}
+              <div className="py-6 border-y border-white/10 mb-6">
+                <h3 className="text-white font-medium mb-3 flex items-center gap-2">
+                  <Ticket className="w-5 h-5 text-amber-500" />
+                  Mã giảm giá
+                </h3>
+
+                {!appliedVoucher ? (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={voucherInput}
+                        onChange={(e) => setVoucherInput(e.target.value)}
+                        placeholder="Nhập mã voucher / sự kiện"
+                        className="flex-1 px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500/50 uppercase"
+                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleValidateVoucher())}
+                      />
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        type="button"
+                        onClick={handleValidateVoucher}
+                        disabled={isValidatingVoucher || !voucherInput.trim()}
+                        className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isValidatingVoucher ? 'Đang kiểm tra...' : 'Áp dụng'}
+                      </motion.button>
+                    </div>
+                    {voucherError && (
+                      <p className="text-red-400 text-sm">{voucherError}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl flex items-center justify-between">
+                    <div>
+                      <p className="text-green-400 font-bold font-mono">{appliedVoucher.code}</p>
+                      <p className="text-white/70 text-sm">{appliedVoucher.message}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRemoveVoucher}
+                      className="p-2 text-white/40 hover:text-white/80 hover:bg-white/10 rounded-full transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3 py-6 border-b border-white/10 mb-6">
                 <div className="flex justify-between text-white/60">
                   <span>Tạm tính</span>
                   <span>{formatPrice(subtotal)}</span>
@@ -410,6 +500,12 @@ export const Checkout: React.FC = () => {
                     <span className="text-amber-400/80 text-sm italic">Xác nhận sau qua SĐT</span>
                   )}
                 </div>
+                {appliedVoucher && (
+                  <div className="flex justify-between text-green-400 font-medium">
+                    <span>Giảm giá</span>
+                    <span>-{formatPrice(appliedVoucher.discountAmount)}</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-between text-2xl font-bold text-white mt-6">

@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Percent, Tag, TrendingDown, Zap, Clock, Gift, Sparkles } from 'lucide-react';
 import { useApp, Product } from '@/app/context/AppContext';
 import { ProductCard } from '@/components/organisms/ProductCard';
 
-interface PromoProps {
-  onBack: () => void;
-  onViewProduct: (product: Product) => void;
-  onBuyNow: (product: Product) => void;
-}
-
-export const Promo: React.FC<PromoProps> = ({ onBack, onViewProduct, onBuyNow }) => {
+export const Promo: React.FC = () => {
+  const navigate = useNavigate();
+  const onBack = () => navigate(-1);
+  const onViewProduct = (product: Product) => navigate(`/products/${product.id}`);
+  const onBuyNow = (_product: Product) => navigate('/checkout');
   const { products } = useApp();
   const [sortBy, setSortBy] = useState<'discount' | 'price' | 'name'>('discount');
 

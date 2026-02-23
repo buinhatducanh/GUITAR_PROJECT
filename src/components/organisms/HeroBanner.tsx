@@ -2,28 +2,53 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/app/context/AppContext';
+import { bannersApi } from '@/app/lib/api';
 
 export const HeroBanner: React.FC = () => {
   const navigate = useNavigate();
-  const { banners } = useApp();
+  const [banners, setBanners] = useState<any[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
+    bannersApi.getAll().then(res => {
+      const active = (Array.isArray(res) ? res : []).filter((b: any) => b.isActive);
+      setBanners(active);
+    }).catch(console.error);
+  }, []);
+
+  const activeBanners = banners;
+
+  useEffect(() => {
+    if (activeBanners.length === 0) return;
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % banners.length);
+      setCurrentSlide((prev) => (prev + 1) % activeBanners.length);
     }, 5000);
 
     return () => clearInterval(timer);
-  }, [banners.length]);
+  }, [activeBanners.length]);
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % banners.length);
+    setCurrentSlide((prev) => (prev + 1) % activeBanners.length);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + banners.length) % banners.length);
+    setCurrentSlide((prev) => (prev - 1 + activeBanners.length) % activeBanners.length);
   };
+
+  if (activeBanners.length === 0) {
+    return (
+      <div className="relative h-[600px] lg:h-[700px] overflow-hidden bg-gradient-to-br from-zinc-900 to-black flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-5xl lg:text-7xl font-bold mb-6 text-white leading-tight">
+            Guitar NOVA
+          </h2>
+          <p className="text-xl lg:text-2xl text-white/60">
+            Khám phá thế giới âm nhạc
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative h-[600px] lg:h-[700px] overflow-hidden">
@@ -46,7 +71,7 @@ export const HeroBanner: React.FC = () => {
             <div
               className="absolute inset-0 bg-cover bg-center"
               style={{
-                backgroundImage: `url(${banners[currentSlide].image})`,
+                backgroundImage: `url(${activeBanners[currentSlide].image})`,
               }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
@@ -61,7 +86,7 @@ export const HeroBanner: React.FC = () => {
                 transition={{ delay: 0.2, duration: 0.6 }}
                 className="text-5xl lg:text-7xl font-bold mb-6 text-white leading-tight"
               >
-                {banners[currentSlide].title}
+                {activeBanners[currentSlide].title}
               </motion.h2>
 
               <motion.p
@@ -70,7 +95,7 @@ export const HeroBanner: React.FC = () => {
                 transition={{ delay: 0.4, duration: 0.6 }}
                 className="text-xl lg:text-2xl text-white/80 mb-8 leading-relaxed"
               >
-                {banners[currentSlide].subtitle}
+                {activeBanners[currentSlide].subtitle}
               </motion.p>
 
               <motion.div
@@ -82,7 +107,7 @@ export const HeroBanner: React.FC = () => {
                 <motion.button
                   whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(251, 191, 36, 0.5)' }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => navigate(banners[currentSlide].link)}
+                  onClick={() => navigate(activeBanners[currentSlide].link)}
                   className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium rounded-full hover:from-amber-600 hover:to-orange-700 transition-all"
                 >
                   Xem chi tiết
@@ -125,14 +150,14 @@ export const HeroBanner: React.FC = () => {
 
       {/* Slide Indicators */}
       <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-2">
-        {banners.map((_, index) => (
+        {activeBanners.map((_, index) => (
           <motion.button
             key={index}
             onClick={() => setCurrentSlide(index)}
             whileHover={{ scale: 1.2 }}
             className={`h-1 rounded-full transition-all ${index === currentSlide
-                ? 'w-12 bg-gradient-to-r from-amber-500 to-orange-600'
-                : 'w-8 bg-white/30 hover:bg-white/50'
+              ? 'w-12 bg-gradient-to-r from-amber-500 to-orange-600'
+              : 'w-8 bg-white/30 hover:bg-white/50'
               }`}
           />
         ))}
