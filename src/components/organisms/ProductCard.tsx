@@ -64,7 +64,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetail,
           whileHover={{ scale: 1.1 }}
           transition={{ duration: 0.6 }}
         />
-        
+
         {/* Hover Overlay */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -92,7 +92,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetail,
       <div className="p-5">
         {/* Category */}
         <p className="text-xs text-amber-500 font-medium mb-2 uppercase tracking-wider">
-          {product.category}
+          {typeof product.category === 'object' && product.category !== null
+            ? (product.category as any).name
+            : product.category}
         </p>
 
         {/* Product Name */}
@@ -106,11 +108,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetail,
             {[...Array(5)].map((_, i) => (
               <Star
                 key={i}
-                className={`w-4 h-4 ${
-                  i < Math.floor(product.rating)
+                className={`w-4 h-4 ${i < Math.floor(product.rating)
                     ? 'fill-amber-500 text-amber-500'
                     : 'text-zinc-600'
-                }`}
+                  }`}
               />
             ))}
           </div>

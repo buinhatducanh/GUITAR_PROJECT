@@ -6,15 +6,19 @@ import { useApp, Product, BlogPost } from '@/app/context/AppContext';
 import { ProductCard } from '@/components/organisms/ProductCard';
 import { HeroBanner } from '@/components/organisms/HeroBanner';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
-import { blogsApi } from '@/app/lib/api';
+import { blogsApi, productsApi, bannersApi, eventsApi, vouchersApi } from '@/app/lib/api';
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { products, events, vouchers } = useApp();
   const settings = useSettingsStore((state) => state.settings);
   const [publishedBlogs, setPublishedBlogs] = useState<BlogPost[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [banners, setBanners] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [vouchers, setVouchers] = useState<any[]>([]);
 
   useEffect(() => {
+    // Fetch Blogs
     blogsApi.getAll({ published: 'true', limit: 3 }).then(res => {
       const mapped: BlogPost[] = res.posts.map((p: any) => ({
         id: p.id,
@@ -33,11 +37,39 @@ export const Home: React.FC = () => {
         isPublished: p.isPublished ?? true,
       }));
       setPublishedBlogs(mapped);
-    }).catch(() => {});
+    }).catch(console.error);
+
+    // Fetch Products
+    productsApi.getAll({ limit: 8 }).then(res => {
+      const mapped: Product[] = res.products.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        price: Number(p.price),
+        oldPrice: p.oldPrice ? Number(p.oldPrice) : undefined,
+        discount: p.discount ?? undefined,
+        image: p.image ?? '',
+        category: typeof p.category === 'object' ? p.category?.name ?? '' : (p.category ?? ''),
+        description: p.description ?? '',
+        specs: Array.isArray(p.specs) ? p.specs : [],
+        rating: p.rating ?? 0,
+        reviews: [],
+      }));
+      setProducts(mapped);
+    }).catch(console.error);
+
+    // Fetch Banners
+    bannersApi.getAll().then(res => setBanners(res)).catch(console.error);
+
+    // Fetch Events
+    eventsApi.getAll().then(res => setEvents(res)).catch(console.error);
+
+    // Fetch Vouchers
+    vouchersApi.getAll().then(res => setVouchers(res)).catch(console.error);
+
   }, []);
 
   const featuredProducts = products.slice(0, 4);
-  const newProducts = products.slice(4, 8);
+  const newProducts = products.slice(0, 8); // Just show all we fetched
   const saleProducts = products.filter(p => p.discount).slice(0, 4);
   const activeEvents = events.filter(e => e.isActive).slice(0, 2);
   const topVouchers = vouchers.filter(v => v.isActive).slice(0, 3);
