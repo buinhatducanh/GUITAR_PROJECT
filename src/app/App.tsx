@@ -13,9 +13,7 @@ export default function App() {
   }, [fetchSettings]);
 
   useEffect(() => {
-    if (settings?.siteName) {
-      document.title = settings.metaTitle || settings.siteName;
-    }
+    document.title = settings?.metaTitle || settings?.siteName || 'Guitar NOVA';
   }, [settings]);
 
   return (
