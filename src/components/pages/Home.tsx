@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { ChevronLeft, ChevronRight, Star, ShoppingCart, Trophy, Zap, Tag, Gift, Sparkles, ArrowRight, Calendar, TrendingUp, Award, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, ShoppingCart, Trophy, Zap, Tag, Gift, Sparkles, ArrowRight, Calendar, TrendingUp, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp, Product, BlogPost } from '@/app/context/AppContext';
-import { useCartStore } from '@/features/cart/store/cartStore';
 import { ProductCard } from '@/components/organisms/ProductCard';
 import { HeroBanner } from '@/components/organisms/HeroBanner';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
@@ -11,8 +10,7 @@ import { blogsApi } from '@/app/lib/api';
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { products, events, vouchers, landingPages } = useApp();
-  const addItem = useCartStore((state) => state.addItem);
+  const { products, events, vouchers } = useApp();
   const settings = useSettingsStore((state) => state.settings);
   const [publishedBlogs, setPublishedBlogs] = useState<BlogPost[]>([]);
 
@@ -43,7 +41,6 @@ export const Home: React.FC = () => {
   const saleProducts = products.filter(p => p.discount).slice(0, 4);
   const activeEvents = events.filter(e => e.isActive).slice(0, 2);
   const topVouchers = vouchers.filter(v => v.isActive).slice(0, 3);
-  const publishedLandingPages = landingPages.filter(lp => lp.isPublished).slice(0, 2);
 
   const onViewProduct = (product: Product) => {
     navigate(`/products/${product.id}`);
@@ -457,104 +454,6 @@ export const Home: React.FC = () => {
           </motion.div>
         </div>
       </section>
-
-      {/* Landing Pages Section */}
-      {publishedLandingPages.length > 0 && (
-        <section className="py-20 bg-gradient-to-b from-black to-zinc-950 relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.05),transparent_50%)]" />
-
-          <div className="container mx-auto px-4 relative">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-12"
-            >
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <FileText className="w-6 h-6 text-blue-400" />
-                <span className="text-blue-400 font-medium uppercase tracking-wider">Nổi bật</span>
-              </div>
-              <h2 className="text-4xl lg:text-5xl font-bold text-white mb-4">
-                Khám Phá Thêm
-              </h2>
-              <p className="text-xl text-white/60">
-                Những bộ sưu tập và câu chuyện đặc biệt từ {settings?.siteName || 'Guitar NOVA'}
-              </p>
-            </motion.div>
-
-            <div className="grid md:grid-cols-2 gap-8 mb-8">
-              {publishedLandingPages.map((page, idx) => (
-                <motion.div
-                  key={page.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: idx * 0.15 }}
-                  whileHover={{ y: -10 }}
-                  onClick={() => onNavigate(`/landing/${page.slug}`)}
-                  className="group bg-gradient-to-br from-zinc-900 to-black rounded-2xl overflow-hidden border border-blue-500/20 hover:border-blue-500/50 transition-all cursor-pointer"
-                >
-                  {/* Card Image */}
-                  <div className="relative h-64 overflow-hidden">
-                    {page.sections[0]?.images?.[0] && (
-                      <img
-                        src={page.sections[0].images[0]}
-                        alt={page.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-
-                    {/* Badge */}
-                    <div className="absolute top-4 left-4">
-                      <span className="px-4 py-2 bg-blue-500/90 backdrop-blur-sm text-white text-xs font-bold rounded-full">
-                        Landing Page
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Card Content */}
-                  <div className="p-6">
-                    <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">
-                      {page.title}
-                    </h3>
-                    <p className="text-white/60 mb-4 line-clamp-2">
-                      {page.subtitle}
-                    </p>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm text-white/40">
-                        <Calendar className="w-4 h-4" />
-                        <span>{new Date(page.createdAt).toLocaleDateString('vi-VN')}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-blue-400 font-medium group-hover:gap-4 transition-all">
-                        <span>Xem chi tiết</span>
-                        <ArrowRight className="w-5 h-5" />
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center"
-            >
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => onNavigate('/landing')}
-                className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all"
-              >
-                Xem tất cả Landing Pages
-              </motion.button>
-            </motion.div>
-          </div>
-        </section>
-      )}
 
       {/* Blog Posts Section */}
       {publishedBlogs.length > 0 && (

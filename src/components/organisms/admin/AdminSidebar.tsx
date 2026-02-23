@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import {
   BarChart3, Package, Users, FileText, Image, Star,
-  Gift, Calendar, Award, Settings as SettingsIcon, Truck, Warehouse,
+  Gift, Calendar, Award, Settings as SettingsIcon, Truck, Warehouse, ShoppingBag,
 } from 'lucide-react';
 
 const tabs = [
@@ -10,6 +10,7 @@ const tabs = [
   { id: 'products', label: 'Sản phẩm', icon: Package },
   { id: 'brands', label: 'Thương hiệu', icon: Award },
   { id: 'inventory', label: 'Kho hàng', icon: Warehouse },
+  { id: 'orders', label: 'Đơn hàng', icon: ShoppingBag },
   { id: 'banners', label: 'Banner', icon: Image },
   { id: 'users', label: 'Người dùng', icon: Users },
   { id: 'reviews', label: 'Đánh giá', icon: Star },
