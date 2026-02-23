@@ -13,8 +13,9 @@ export const BrandsTab: React.FC = () => {
 
   const load = async () => {
     try {
-      const data = await brandsApi.getAll();
-      setBrands(data.brands || []);
+      const res = await brandsApi.getAll();
+      const brandsData = res.data?.brands || (res as any).brands || [];
+      setBrands(brandsData);
     } catch { toast.error('Không thể tải danh sách thương hiệu'); }
   };
 

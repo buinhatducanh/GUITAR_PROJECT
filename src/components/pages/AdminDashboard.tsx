@@ -73,7 +73,7 @@ export const AdminDashboard: React.FC = () => {
           <div className="flex-1">
             <AnimatePresence mode="wait">
               {activeTab === 'dashboard' && <motion.div key="dashboard" {...tabAnimation}><DashboardTab /></motion.div>}
-              {activeTab === 'products' && <motion.div key="products" {...tabAnimation}><ProductsTab products={products} onDelete={deleteFrom(products, setProducts, 'sản phẩm')} onEdit={stubEdit} onAdd={stubAdd} /></motion.div>}
+              {activeTab === 'products' && <motion.div key="products" {...tabAnimation}><ProductsTab /></motion.div>}
               {activeTab === 'brands' && <motion.div key="brands" {...tabAnimation}><BrandsTab /></motion.div>}
               {activeTab === 'inventory' && <motion.div key="inventory" {...tabAnimation}><InventoryTab /></motion.div>}
               {activeTab === 'orders' && <motion.div key="orders" {...tabAnimation}><OrdersTab /></motion.div>}

@@ -20,7 +20,7 @@ export default function App() {
     <AppProvider>
       <AppRouter />
       <Toaster
-        position="top-right"
+        position="bottom-left"
         toastOptions={{
           style: {
             background: '#18181b',

@@ -275,7 +275,7 @@ export const uploadApi = {
 // ─── Brands API ──────────────────────────────────
 
 export const brandsApi = {
-    getAll: () => request<{ brands: any[] }>('/brands'),
+    getAll: () => request<{ data?: { brands: any[] }, brands?: any[] }>('/brands'),
 
     create: (data: any) =>
         request<any>('/brands', { method: 'POST', body: JSON.stringify(data) }),

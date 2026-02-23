@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
-import { RefreshCw, Package } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { RefreshCw, Package, ChevronDown, ChevronUp, MapPin, Receipt, MessageSquare, Clock, CreditCard } from 'lucide-react';
 import { ordersApi } from '@/app/lib/api';
 import { toast } from 'sonner';
 
@@ -37,6 +37,11 @@ export const OrdersTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<OrderStatus | 'ALL'>('ALL');
   const [updating, setUpdating] = useState<string | null>(null);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+
+  const toggleExpand = (id: string) => {
+    setExpandedOrderId(prev => prev === id ? null : id);
+  };
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -122,6 +127,7 @@ export const OrdersTab: React.FC = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-white/10">
+                  <th className="w-10 px-4 py-4"></th>
                   <th className="text-left px-6 py-4 text-white/50 text-sm font-medium">Mã đơn</th>
                   <th className="text-left px-6 py-4 text-white/50 text-sm font-medium">Khách hàng</th>
                   <th className="text-left px-6 py-4 text-white/50 text-sm font-medium">Sản phẩm</th>
@@ -133,59 +139,197 @@ export const OrdersTab: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {filtered.map(order => (
-                  <motion.tr
-                    key={order.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="hover:bg-white/[0.02] transition-colors"
-                  >
-                    {/* Order number */}
-                    <td className="px-6 py-4">
-                      <span className="font-mono text-amber-400 text-sm font-bold">{order.orderNumber}</span>
-                    </td>
+                  <React.Fragment key={order.id}>
+                    <motion.tr
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className={`hover:bg-white/[0.04] transition-colors cursor-pointer ${expandedOrderId === order.id ? 'bg-white/[0.02]' : ''}`}
+                      onClick={() => toggleExpand(order.id)}
+                    >
+                      {/* Expand Toggle */}
+                      <td className="px-4 py-4 text-white/40">
+                        {expandedOrderId === order.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                      </td>
+                      {/* Order number */}
+                      <td className="px-6 py-4">
+                        <span className="font-mono text-amber-400 text-sm font-bold">{order.orderNumber}</span>
+                      </td>
 
-                    {/* Customer */}
-                    <td className="px-6 py-4">
-                      <p className="text-white text-sm font-medium">{order.user?.name || '—'}</p>
-                      <p className="text-white/40 text-xs mt-0.5">{order.phone}</p>
-                    </td>
+                      {/* Customer */}
+                      <td className="px-6 py-4">
+                        <p className="text-white text-sm font-medium">{order.user?.name || '—'}</p>
+                        <p className="text-white/40 text-xs mt-0.5">{order.phone}</p>
+                      </td>
 
-                    {/* Items count */}
-                    <td className="px-6 py-4">
-                      <span className="text-white/70 text-sm">{order.items?.length ?? 0} sản phẩm</span>
-                    </td>
+                      {/* Items count */}
+                      <td className="px-6 py-4">
+                        <span className="text-white/70 text-sm">{order.items?.length ?? 0} sản phẩm</span>
+                      </td>
 
-                    {/* Total */}
-                    <td className="px-6 py-4">
-                      <span className="text-amber-400 font-semibold text-sm">{formatPrice(Number(order.totalAmount))}</span>
-                    </td>
+                      {/* Total */}
+                      <td className="px-6 py-4">
+                        <span className="text-amber-400 font-semibold text-sm">{formatPrice(Number(order.totalAmount))}</span>
+                      </td>
 
-                    {/* Status badge */}
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-medium border ${STATUS_COLORS[order.status as OrderStatus] ?? 'bg-white/10 text-white/60 border-white/20'}`}>
-                        {STATUS_LABELS[order.status as OrderStatus] ?? order.status}
-                      </span>
-                    </td>
+                      {/* Status badge */}
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-medium border ${STATUS_COLORS[order.status as OrderStatus] ?? 'bg-white/10 text-white/60 border-white/20'}`}>
+                          {STATUS_LABELS[order.status as OrderStatus] ?? order.status}
+                        </span>
+                      </td>
 
-                    {/* Date */}
-                    <td className="px-6 py-4">
-                      <span className="text-white/50 text-xs">{formatDate(order.createdAt)}</span>
-                    </td>
+                      {/* Date */}
+                      <td className="px-6 py-4">
+                        <span className="text-white/50 text-xs">{formatDate(order.createdAt)}</span>
+                      </td>
 
-                    {/* Status update */}
-                    <td className="px-6 py-4">
-                      <select
-                        value={order.status}
-                        onChange={e => handleStatusChange(order.id, e.target.value)}
-                        disabled={updating === order.id}
-                        className="bg-zinc-800 border border-white/10 rounded-lg px-2 py-1.5 text-white/80 text-xs focus:outline-none focus:border-purple-500 disabled:opacity-50 cursor-pointer"
-                      >
-                        {ALL_STATUSES.map(s => (
-                          <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-                        ))}
-                      </select>
-                    </td>
-                  </motion.tr>
+                      {/* Status update */}
+                      <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                        <select
+                          value={order.status}
+                          onChange={e => handleStatusChange(order.id, e.target.value)}
+                          disabled={updating === order.id}
+                          className="bg-zinc-800 border border-white/10 rounded-lg px-2 py-1.5 text-white/80 text-xs focus:outline-none focus:border-purple-500 disabled:opacity-50 cursor-pointer"
+                        >
+                          {ALL_STATUSES.map(s => (
+                            <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                          ))}
+                        </select>
+                      </td>
+                    </motion.tr>
+
+                    {/* Expanded Detail Row */}
+                    <AnimatePresence>
+                      {expandedOrderId === order.id && (
+                        <motion.tr
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                        >
+                          <td colSpan={8} className="p-0 border-b border-white/5">
+                            <div className="bg-zinc-950/50 p-6 shadow-inner">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                                {/* Left Column: Items & Financials */}
+                                <div className="space-y-6">
+                                  <div>
+                                    <h3 className="flex items-center gap-2 text-white/80 font-semibold mb-4">
+                                      <Receipt className="w-4 h-4 text-purple-400" />
+                                      Danh sách sản phẩm
+                                    </h3>
+                                    <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+                                      <table className="w-full text-sm">
+                                        <thead className="bg-white/5">
+                                          <tr>
+                                            <th className="px-4 py-2 text-left text-white/60 font-medium">Sản phẩm</th>
+                                            <th className="px-4 py-2 text-right text-white/60 font-medium">Đơn giá</th>
+                                            <th className="px-4 py-2 text-center text-white/60 font-medium">SL</th>
+                                            <th className="px-4 py-2 text-right text-white/60 font-medium">Thành tiền</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5">
+                                          {order.items?.map((item: any, idx: number) => (
+                                            <tr key={idx}>
+                                              <td className="px-4 py-3 text-white/90 font-medium">{item.name}</td>
+                                              <td className="px-4 py-3 text-right text-white/60">{formatPrice(Number(item.price))}</td>
+                                              <td className="px-4 py-3 text-center text-white/60">{item.quantity}</td>
+                                              <td className="px-4 py-3 text-right text-amber-400 font-medium">
+                                                {formatPrice(Number(item.price) * item.quantity)}
+                                              </td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+
+                                  <div className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-2 text-sm">
+                                    <div className="flex justify-between text-white/60">
+                                      <span>Tạm tính ({order.items?.length || 0} sản phẩm):</span>
+                                      <span>{formatPrice(Number(order.totalAmount) + (Number(order.discountAmount) || 0))}</span>
+                                    </div>
+
+                                    {Number(order.discountAmount) > 0 && (
+                                      <div className="flex justify-between text-green-400">
+                                        <span>
+                                          Giảm giá
+                                          {order.voucherCode && <span className="ml-1 px-1.5 py-0.5 bg-green-500/20 rounded text-xs">Mã: {order.voucherCode}</span>}
+                                        </span>
+                                        <span>-{formatPrice(Number(order.discountAmount))}</span>
+                                      </div>
+                                    )}
+
+                                    <div className="pt-2 mt-2 border-t border-white/10 flex justify-between items-center">
+                                      <span className="text-white font-medium">Tổng thanh toán:</span>
+                                      <span className="text-xl font-bold text-amber-500">{formatPrice(Number(order.totalAmount))}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Right Column: Customer Info & Notes */}
+                                <div className="space-y-6">
+                                  <div>
+                                    <h3 className="flex items-center gap-2 text-white/80 font-semibold mb-4">
+                                      <MapPin className="w-4 h-4 text-blue-400" />
+                                      Thông tin giao hàng
+                                    </h3>
+                                    <div className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-3 text-sm">
+                                      <div className="grid grid-cols-[100px_1fr] gap-2">
+                                        <span className="text-white/50">Khách hàng:</span>
+                                        <span className="text-white font-medium">{order.user?.name || 'Khách vãng lai'}</span>
+                                      </div>
+                                      <div className="grid grid-cols-[100px_1fr] gap-2">
+                                        <span className="text-white/50">Điện thoại:</span>
+                                        <span className="text-white font-medium">{order.phone}</span>
+                                      </div>
+                                      <div className="grid grid-cols-[100px_1fr] gap-2">
+                                        <span className="text-white/50">Email:</span>
+                                        <span className="text-white">{order.user?.email || '—'}</span>
+                                      </div>
+                                      <div className="grid grid-cols-[100px_1fr] gap-2">
+                                        <span className="text-white/50">Địa chỉ:</span>
+                                        <span className="text-white leading-relaxed">{order.address}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {order.notes && (
+                                    <div>
+                                      <h3 className="flex items-center gap-2 text-white/80 font-semibold mb-3">
+                                        <MessageSquare className="w-4 h-4 text-amber-400" />
+                                        Ghi chú của khách
+                                      </h3>
+                                      <div className="bg-amber-500/10 text-amber-200/90 rounded-xl p-4 border border-amber-500/20 text-sm whitespace-pre-wrap">
+                                        {order.notes}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  <div>
+                                    <h3 className="flex items-center gap-2 text-white/80 font-semibold mb-3">
+                                      <Clock className="w-4 h-4 text-zinc-400" />
+                                      Dấu thời gian
+                                    </h3>
+                                    <div className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-2 text-sm">
+                                      <div className="flex justify-between">
+                                        <span className="text-white/50">Ngày đặt hàng:</span>
+                                        <span className="text-white">{formatDate(order.createdAt)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-white/50">Cập nhật lần cuối:</span>
+                                        <span className="text-white">{formatDate(order.updatedAt)}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                              </div>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      )}
+                    </AnimatePresence>
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
