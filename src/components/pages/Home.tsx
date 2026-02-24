@@ -7,6 +7,7 @@ import { ProductCard } from '@/components/organisms/ProductCard';
 import { HeroBanner } from '@/components/organisms/HeroBanner';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
 import { blogsApi, productsApi, bannersApi, eventsApi, vouchersApi } from '@/app/lib/api';
+import { ProductGridSkeleton } from '@/components/atoms/SkeletonLayouts';
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -183,7 +184,9 @@ export const Home: React.FC = () => {
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredProducts.map((product, idx) => (
+            {products.length === 0 ? (
+              <div className="col-span-4"><ProductGridSkeleton count={4} /></div>
+            ) : featuredProducts.map((product, idx) => (
               <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 20 }}

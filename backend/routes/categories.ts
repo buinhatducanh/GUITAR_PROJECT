@@ -43,7 +43,7 @@ router.get('/all', async (_req, res) => {
 /** POST /api/categories — create (admin only) */
 router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
-        const { name, parentId } = req.body;
+        const { name, parentId, icon } = req.body;
 
         const slug = name
             .toLowerCase()
@@ -54,7 +54,7 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
             .replace(/^-|-$/g, '');
 
         const category = await prisma.category.create({
-            data: { name, slug, parentId },
+            data: { name, slug, parentId, icon },
         });
 
         res.status(201).json(category);

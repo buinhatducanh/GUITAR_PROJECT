@@ -1,17 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Calendar, Gift, Star, Heart, Users, Trophy, Sparkles, CheckCircle2, Clock } from 'lucide-react';
 import { useApp, Event } from '@/app/context/AppContext';
 import { toast } from 'sonner';
+import { eventsApi } from '@/app/lib/api';
+import { EventsListSkeleton } from '@/components/atoms/SkeletonLayouts';
 
 interface EventsProps {
   onBack: () => void;
 }
 
 export const Events: React.FC<EventsProps> = ({ onBack }) => {
-  const { user, events } = useApp();
+  const { user } = useApp();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [filter, setFilter] = useState<'active' | 'upcoming' | 'past'>('active');
+
+  useEffect(() => {
+    eventsApi.getAll().then((data: any[]) => {
+      const mapped: Event[] = data.map((e: any) => ({
+        id: e.id,
+        title: e.title,
+        description: e.description ?? '',
+        type: e.type ?? 'special_day',
+        reward: e.reward ?? { type: 'points', value: 0 },
+        conditions: e.conditions ?? {},
+        startDate: e.startDate,
+        endDate: e.endDate,
+        isActive: e.isActive ?? true,
+        image: e.image ?? '',
+        progress: e.progress,
+      }));
+      setEvents(mapped);
+    }).catch(console.error).finally(() => setIsLoading(false));
+  }, []);
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('vi-VN', {
@@ -116,11 +139,10 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setFilter('active')}
-            className={`px-6 py-3 rounded-xl font-medium transition-all ${
-              filter === 'active'
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
-            }`}
+            className={`px-6 py-3 rounded-xl font-medium transition-all ${filter === 'active'
+              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+              }`}
           >
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5" />
@@ -132,11 +154,10 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setFilter('upcoming')}
-            className={`px-6 py-3 rounded-xl font-medium transition-all ${
-              filter === 'upcoming'
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
-            }`}
+            className={`px-6 py-3 rounded-xl font-medium transition-all ${filter === 'upcoming'
+              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+              }`}
           >
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5" />
@@ -148,11 +169,10 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setFilter('past')}
-            className={`px-6 py-3 rounded-xl font-medium transition-all ${
-              filter === 'past'
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
-            }`}
+            className={`px-6 py-3 rounded-xl font-medium transition-all ${filter === 'past'
+              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+              }`}
           >
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5" />
@@ -162,7 +182,9 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
         </div>
 
         {/* Events Grid */}
-        {filteredEvents.length === 0 ? (
+        {isLoading ? (
+          <EventsListSkeleton count={6} />
+        ) : filteredEvents.length === 0 ? (
           <div className="text-center py-20">
             <Trophy className="w-20 h-20 text-white/20 mx-auto mb-4" />
             <p className="text-xl text-white/60">
@@ -186,11 +208,10 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
                   whileHover={{ y: -5 }}
-                  className={`group bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl overflow-hidden border ${
-                    isActive
-                      ? 'border-purple-500/50 hover:border-purple-500/80'
-                      : 'border-white/10 hover:border-white/20'
-                  } transition-all cursor-pointer`}
+                  className={`group bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl overflow-hidden border ${isActive
+                    ? 'border-purple-500/50 hover:border-purple-500/80'
+                    : 'border-white/10 hover:border-white/20'
+                    } transition-all cursor-pointer`}
                   onClick={() => setSelectedEvent(event)}
                 >
                   {/* Event Image */}
@@ -204,13 +225,12 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
 
                     {/* Status Badge */}
                     <div
-                      className={`absolute top-4 right-4 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1 ${
-                        isActive
-                          ? 'bg-green-500 text-white'
-                          : isUpcoming
+                      className={`absolute top-4 right-4 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1 ${isActive
+                        ? 'bg-green-500 text-white'
+                        : isUpcoming
                           ? 'bg-blue-500 text-white'
                           : 'bg-zinc-500 text-white'
-                      }`}
+                        }`}
                     >
                       {isActive && <CheckCircle2 className="w-4 h-4" />}
                       {isUpcoming && <Clock className="w-4 h-4" />}
@@ -288,11 +308,10 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
                         e.stopPropagation();
                         setSelectedEvent(event);
                       }}
-                      className={`w-full py-3 rounded-xl font-semibold transition-all ${
-                        isActive
-                          ? `bg-gradient-to-r ${eventColor} text-white hover:shadow-lg`
-                          : 'bg-white/5 text-white/60 hover:bg-white/10'
-                      }`}
+                      className={`w-full py-3 rounded-xl font-semibold transition-all ${isActive
+                        ? `bg-gradient-to-r ${eventColor} text-white hover:shadow-lg`
+                        : 'bg-white/5 text-white/60 hover:bg-white/10'
+                        }`}
                     >
                       {isActive ? 'Tham gia ngay' : 'Xem chi tiết'}
                     </motion.button>
@@ -329,7 +348,7 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
-                
+
                 {/* Event Icon */}
                 {(() => {
                   const EventIcon = getEventIcon(selectedEvent.type);
@@ -347,13 +366,12 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
                   const isUpcoming = isEventUpcoming(selectedEvent);
                   return (
                     <div
-                      className={`absolute top-4 right-4 px-4 py-2 rounded-full font-semibold ${
-                        isActive
-                          ? 'bg-green-500 text-white'
-                          : isUpcoming
+                      className={`absolute top-4 right-4 px-4 py-2 rounded-full font-semibold ${isActive
+                        ? 'bg-green-500 text-white'
+                        : isUpcoming
                           ? 'bg-blue-500 text-white'
                           : 'bg-zinc-500 text-white'
-                      }`}
+                        }`}
                     >
                       {isActive ? 'Đang diễn ra' : isUpcoming ? 'Sắp diễn ra' : 'Đã kết thúc'}
                     </div>
@@ -473,9 +491,8 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setSelectedEvent(null)}
-                    className={`${
-                      isEventActive(selectedEvent) ? 'px-6' : 'flex-1'
-                    } py-4 rounded-xl font-semibold text-lg bg-white/5 text-white hover:bg-white/10 transition-all`}
+                    className={`${isEventActive(selectedEvent) ? 'px-6' : 'flex-1'
+                      } py-4 rounded-xl font-semibold text-lg bg-white/5 text-white hover:bg-white/10 transition-all`}
                   >
                     Đóng
                   </motion.button>

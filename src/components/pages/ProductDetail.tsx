@@ -2,18 +2,43 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, ShoppingCart, Zap, Star, X, ZoomIn } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useApp } from '@/app/context/AppContext';
+import { useApp, Product } from '@/app/context/AppContext';
 import { toast } from 'sonner';
+import { productsApi } from '@/app/lib/api';
+import { ProductDetailSkeleton } from '@/components/atoms/SkeletonLayouts';
 
 export const ProductDetail: React.FC = () => {
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
-  const { addToCart, products } = useApp();
+  const { addToCart } = useApp();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isZoomed, setIsZoomed] = useState(false);
 
   const closeZoom = useCallback(() => setIsZoomed(false), []);
+
+  useEffect(() => {
+    if (!slug) return;
+    setIsLoading(true);
+    productsApi.getBySlug(slug).then((p: any) => {
+      const mapped: Product = {
+        id: p.id,
+        name: p.name,
+        price: Number(p.price),
+        oldPrice: p.oldPrice ? Number(p.oldPrice) : undefined,
+        discount: p.discount ?? undefined,
+        image: p.image ?? '',
+        category: typeof p.category === 'object' ? p.category?.name ?? '' : (p.category ?? ''),
+        description: p.description ?? '',
+        specs: Array.isArray(p.specs) ? p.specs : [],
+        rating: p.rating ?? 0,
+        reviews: [],
+      };
+      setProduct(mapped);
+    }).catch(console.error).finally(() => setIsLoading(false));
+  }, [slug]);
 
   useEffect(() => {
     if (!isZoomed) return;
@@ -22,8 +47,9 @@ export const ProductDetail: React.FC = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [isZoomed, closeZoom]);
 
-  // Find product by slug (using id as slug fallback)
-  const product = products.find(p => p.id === slug || p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') === slug);
+  if (isLoading) {
+    return <ProductDetailSkeleton />;
+  }
 
   if (!product) {
     return (
@@ -118,11 +144,10 @@ export const ProductDetail: React.FC = () => {
                   key={idx}
                   whileHover={{ scale: 1.05 }}
                   onClick={() => setSelectedImage(idx)}
-                  className={`aspect-square rounded-xl overflow-hidden border-2 transition-all ${
-                    selectedImage === idx
-                      ? 'border-amber-500'
-                      : 'border-white/10 hover:border-white/30'
-                  }`}
+                  className={`aspect-square rounded-xl overflow-hidden border-2 transition-all ${selectedImage === idx
+                    ? 'border-amber-500'
+                    : 'border-white/10 hover:border-white/30'
+                    }`}
                 >
                   <img src={img} alt={`View ${idx + 1}`} className="w-full h-full object-cover" />
                 </motion.button>
@@ -152,11 +177,10 @@ export const ProductDetail: React.FC = () => {
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
-                    className={`w-5 h-5 ${
-                      i < Math.floor(product.rating)
-                        ? 'fill-amber-500 text-amber-500'
-                        : 'text-zinc-600'
-                    }`}
+                    className={`w-5 h-5 ${i < Math.floor(product.rating)
+                      ? 'fill-amber-500 text-amber-500'
+                      : 'text-zinc-600'
+                      }`}
                   />
                 ))}
               </div>
@@ -262,9 +286,8 @@ export const ProductDetail: React.FC = () => {
                           {[...Array(5)].map((_, i) => (
                             <Star
                               key={i}
-                              className={`w-4 h-4 ${
-                                i < review.rating ? 'fill-amber-500 text-amber-500' : 'text-zinc-600'
-                              }`}
+                              className={`w-4 h-4 ${i < review.rating ? 'fill-amber-500 text-amber-500' : 'text-zinc-600'
+                                }`}
                             />
                           ))}
                         </div>

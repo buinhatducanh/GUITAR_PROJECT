@@ -14,6 +14,18 @@ export default function App() {
 
   useEffect(() => {
     document.title = settings?.metaTitle || settings?.siteName || 'Guitar NOVA';
+
+    // Dynamically update favicon from settings
+    if (settings?.favicon) {
+      let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.type = 'image/png';
+      link.href = settings.favicon;
+    }
   }, [settings]);
 
   return (

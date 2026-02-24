@@ -1,20 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Filter, Search } from 'lucide-react';
+import { ArrowLeft, Filter, Search, Loader2 } from 'lucide-react';
 import { ProductCard } from '@/components/organisms/ProductCard';
-import { useApp, Product } from '@/app/context/AppContext';
+import { Product } from '@/app/context/AppContext';
+import { productsApi } from '@/app/lib/api';
+import { ProductGridSkeleton, FilterBarSkeleton } from '@/components/atoms/SkeletonLayouts';
 
 export const Products: React.FC = () => {
   const navigate = useNavigate();
   const onBack = () => navigate(-1);
   const onViewProduct = (product: Product) => navigate(`/products/${product.id}`);
   const onBuyNow = (_product: Product) => navigate('/checkout');
-  const { products } = useApp();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const categories = ['all', 'Electric Guitar', 'Acoustic Guitar', 'Bass Guitar', 'Amplifier', 'Effects', 'Accessories'];
+  useEffect(() => {
+    setIsLoading(true);
+    productsApi.getAll({ limit: 100 }).then(res => {
+      const mapped: Product[] = res.products.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        price: Number(p.price),
+        oldPrice: p.oldPrice ? Number(p.oldPrice) : undefined,
+        discount: p.discount ?? undefined,
+        image: p.image ?? '',
+        category: typeof p.category === 'object' ? p.category?.name ?? '' : (p.category ?? ''),
+        description: p.description ?? '',
+        specs: Array.isArray(p.specs) ? p.specs : [],
+        rating: p.rating ?? 0,
+        reviews: [],
+      }));
+      setProducts(mapped);
+    }).catch(console.error).finally(() => setIsLoading(false));
+  }, []);
+
+  const categories = ['all', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
 
   const filteredProducts = products.filter(product => {
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
@@ -71,11 +94,10 @@ export const Products: React.FC = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setSelectedCategory(category)}
-                className={`px-6 py-2 rounded-full font-medium transition-all ${
-                  selectedCategory === category
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white'
-                    : 'bg-zinc-900 text-white/60 hover:text-white border border-white/10 hover:border-amber-500/50'
-                }`}
+                className={`px-6 py-2 rounded-full font-medium transition-all ${selectedCategory === category
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white'
+                  : 'bg-zinc-900 text-white/60 hover:text-white border border-white/10 hover:border-amber-500/50'
+                  }`}
               >
                 {category === 'all' ? 'Tất cả' : category}
               </motion.button>
@@ -84,7 +106,9 @@ export const Products: React.FC = () => {
         </div>
 
         {/* Products Grid */}
-        {filteredProducts.length > 0 ? (
+        {isLoading ? (
+          <ProductGridSkeleton count={8} />
+        ) : filteredProducts.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product, idx) => (
               <motion.div

@@ -1,17 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Star, Gift, Calendar, CheckCircle, X, Sparkles, Award } from 'lucide-react';
 import { useApp, Voucher } from '@/app/context/AppContext';
 import { toast } from 'sonner';
+import { vouchersApi } from '@/app/lib/api';
+import { RewardsGridSkeleton } from '@/components/atoms/SkeletonLayouts';
 
 interface RewardsProps {
   onBack: () => void;
 }
 
 export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
-  const { user, vouchers, userVouchers, redeemVoucher } = useApp();
+  const { user, userVouchers, redeemVoucher } = useApp();
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
   const [filter, setFilter] = useState<'all' | 'redeemed'>('all');
+
+  useEffect(() => {
+    vouchersApi.getAll().then((data: any[]) => {
+      const mapped: Voucher[] = data.map((v: any) => ({
+        id: v.id,
+        code: v.code,
+        title: v.title,
+        description: v.description ?? '',
+        discountType: v.discountType ?? 'percentage',
+        discountValue: v.discountValue ?? 0,
+        pointsCost: v.pointsCost ?? 0,
+        minPurchase: v.minPurchase ?? 0,
+        maxDiscount: v.maxDiscount,
+        expiryDate: v.expiryDate,
+        isActive: v.isActive ?? true,
+        image: v.image ?? '',
+        usageLimit: v.usageLimit ?? 100,
+        usedCount: v.usedCount ?? 0,
+      }));
+      setVouchers(mapped);
+    }).catch(console.error).finally(() => setIsLoading(false));
+  }, []);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -49,7 +75,7 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
     setSelectedVoucher(null);
   };
 
-  const filteredVouchers = filter === 'all' 
+  const filteredVouchers = filter === 'all'
     ? vouchers.filter(v => v.isActive)
     : vouchers.filter(v => userVouchers.includes(v.id));
 
@@ -125,11 +151,10 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setFilter('all')}
-            className={`px-6 py-3 rounded-xl font-medium transition-all ${
-              filter === 'all'
-                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
-                : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
-            }`}
+            className={`px-6 py-3 rounded-xl font-medium transition-all ${filter === 'all'
+              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+              }`}
           >
             <div className="flex items-center gap-2">
               <Gift className="w-5 h-5" />
@@ -141,11 +166,10 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setFilter('redeemed')}
-            className={`px-6 py-3 rounded-xl font-medium transition-all ${
-              filter === 'redeemed'
-                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
-                : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
-            }`}
+            className={`px-6 py-3 rounded-xl font-medium transition-all ${filter === 'redeemed'
+              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+              }`}
           >
             <div className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5" />
@@ -168,6 +192,8 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
               Đăng nhập ngay
             </motion.button>
           </div>
+        ) : isLoading ? (
+          <RewardsGridSkeleton count={6} />
         ) : filteredVouchers.length === 0 ? (
           <div className="text-center py-20">
             <Gift className="w-20 h-20 text-white/20 mx-auto mb-4" />
@@ -189,13 +215,12 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
                   whileHover={{ y: -5 }}
-                  className={`group bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl overflow-hidden border ${
-                    isRedeemed
-                      ? 'border-green-500/50'
-                      : canAfford && !isExpired
+                  className={`group bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl overflow-hidden border ${isRedeemed
+                    ? 'border-green-500/50'
+                    : canAfford && !isExpired
                       ? 'border-amber-500/30 hover:border-amber-500/60'
                       : 'border-white/10'
-                  } transition-all cursor-pointer`}
+                    } transition-all cursor-pointer`}
                   onClick={() => setSelectedVoucher(voucher)}
                 >
                   {/* Voucher Image */}
@@ -206,7 +231,7 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-                    
+
                     {isRedeemed && (
                       <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
                         <CheckCircle className="w-4 h-4" />
@@ -270,11 +295,10 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
                           handleRedeemVoucher(voucher);
                         }}
                         disabled={!canAfford}
-                        className={`w-full py-3 rounded-xl font-semibold transition-all ${
-                          canAfford
-                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:shadow-lg hover:shadow-amber-500/50'
-                            : 'bg-white/5 text-white/30 cursor-not-allowed'
-                        }`}
+                        className={`w-full py-3 rounded-xl font-semibold transition-all ${canAfford
+                          ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:shadow-lg hover:shadow-amber-500/50'
+                          : 'bg-white/5 text-white/30 cursor-not-allowed'
+                          }`}
                       >
                         {canAfford ? 'Đổi ngay' : 'Không đủ điểm'}
                       </motion.button>
@@ -380,11 +404,10 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleRedeemVoucher(selectedVoucher)}
                     disabled={user.points < selectedVoucher.pointsCost}
-                    className={`w-full py-4 rounded-xl font-semibold text-lg transition-all ${
-                      user.points >= selectedVoucher.pointsCost
-                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:shadow-lg hover:shadow-amber-500/50'
-                        : 'bg-white/5 text-white/30 cursor-not-allowed'
-                    }`}
+                    className={`w-full py-4 rounded-xl font-semibold text-lg transition-all ${user.points >= selectedVoucher.pointsCost
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:shadow-lg hover:shadow-amber-500/50'
+                      : 'bg-white/5 text-white/30 cursor-not-allowed'
+                      }`}
                   >
                     {user.points >= selectedVoucher.pointsCost
                       ? 'Đổi voucher ngay'

@@ -1,72 +1,71 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Guitar, Music, Radio, Zap, Package } from 'lucide-react';
-import { useApp, Product } from '@/app/context/AppContext';
+import { ArrowLeft, Package } from 'lucide-react';
+import { Product } from '@/app/context/AppContext';
 import { ProductCard } from '@/components/organisms/ProductCard';
+import { productsApi, categoriesApi } from '@/app/lib/api';
+import { ICON_MAP } from '@/components/organisms/admin/CategoriesTab';
+import { CategoryGridSkeleton, ProductGridSkeleton } from '@/components/atoms/SkeletonLayouts';
+
+const COLORS = [
+  'from-zinc-500 to-zinc-600',
+  'from-blue-500 to-blue-600',
+  'from-amber-500 to-orange-600',
+  'from-purple-500 to-purple-600',
+  'from-green-500 to-green-600',
+  'from-red-500 to-red-600',
+  'from-pink-500 to-pink-600',
+  'from-cyan-500 to-teal-600',
+];
 
 export const Categories: React.FC = () => {
   const navigate = useNavigate();
   const onBack = () => navigate(-1);
   const onViewProduct = (product: Product) => navigate(`/products/${product.id}`);
   const onBuyNow = (_product: Product) => navigate('/checkout');
-  const { products } = useApp();
+  const [products, setProducts] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [categories, setCategories] = useState<{ id: string; name: string; icon: any; color: string; count: number }[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const categories = [
-    { 
-      id: 'all', 
-      name: 'Tất cả', 
-      icon: Package,
-      color: 'from-zinc-500 to-zinc-600',
-      count: products.length
-    },
-    { 
-      id: 'Electric Guitar', 
-      name: 'Guitar Điện', 
-      icon: Zap,
-      color: 'from-blue-500 to-blue-600',
-      count: products.filter(p => p.category === 'Electric Guitar').length
-    },
-    { 
-      id: 'Acoustic Guitar', 
-      name: 'Guitar Acoustic', 
-      icon: Guitar,
-      color: 'from-amber-500 to-orange-600',
-      count: products.filter(p => p.category === 'Acoustic Guitar').length
-    },
-    { 
-      id: 'Bass Guitar', 
-      name: 'Bass Guitar', 
-      icon: Music,
-      color: 'from-purple-500 to-purple-600',
-      count: products.filter(p => p.category === 'Bass Guitar').length
-    },
-    { 
-      id: 'Amplifier', 
-      name: 'Amplifier', 
-      icon: Radio,
-      color: 'from-green-500 to-green-600',
-      count: products.filter(p => p.category === 'Amplifier').length
-    },
-    { 
-      id: 'Effects', 
-      name: 'Effects', 
-      icon: Zap,
-      color: 'from-red-500 to-red-600',
-      count: products.filter(p => p.category === 'Effects').length
-    },
-    { 
-      id: 'Accessories', 
-      name: 'Phụ kiện', 
-      icon: Package,
-      color: 'from-pink-500 to-pink-600',
-      count: products.filter(p => p.category === 'Accessories').length
-    }
-  ];
+  useEffect(() => {
+    Promise.all([
+      productsApi.getAll({ limit: 100 }),
+      categoriesApi.getAll(),
+    ]).then(([prodRes, cats]) => {
+      const mapped: Product[] = prodRes.products.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        price: Number(p.price),
+        oldPrice: p.oldPrice ? Number(p.oldPrice) : undefined,
+        discount: p.discount ?? undefined,
+        image: p.image ?? '',
+        category: typeof p.category === 'object' ? p.category?.name ?? '' : (p.category ?? ''),
+        description: p.description ?? '',
+        specs: Array.isArray(p.specs) ? p.specs : [],
+        rating: p.rating ?? 0,
+        reviews: [],
+      }));
+      setProducts(mapped);
 
-  const filteredProducts = selectedCategory === 'all' 
-    ? products 
+      const totalCount = mapped.length;
+      const catList = [
+        { id: 'all', name: 'Tất cả', icon: Package, color: COLORS[0], count: totalCount },
+        ...cats.map((c: any, idx: number) => ({
+          id: c.name,
+          name: c.name,
+          icon: ICON_MAP[c.icon] || Package,
+          color: COLORS[(idx + 1) % COLORS.length],
+          count: c._count?.products ?? 0,
+        })),
+      ];
+      setCategories(catList);
+    }).catch(console.error).finally(() => setIsLoading(false));
+  }, []);
+
+  const filteredProducts = selectedCategory === 'all'
+    ? products
     : products.filter(p => p.category === selectedCategory);
 
   const selectedCategoryData = categories.find(c => c.id === selectedCategory);
@@ -92,53 +91,53 @@ export const Categories: React.FC = () => {
 
       <div className="container mx-auto px-4">
         {/* Categories Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-12">
-          {categories.map((category, idx) => {
-            const Icon = category.icon;
-            const isSelected = selectedCategory === category.id;
+        {isLoading ? (
+          <div className="mb-12"><CategoryGridSkeleton count={7} /></div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-12">
+            {categories.map((category, idx) => {
+              const Icon = category.icon;
+              const isSelected = selectedCategory === category.id;
 
-            return (
-              <motion.button
-                key={category.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: idx * 0.05 }}
-                whileHover={{ scale: 1.05, y: -5 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`relative overflow-hidden rounded-2xl p-6 transition-all ${
-                  isSelected
+              return (
+                <motion.button
+                  key={category.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: idx * 0.05 }}
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`relative overflow-hidden rounded-2xl p-6 transition-all ${isSelected
                     ? `bg-gradient-to-br ${category.color} shadow-lg`
                     : 'bg-gradient-to-br from-zinc-900 to-zinc-950 border border-white/10 hover:border-white/20'
-                }`}
-              >
-                {isSelected && (
-                  <motion.div
-                    layoutId="selectedCategory"
-                    className="absolute inset-0 bg-white/10"
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  />
-                )}
-                
-                <div className="relative">
-                  <Icon className={`w-10 h-10 mb-3 mx-auto ${
-                    isSelected ? 'text-white' : 'text-white/60'
-                  }`} />
-                  <h3 className={`font-semibold mb-1 ${
-                    isSelected ? 'text-white' : 'text-white/80'
-                  }`}>
-                    {category.name}
-                  </h3>
-                  <p className={`text-sm ${
-                    isSelected ? 'text-white/90' : 'text-white/40'
-                  }`}>
-                    {category.count} sản phẩm
-                  </p>
-                </div>
-              </motion.button>
-            );
-          })}
-        </div>
+                    }`}
+                >
+                  {isSelected && (
+                    <motion.div
+                      layoutId="selectedCategory"
+                      className="absolute inset-0 bg-white/10"
+                      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    />
+                  )}
+
+                  <div className="relative">
+                    <Icon className={`w-10 h-10 mb-3 mx-auto ${isSelected ? 'text-white' : 'text-white/60'
+                      }`} />
+                    <h3 className={`font-semibold mb-1 ${isSelected ? 'text-white' : 'text-white/80'
+                      }`}>
+                      {category.name}
+                    </h3>
+                    <p className={`text-sm ${isSelected ? 'text-white/90' : 'text-white/40'
+                      }`}>
+                      {category.count} sản phẩm
+                    </p>
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Selected Category Info */}
         {selectedCategoryData && (
@@ -164,7 +163,9 @@ export const Categories: React.FC = () => {
         )}
 
         {/* Products Grid */}
-        {filteredProducts.length === 0 ? (
+        {isLoading ? (
+          <ProductGridSkeleton count={8} />
+        ) : filteredProducts.length === 0 ? (
           <div className="text-center py-20">
             <Package className="w-20 h-20 text-white/20 mx-auto mb-4" />
             <p className="text-xl text-white/60">Không có sản phẩm nào trong danh mục này</p>

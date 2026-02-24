@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { AdminSidebar } from '@/components/organisms/admin/AdminSidebar';
 import { DashboardTab } from '@/components/organisms/admin/DashboardTab';
 import { ProductsTab } from '@/components/organisms/admin/ProductsTab';
+import { CategoriesTab } from '@/components/organisms/admin/CategoriesTab';
 import { BrandsTab } from '@/components/organisms/admin/BrandsTab';
 import { InventoryTab } from '@/components/organisms/admin/InventoryTab';
 import { BannersTab } from '@/components/organisms/admin/BannersTab';
@@ -74,6 +75,7 @@ export const AdminDashboard: React.FC = () => {
             <AnimatePresence mode="wait">
               {activeTab === 'dashboard' && <motion.div key="dashboard" {...tabAnimation}><DashboardTab /></motion.div>}
               {activeTab === 'products' && <motion.div key="products" {...tabAnimation}><ProductsTab /></motion.div>}
+              {activeTab === 'categories' && <motion.div key="categories" {...tabAnimation}><CategoriesTab /></motion.div>}
               {activeTab === 'brands' && <motion.div key="brands" {...tabAnimation}><BrandsTab /></motion.div>}
               {activeTab === 'inventory' && <motion.div key="inventory" {...tabAnimation}><InventoryTab /></motion.div>}
               {activeTab === 'orders' && <motion.div key="orders" {...tabAnimation}><OrdersTab /></motion.div>}

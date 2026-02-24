@@ -113,19 +113,6 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* Admin Access */}
-        <div className="mb-8 pb-8 border-b border-white/10">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => navigate('/admin')}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl transition-all"
-          >
-            <Shield className="w-5 h-5" />
-            <span className="font-medium">Truy cập Admin Dashboard</span>
-          </motion.button>
-        </div>
-
         {/* Bottom */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-white/40 text-sm">
           <p>© {new Date().getFullYear()} {settings?.siteName || 'Guitar NOVA'}. All rights reserved.</p>

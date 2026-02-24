@@ -1,17 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Percent, Tag, TrendingDown, Zap, Clock, Gift, Sparkles } from 'lucide-react';
-import { useApp, Product } from '@/app/context/AppContext';
+import { Product } from '@/app/context/AppContext';
 import { ProductCard } from '@/components/organisms/ProductCard';
+import { productsApi } from '@/app/lib/api';
+import { ProductGridSkeleton } from '@/components/atoms/SkeletonLayouts';
 
 export const Promo: React.FC = () => {
   const navigate = useNavigate();
   const onBack = () => navigate(-1);
   const onViewProduct = (product: Product) => navigate(`/products/${product.id}`);
   const onBuyNow = (_product: Product) => navigate('/checkout');
-  const { products } = useApp();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'discount' | 'price' | 'name'>('discount');
+
+  useEffect(() => {
+    productsApi.getAll({ limit: 100 }).then(res => {
+      const mapped: Product[] = res.products.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        price: Number(p.price),
+        oldPrice: p.oldPrice ? Number(p.oldPrice) : undefined,
+        discount: p.discount ?? undefined,
+        image: p.image ?? '',
+        category: typeof p.category === 'object' ? p.category?.name ?? '' : (p.category ?? ''),
+        description: p.description ?? '',
+        specs: Array.isArray(p.specs) ? p.specs : [],
+        rating: p.rating ?? 0,
+        reviews: [],
+      }));
+      setProducts(mapped);
+    }).catch(console.error).finally(() => setIsLoading(false));
+  }, []);;
 
   const promoProducts = products.filter(p => p.discount && p.discount > 0);
 
@@ -154,11 +176,10 @@ export const Promo: React.FC = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setSortBy(option.id as any)}
-                className={`px-4 py-2 rounded-xl font-medium transition-all ${
-                  sortBy === option.id
-                    ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white'
-                    : 'bg-white/5 text-white/60 hover:bg-white/10'
-                }`}
+                className={`px-4 py-2 rounded-xl font-medium transition-all ${sortBy === option.id
+                  ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white'
+                  : 'bg-white/5 text-white/60 hover:bg-white/10'
+                  }`}
               >
                 {option.label}
               </motion.button>
@@ -167,7 +188,9 @@ export const Promo: React.FC = () => {
         </div>
 
         {/* Products Grid with Special Layout */}
-        {sortedProducts.length === 0 ? (
+        {isLoading ? (
+          <ProductGridSkeleton count={8} />
+        ) : sortedProducts.length === 0 ? (
           <div className="text-center py-20">
             <Gift className="w-20 h-20 text-white/20 mx-auto mb-4" />
             <p className="text-xl text-white/60">Hiện tại không có sản phẩm khuyến mãi nào</p>
@@ -185,12 +208,12 @@ export const Promo: React.FC = () => {
               >
                 {/* Discount Badge */}
                 <motion.div
-                  animate={{ 
+                  animate={{
                     scale: [1, 1.1, 1],
                     rotate: [0, 5, -5, 0]
                   }}
-                  transition={{ 
-                    duration: 2, 
+                  transition={{
+                    duration: 2,
                     repeat: Infinity,
                     repeatDelay: 2
                   }}
@@ -235,7 +258,7 @@ export const Promo: React.FC = () => {
           <div className="absolute inset-0">
             <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(239,68,68,0.15),transparent_70%)]" />
           </div>
-          
+
           <div className="relative">
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
