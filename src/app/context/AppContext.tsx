@@ -191,7 +191,17 @@ export const useApp = () => {
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  // Persist cart to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }, [cart]);
   const [products, setProducts] = useState<Product[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [currentPage, setCurrentPage] = useState('home');

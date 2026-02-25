@@ -188,27 +188,6 @@ export const Promo: React.FC = () => {
                 whileHover={{ scale: 1.03, rotate: idx % 2 === 0 ? 1 : -1 }}
                 className="relative"
               >
-                {/* Discount Badge */}
-                <motion.div
-                  animate={{
-                    scale: [1, 1.1, 1],
-                    rotate: [0, 5, -5, 0]
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    repeatDelay: 2
-                  }}
-                  className="absolute -top-3 -right-3 z-10"
-                >
-                  <div className="relative">
-                    <div className="bg-gradient-to-br from-red-500 to-orange-500 text-white font-bold px-4 py-2 rounded-full shadow-lg shadow-red-500/50">
-                      <span className="text-2xl">-{product.discount}%</span>
-                    </div>
-                    <div className="absolute inset-0 bg-gradient-to-br from-red-500 to-orange-500 rounded-full blur-xl opacity-50 -z-10" />
-                  </div>
-                </motion.div>
-
                 {/* Savings Badge */}
                 {product.oldPrice && (
                   <motion.div

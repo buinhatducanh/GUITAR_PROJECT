@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, CreditCard, CheckCircle2, Phone, MapPin, Store, Hash, Ticket, X } from 'lucide-react';
+import { ArrowLeft, CreditCard, CheckCircle2, Phone, MapPin, Store, Hash, Ticket, X, Gift } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/app/context/AppContext';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
@@ -107,19 +107,19 @@ export const Checkout: React.FC = () => {
         });
 
       setOrderNumber(result.orderNumber);
-    } catch (err) {
+      setIsProcessing(false);
+      setIsSuccess(true);
+
+      // Wait for animation then redirect (longer for guests to read the notice)
+      setTimeout(() => {
+        clearCart();
+        navigate('/');
+      }, user ? 3000 : 8000);
+    } catch (err: any) {
       console.error('Failed to create order:', err);
-      // Continue to show success modal — staff will confirm via phone
+      setIsProcessing(false);
+      toast.error(err?.message || 'Đặt hàng thất bại. Vui lòng thử lại.');
     }
-
-    setIsProcessing(false);
-    setIsSuccess(true);
-
-    // Wait for animation then redirect
-    setTimeout(() => {
-      clearCart();
-      navigate('/');
-    }, 3000);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -563,7 +563,34 @@ export const Checkout: React.FC = () => {
               )}
               <p className="text-white/60 mb-2">Cảm ơn bạn đã mua hàng tại {settings?.siteName || 'Guitar NOVA'}</p>
               <p className="text-white/60 mb-2">Chúng tôi sẽ liên hệ qua SĐT: <span className="text-amber-400 font-medium">{formData.phone}</span></p>
-              <p className="text-white/40 text-sm">Đơn hàng của bạn đang được xử lý...</p>
+              <p className="text-white/40 text-sm mb-4">Đơn hàng của bạn đang được xử lý...</p>
+
+              {/* Guest registration notice */}
+              {!user && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="mt-2 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-left"
+                >
+                  <div className="flex items-start gap-3">
+                    <Gift className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-amber-400 font-semibold text-sm mb-1">Bạn đã được tích điểm!</p>
+                      <p className="text-white/60 text-xs leading-relaxed">
+                        Điểm thưởng đã được cộng vào SĐT <span className="text-amber-400 font-medium">{formData.phone}</span>.
+                        Để xem điểm, đổi voucher giảm giá và theo dõi đơn hàng, hãy đăng ký tài khoản với cùng số điện thoại này.
+                      </p>
+                      <button
+                        onClick={() => { clearCart(); navigate('/register'); }}
+                        className="mt-3 px-5 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-sm font-bold rounded-lg transition-all"
+                      >
+                        Đăng ký ngay
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
             </motion.div>
           </motion.div>
         )}
