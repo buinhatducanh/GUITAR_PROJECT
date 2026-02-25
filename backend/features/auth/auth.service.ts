@@ -194,16 +194,30 @@ export const getCurrentUser = async (userId: string): Promise<UserResponse> => {
  * Login/Register via Google OAuth
  */
 export const googleLogin = async (data: GoogleAuthDto): Promise<AuthResponse> => {
-    if (!data.credential) {
+    if (!data.credential && !data.accessToken) {
         throw new Error('Token Google không hợp lệ');
     }
 
-    // Verify Google ID token
-    const ticket = await googleClient.verifyIdToken({
-        idToken: data.credential,
-        audience: GOOGLE_CLIENT_ID,
-    });
-    const payload = ticket.getPayload();
+    let payload: any = null;
+
+    if (data.accessToken) {
+        // Authenticate via Access Token (using useGoogleLogin)
+        const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${data.accessToken}` },
+        });
+        if (!response.ok) {
+            throw new Error('Token Google không hợp lệ');
+        }
+        payload = await response.json();
+    } else if (data.credential) {
+        // Verify Google ID token (standard credential)
+        const ticket = await googleClient.verifyIdToken({
+            idToken: data.credential,
+            audience: GOOGLE_CLIENT_ID,
+        });
+        payload = ticket.getPayload();
+    }
+
     if (!payload || !payload.sub) {
         throw new Error('Token Google không hợp lệ');
     }

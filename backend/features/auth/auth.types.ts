@@ -20,7 +20,8 @@ export interface GuestCheckoutDto {
 }
 
 export interface GoogleAuthDto {
-    credential: string; // Google ID token from frontend
+    credential?: string; // Google ID token from frontend (implicit popup)
+    accessToken?: string; // Google Access token (redirect/useGoogleLogin)
 }
 
 export interface AuthResponse {
