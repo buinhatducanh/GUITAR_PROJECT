@@ -23,7 +23,7 @@ const COLORS = [
 export const Categories: React.FC = () => {
   const navigate = useNavigate();
   const onBack = () => navigate(-1);
-  const onViewProduct = (product: Product) => navigate(`/products/${product.id}`);
+  const onViewProduct = (product: Product) => navigate(`/products/${product.slug}`);
   const onBuyNow = (_product: Product) => navigate('/checkout');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 

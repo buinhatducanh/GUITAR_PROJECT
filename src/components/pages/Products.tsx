@@ -14,7 +14,7 @@ export const Products: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const onBack = () => navigate(-1);
-  const onViewProduct = (product: Product) => navigate(`/products/${product.id}`);
+  const onViewProduct = (product: Product) => navigate(`/products/${product.slug}`);
   const onBuyNow = (_product: Product) => navigate('/checkout');
 
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -104,9 +104,9 @@ export const Products: React.FC = () => {
                 transition={{ delay: idx * 0.05 }}
                 onMouseEnter={() => {
                   queryClient.prefetchQuery({
-                    queryKey: queryKeys.products.detail(product.id),
+                    queryKey: queryKeys.products.detail(product.slug),
                     queryFn: async () => {
-                      const p = await productsApi.getBySlug(product.id);
+                      const p = await productsApi.getBySlug(product.slug);
                       return mapProduct(p);
                     },
                     staleTime: 5 * 60 * 1000,

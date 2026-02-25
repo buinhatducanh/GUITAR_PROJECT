@@ -10,7 +10,7 @@ import { useProducts } from '@/hooks/useProducts';
 export const Promo: React.FC = () => {
   const navigate = useNavigate();
   const onBack = () => navigate(-1);
-  const onViewProduct = (product: Product) => navigate(`/products/${product.id}`);
+  const onViewProduct = (product: Product) => navigate(`/products/${product.slug}`);
   const onBuyNow = (_product: Product) => navigate('/checkout');
   const [sortBy, setSortBy] = useState<'discount' | 'price' | 'name'>('discount');
 

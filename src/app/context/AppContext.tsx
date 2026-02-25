@@ -4,6 +4,7 @@ import { useAuthStore } from '../../features/auth/store/authStore';
 export interface Product {
   id: string;
   name: string;
+  slug: string;
   price: number;
   oldPrice?: number;
   discount?: number;

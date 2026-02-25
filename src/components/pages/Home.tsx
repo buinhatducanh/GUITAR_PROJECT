@@ -40,7 +40,7 @@ export const Home: React.FC = () => {
   const topVouchers = vouchers.filter(v => v.isActive).slice(0, 3);
 
   const onViewProduct = (product: Product) => {
-    navigate(`/products/${product.id}`);
+    navigate(`/products/${product.slug}`);
   };
 
   const onBuyNow = (product: Product) => {

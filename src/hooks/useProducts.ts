@@ -7,6 +7,7 @@ import { Product } from '@/app/context/AppContext';
 export const mapProduct = (p: any): Product => ({
     id: p.id,
     name: p.name,
+    slug: p.slug,
     price: Number(p.price),
     oldPrice: p.oldPrice ? Number(p.oldPrice) : undefined,
     discount: p.discount ?? undefined,
