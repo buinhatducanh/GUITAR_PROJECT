@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 
 import productRoutes from './routes/products.js';
 import categoryRoutes from './routes/categories.js';
@@ -26,6 +27,10 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // ─── Middleware ─────────────────────────────────
+app.use(helmet({
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+    crossOriginEmbedderPolicy: false,
+}));
 app.use(cors({
     origin: [
         'http://localhost:5173',
