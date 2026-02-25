@@ -2,46 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Clock, Eye, Calendar, Tag, Search, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { blogsApi } from '@/app/lib/api';
 import { BlogPost } from '@/app/context/AppContext';
+import { useBlogs } from '@/hooks/useBlogs';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/app/lib/queryKeys';
+import { blogsApi } from '@/app/lib/api';
 
 export const BlogList: React.FC = () => {
   const navigate = useNavigate();
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        setLoading(true);
-        const res = await blogsApi.getAll({ published: 'true', limit: 100 });
-        const mapped: BlogPost[] = res.posts.map((p: any) => ({
-          id: p.id,
-          slug: p.slug,
-          title: p.title,
-          excerpt: p.excerpt ?? '',
-          content: p.content ?? '',
-          coverImage: p.coverImage ?? '',
-          authorName: p.authorName ?? '',
-          authorAvatar: p.authorAvatar ?? '',
-          category: p.category ?? '',
-          tags: Array.isArray(p.tags) ? p.tags : [],
-          publishedDate: p.publishedDate ?? null,
-          readTime: p.readTime ?? 5,
-          views: p.views ?? 0,
-          isPublished: p.isPublished ?? true,
-        }));
-        setPosts(mapped);
-      } catch (err) {
-        console.error('Failed to fetch blog posts:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPosts();
-  }, []);
+  const { data, isLoading: loading } = useBlogs({ published: 'true', limit: 100 });
+  const posts = data?.posts || [];
 
   const categories = ['all', ...Array.from(new Set(posts.map(post => post.category).filter(Boolean)))];
 
@@ -139,6 +113,16 @@ export const BlogList: React.FC = () => {
                 transition={{ delay: idx * 0.1 }}
                 whileHover={{ y: -5 }}
                 onClick={() => navigate(`/blog/${post.slug}`)}
+                onMouseEnter={() => {
+                  queryClient.prefetchQuery({
+                    queryKey: queryKeys.blogs.detail(post.slug),
+                    queryFn: async () => {
+                      const p = await blogsApi.getBySlug(post.slug);
+                      return p; // Mapped internally by the hook
+                    },
+                    staleTime: 5 * 60 * 1000,
+                  });
+                }}
                 className="group cursor-pointer bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl overflow-hidden border border-white/10 hover:border-emerald-500/30 transition-all"
               >
                 {/* Cover Image */}

@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Star, Gift, Calendar, CheckCircle, X, Sparkles, Award } from 'lucide-react';
 import { useApp, Voucher } from '@/app/context/AppContext';
 import { toast } from 'sonner';
-import { vouchersApi } from '@/app/lib/api';
 import { RewardsGridSkeleton } from '@/components/atoms/SkeletonLayouts';
+import { useVouchers } from '@/hooks/useVouchers';
 
 interface RewardsProps {
   onBack: () => void;
@@ -12,32 +12,10 @@ interface RewardsProps {
 
 export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
   const { user, userVouchers, redeemVoucher } = useApp();
-  const [vouchers, setVouchers] = useState<Voucher[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
   const [filter, setFilter] = useState<'all' | 'redeemed'>('all');
 
-  useEffect(() => {
-    vouchersApi.getAll().then((data: any[]) => {
-      const mapped: Voucher[] = data.map((v: any) => ({
-        id: v.id,
-        code: v.code,
-        title: v.title,
-        description: v.description ?? '',
-        discountType: v.discountType ?? 'percentage',
-        discountValue: v.discountValue ?? 0,
-        pointsCost: v.pointsCost ?? 0,
-        minPurchase: v.minPurchase ?? 0,
-        maxDiscount: v.maxDiscount,
-        expiryDate: v.expiryDate,
-        isActive: v.isActive ?? true,
-        image: v.image ?? '',
-        usageLimit: v.usageLimit ?? 100,
-        usedCount: v.usedCount ?? 0,
-      }));
-      setVouchers(mapped);
-    }).catch(console.error).finally(() => setIsLoading(false));
-  }, []);
+  const { data: vouchers = [], isLoading } = useVouchers();
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {

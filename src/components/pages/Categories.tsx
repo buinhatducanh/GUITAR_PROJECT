@@ -4,9 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Package } from 'lucide-react';
 import { Product } from '@/app/context/AppContext';
 import { ProductCard } from '@/components/organisms/ProductCard';
-import { productsApi, categoriesApi } from '@/app/lib/api';
 import { ICON_MAP } from '@/components/organisms/admin/CategoriesTab';
 import { CategoryGridSkeleton, ProductGridSkeleton } from '@/components/atoms/SkeletonLayouts';
+import { useProducts } from '@/hooks/useProducts';
+import { useAllCategories } from '@/hooks/useCategories';
 
 const COLORS = [
   'from-zinc-500 to-zinc-600',
@@ -24,45 +25,27 @@ export const Categories: React.FC = () => {
   const onBack = () => navigate(-1);
   const onViewProduct = (product: Product) => navigate(`/products/${product.id}`);
   const onBuyNow = (_product: Product) => navigate('/checkout');
-  const [products, setProducts] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [categories, setCategories] = useState<{ id: string; name: string; icon: any; color: string; count: number }[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    Promise.all([
-      productsApi.getAll({ limit: 100 }),
-      categoriesApi.getAll(),
-    ]).then(([prodRes, cats]) => {
-      const mapped: Product[] = prodRes.products.map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        price: Number(p.price),
-        oldPrice: p.oldPrice ? Number(p.oldPrice) : undefined,
-        discount: p.discount ?? undefined,
-        image: p.image ?? '',
-        category: typeof p.category === 'object' ? p.category?.name ?? '' : (p.category ?? ''),
-        description: p.description ?? '',
-        specs: Array.isArray(p.specs) ? p.specs : [],
-        rating: p.rating ?? 0,
-        reviews: [],
-      }));
-      setProducts(mapped);
+  const { data: productsData, isLoading: isLoadingProducts } = useProducts({ limit: 100 });
+  const products = productsData?.products || [];
 
-      const totalCount = mapped.length;
-      const catList = [
-        { id: 'all', name: 'Tất cả', icon: Package, color: COLORS[0], count: totalCount },
-        ...cats.map((c: any, idx: number) => ({
-          id: c.name,
-          name: c.name,
-          icon: ICON_MAP[c.icon] || Package,
-          color: COLORS[(idx + 1) % COLORS.length],
-          count: c._count?.products ?? 0,
-        })),
-      ];
-      setCategories(catList);
-    }).catch(console.error).finally(() => setIsLoading(false));
-  }, []);
+  const { data: cats = [], isLoading: isLoadingCategories } = useAllCategories();
+
+  const isLoading = isLoadingProducts || isLoadingCategories;
+
+  const categories = React.useMemo(() => {
+    return [
+      { id: 'all', name: 'Tất cả', icon: Package, color: COLORS[0], count: products.length },
+      ...cats.map((c: any, idx: number) => ({
+        id: c.name,
+        name: c.name,
+        icon: ICON_MAP[c.icon] || Package,
+        color: COLORS[(idx + 1) % COLORS.length],
+        count: c._count?.products ?? 0,
+      })),
+    ];
+  }, [cats, products.length]);
 
   const filteredProducts = selectedCategory === 'all'
     ? products

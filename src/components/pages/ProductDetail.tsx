@@ -4,41 +4,36 @@ import { ArrowLeft, ShoppingCart, Zap, Star, X, ZoomIn } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApp, Product } from '@/app/context/AppContext';
 import { toast } from 'sonner';
-import { productsApi } from '@/app/lib/api';
 import { ProductDetailSkeleton } from '@/components/atoms/SkeletonLayouts';
+import { useProductDetail } from '@/hooks/useProducts';
 
 export const ProductDetail: React.FC = () => {
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
   const { addToCart } = useApp();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: product, isLoading } = useProductDetail(slug || '');
+
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isZoomed, setIsZoomed] = useState(false);
-
   const closeZoom = useCallback(() => setIsZoomed(false), []);
 
   useEffect(() => {
-    if (!slug) return;
-    setIsLoading(true);
-    productsApi.getBySlug(slug).then((p: any) => {
-      const mapped: Product = {
-        id: p.id,
-        name: p.name,
-        price: Number(p.price),
-        oldPrice: p.oldPrice ? Number(p.oldPrice) : undefined,
-        discount: p.discount ?? undefined,
-        image: p.image ?? '',
-        category: typeof p.category === 'object' ? p.category?.name ?? '' : (p.category ?? ''),
-        description: p.description ?? '',
-        specs: Array.isArray(p.specs) ? p.specs : [],
-        rating: p.rating ?? 0,
-        reviews: [],
-      };
-      setProduct(mapped);
-    }).catch(console.error).finally(() => setIsLoading(false));
-  }, [slug]);
+    if (product) {
+      // Store recently viewed
+      const viewedProducts = JSON.parse(localStorage.getItem('viewedProducts') || '[]');
+      const isExist = viewedProducts.some((item: any) => item.id === product.id);
+
+      if (!isExist) {
+        // Keep only last 10 viewed
+        const newViewed = [
+          { id: product.id, name: product.name, image: product.image ?? '', price: Number(product.price) },
+          ...viewedProducts
+        ].slice(0, 10);
+        localStorage.setItem('viewedProducts', JSON.stringify(newViewed));
+      }
+    }
+  }, [product]);
 
   useEffect(() => {
     if (!isZoomed) return;

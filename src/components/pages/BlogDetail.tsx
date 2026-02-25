@@ -1,48 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Clock, Eye, Calendar, Tag, Share2, Heart, Loader2 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { BlogPost } from '@/app/context/AppContext';
-import { blogsApi } from '@/app/lib/api';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
+import { useBlogDetail } from '@/hooks/useBlogs';
 
 export const BlogDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const settings = useSettingsStore((state) => state.settings);
-  const [post, setPost] = useState<BlogPost | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!slug) return;
-    const fetchPost = async () => {
-      try {
-        setLoading(true);
-        const data = await blogsApi.getBySlug(slug);
-        setPost({
-          id: data.id,
-          slug: data.slug,
-          title: data.title,
-          excerpt: data.excerpt ?? '',
-          content: data.content ?? '',
-          coverImage: data.coverImage ?? '',
-          authorName: data.authorName ?? '',
-          authorAvatar: data.authorAvatar ?? '',
-          category: data.category ?? '',
-          tags: Array.isArray(data.tags) ? data.tags : [],
-          publishedDate: data.publishedDate ?? null,
-          readTime: data.readTime ?? 5,
-          views: data.views ?? 0,
-          isPublished: data.isPublished ?? true,
-        });
-      } catch (err) {
-        console.error('Failed to fetch blog post:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPost();
-  }, [slug]);
+  const { data: post, isLoading: loading } = useBlogDetail(slug || '');
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '';

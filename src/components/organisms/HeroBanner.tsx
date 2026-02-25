@@ -2,21 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { bannersApi } from '@/app/lib/api';
-
+import { useBanners } from '@/hooks/useBanners';
 export const HeroBanner: React.FC = () => {
   const navigate = useNavigate();
-  const [banners, setBanners] = useState<any[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  useEffect(() => {
-    bannersApi.getAll().then(res => {
-      const active = (Array.isArray(res) ? res : []).filter((b: any) => b.isActive);
-      setBanners(active);
-    }).catch(console.error);
-  }, []);
-
-  const activeBanners = banners;
+  const { data: bannersData = [] } = useBanners();
+  const activeBanners = bannersData.filter((b: any) => b.isActive);
 
   useEffect(() => {
     if (activeBanners.length === 0) return;

@@ -4,36 +4,18 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Percent, Tag, TrendingDown, Zap, Clock, Gift, Sparkles } from 'lucide-react';
 import { Product } from '@/app/context/AppContext';
 import { ProductCard } from '@/components/organisms/ProductCard';
-import { productsApi } from '@/app/lib/api';
 import { ProductGridSkeleton } from '@/components/atoms/SkeletonLayouts';
+import { useProducts } from '@/hooks/useProducts';
 
 export const Promo: React.FC = () => {
   const navigate = useNavigate();
   const onBack = () => navigate(-1);
   const onViewProduct = (product: Product) => navigate(`/products/${product.id}`);
   const onBuyNow = (_product: Product) => navigate('/checkout');
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'discount' | 'price' | 'name'>('discount');
 
-  useEffect(() => {
-    productsApi.getAll({ limit: 100 }).then(res => {
-      const mapped: Product[] = res.products.map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        price: Number(p.price),
-        oldPrice: p.oldPrice ? Number(p.oldPrice) : undefined,
-        discount: p.discount ?? undefined,
-        image: p.image ?? '',
-        category: typeof p.category === 'object' ? p.category?.name ?? '' : (p.category ?? ''),
-        description: p.description ?? '',
-        specs: Array.isArray(p.specs) ? p.specs : [],
-        rating: p.rating ?? 0,
-        reviews: [],
-      }));
-      setProducts(mapped);
-    }).catch(console.error).finally(() => setIsLoading(false));
-  }, []);;
+  const { data, isLoading } = useProducts({ limit: 100 });
+  const products = data?.products || [];
 
   const promoProducts = products.filter(p => p.discount && p.discount > 0);
 

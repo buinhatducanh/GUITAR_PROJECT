@@ -6,68 +6,32 @@ import { useApp, Product, BlogPost } from '@/app/context/AppContext';
 import { ProductCard } from '@/components/organisms/ProductCard';
 import { HeroBanner } from '@/components/organisms/HeroBanner';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
-import { blogsApi, productsApi, bannersApi, eventsApi, vouchersApi } from '@/app/lib/api';
 import { ProductGridSkeleton } from '@/components/atoms/SkeletonLayouts';
+import { useProducts } from '@/hooks/useProducts';
+import { useBlogs } from '@/hooks/useBlogs';
+import { useEvents } from '@/hooks/useEvents';
+import { useVouchers } from '@/hooks/useVouchers';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/app/lib/queryKeys';
+import { productsApi } from '@/app/lib/api';
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
   const settings = useSettingsStore((state) => state.settings);
-  const [publishedBlogs, setPublishedBlogs] = useState<BlogPost[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [banners, setBanners] = useState<any[]>([]);
-  const [events, setEvents] = useState<any[]>([]);
-  const [vouchers, setVouchers] = useState<any[]>([]);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    // Fetch Blogs
-    blogsApi.getAll({ published: 'true', limit: 3 }).then(res => {
-      const mapped: BlogPost[] = res.posts.map((p: any) => ({
-        id: p.id,
-        slug: p.slug,
-        title: p.title,
-        excerpt: p.excerpt ?? '',
-        content: p.content ?? '',
-        coverImage: p.coverImage ?? '',
-        authorName: p.authorName ?? '',
-        authorAvatar: p.authorAvatar ?? '',
-        category: p.category ?? '',
-        tags: Array.isArray(p.tags) ? p.tags : [],
-        publishedDate: p.publishedDate ?? null,
-        readTime: p.readTime ?? 5,
-        views: p.views ?? 0,
-        isPublished: p.isPublished ?? true,
-      }));
-      setPublishedBlogs(mapped);
-    }).catch(console.error);
+  // Fetch data using React Query hooks
+  const { data: blogsData } = useBlogs({ published: 'true', limit: 3 });
+  const publishedBlogs = blogsData?.posts || [];
 
-    // Fetch Products
-    productsApi.getAll({ limit: 8 }).then(res => {
-      const mapped: Product[] = res.products.map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        price: Number(p.price),
-        oldPrice: p.oldPrice ? Number(p.oldPrice) : undefined,
-        discount: p.discount ?? undefined,
-        image: p.image ?? '',
-        category: typeof p.category === 'object' ? p.category?.name ?? '' : (p.category ?? ''),
-        description: p.description ?? '',
-        specs: Array.isArray(p.specs) ? p.specs : [],
-        rating: p.rating ?? 0,
-        reviews: [],
-      }));
-      setProducts(mapped);
-    }).catch(console.error);
+  const { data: productsData, isLoading: isLoadingProducts } = useProducts({ limit: 8 });
+  const products = productsData?.products || [];
 
-    // Fetch Banners
-    bannersApi.getAll().then(res => setBanners(res)).catch(console.error);
+  const { data: eventsData = [] } = useEvents();
+  const events = eventsData;
 
-    // Fetch Events
-    eventsApi.getAll().then(res => setEvents(res)).catch(console.error);
-
-    // Fetch Vouchers
-    vouchersApi.getAll().then(res => setVouchers(res)).catch(console.error);
-
-  }, []);
+  const { data: vouchersData = [] } = useVouchers();
+  const vouchers = vouchersData;
 
   const featuredProducts = products.slice(0, 4);
   const newProducts = products.slice(0, 8); // Just show all we fetched
@@ -85,6 +49,20 @@ export const Home: React.FC = () => {
 
   const onNavigate = (path: string) => {
     navigate(path);
+  };
+
+  const prefetchProductsList = () => {
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.products.list({ limit: 100 }),
+      queryFn: async () => {
+        const res = await productsApi.getAll({ limit: 100 });
+        return {
+          products: res.products,
+          pagination: res.pagination,
+        };
+      },
+      staleTime: 5 * 60 * 1000,
+    });
   };
 
   return (
@@ -184,7 +162,7 @@ export const Home: React.FC = () => {
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {products.length === 0 ? (
+            {isLoadingProducts ? (
               <div className="col-span-4"><ProductGridSkeleton count={4} /></div>
             ) : featuredProducts.map((product, idx) => (
               <motion.div
@@ -210,6 +188,7 @@ export const Home: React.FC = () => {
             className="text-center mt-12"
           >
             <motion.button
+              onMouseEnter={prefetchProductsList}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => onNavigate('/products')}
@@ -243,6 +222,7 @@ export const Home: React.FC = () => {
               </p>
             </div>
             <motion.button
+              onMouseEnter={prefetchProductsList}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => onNavigate('/products')}
@@ -469,6 +449,7 @@ export const Home: React.FC = () => {
               </p>
               <div className="flex flex-wrap gap-4 justify-center">
                 <motion.button
+                  onMouseEnter={prefetchProductsList}
                   whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(251, 191, 36, 0.5)' }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => onNavigate('/products')}

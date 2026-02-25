@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Calendar, Gift, Star, Heart, Users, Trophy, Sparkles, CheckCircle2, Clock } from 'lucide-react';
 import { useApp, Event } from '@/app/context/AppContext';
 import { toast } from 'sonner';
-import { eventsApi } from '@/app/lib/api';
 import { EventsListSkeleton } from '@/components/atoms/SkeletonLayouts';
+import { useEvents } from '@/hooks/useEvents';
 
 interface EventsProps {
   onBack: () => void;
@@ -12,29 +12,10 @@ interface EventsProps {
 
 export const Events: React.FC<EventsProps> = ({ onBack }) => {
   const { user } = useApp();
-  const [events, setEvents] = useState<Event[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [filter, setFilter] = useState<'active' | 'upcoming' | 'past'>('active');
 
-  useEffect(() => {
-    eventsApi.getAll().then((data: any[]) => {
-      const mapped: Event[] = data.map((e: any) => ({
-        id: e.id,
-        title: e.title,
-        description: e.description ?? '',
-        type: e.type ?? 'special_day',
-        reward: e.reward ?? { type: 'points', value: 0 },
-        conditions: e.conditions ?? {},
-        startDate: e.startDate,
-        endDate: e.endDate,
-        isActive: e.isActive ?? true,
-        image: e.image ?? '',
-        progress: e.progress,
-      }));
-      setEvents(mapped);
-    }).catch(console.error).finally(() => setIsLoading(false));
-  }, []);
+  const { data: events = [], isLoading } = useEvents();
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('vi-VN', {

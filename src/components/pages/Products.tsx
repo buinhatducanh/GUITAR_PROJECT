@@ -1,41 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Filter, Search, Loader2 } from 'lucide-react';
+import { ArrowLeft, Filter, Search } from 'lucide-react';
 import { ProductCard } from '@/components/organisms/ProductCard';
 import { Product } from '@/app/context/AppContext';
+import { ProductGridSkeleton } from '@/components/atoms/SkeletonLayouts';
+import { useProducts } from '@/hooks/useProducts';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/app/lib/queryKeys';
 import { productsApi } from '@/app/lib/api';
-import { ProductGridSkeleton, FilterBarSkeleton } from '@/components/atoms/SkeletonLayouts';
 
 export const Products: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const onBack = () => navigate(-1);
   const onViewProduct = (product: Product) => navigate(`/products/${product.id}`);
   const onBuyNow = (_product: Product) => navigate('/checkout');
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    setIsLoading(true);
-    productsApi.getAll({ limit: 100 }).then(res => {
-      const mapped: Product[] = res.products.map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        price: Number(p.price),
-        oldPrice: p.oldPrice ? Number(p.oldPrice) : undefined,
-        discount: p.discount ?? undefined,
-        image: p.image ?? '',
-        category: typeof p.category === 'object' ? p.category?.name ?? '' : (p.category ?? ''),
-        description: p.description ?? '',
-        specs: Array.isArray(p.specs) ? p.specs : [],
-        rating: p.rating ?? 0,
-        reviews: [],
-      }));
-      setProducts(mapped);
-    }).catch(console.error).finally(() => setIsLoading(false));
-  }, []);
+  const { data, isLoading } = useProducts({ limit: 100 });
+  const products = data?.products || [];
 
   const categories = ['all', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
 
@@ -116,6 +102,16 @@ export const Products: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.05 }}
+                onMouseEnter={() => {
+                  queryClient.prefetchQuery({
+                    queryKey: queryKeys.products.detail(product.id),
+                    queryFn: async () => {
+                      const p = await productsApi.getBySlug(product.id);
+                      return p; // Assuming the map is done in useProductDetail hook safely
+                    },
+                    staleTime: 5 * 60 * 1000,
+                  });
+                }}
               >
                 <ProductCard
                   product={product}
