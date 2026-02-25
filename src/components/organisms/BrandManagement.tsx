@@ -41,7 +41,8 @@ export const BrandManagement: React.FC = () => {
 
   const fetchBrands = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/brands');
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://srv-d6fauhddi7vc738mkimg.onrender.com/api';
+      const response = await fetch(`${API_BASE}/brands`);
       const data = await response.json();
       setBrands(data.brands || []);
     } catch (error) {
@@ -55,9 +56,10 @@ export const BrandManagement: React.FC = () => {
     e.preventDefault();
 
     try {
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://srv-d6fauhddi7vc738mkimg.onrender.com/api';
       const url = editingBrand
-        ? `http://localhost:3001/api/brands/${editingBrand.id}`
-        : 'http://localhost:3001/api/brands';
+        ? `${API_BASE}/brands/${editingBrand.id}`
+        : `${API_BASE}/brands`;
 
       const method = editingBrand ? 'PUT' : 'POST';
 
@@ -85,7 +87,8 @@ export const BrandManagement: React.FC = () => {
     if (!confirm('Bạn có chắc muốn xóa brand này?')) return;
 
     try {
-      const response = await fetch(`http://localhost:3001/api/brands/${id}`, {
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://srv-d6fauhddi7vc738mkimg.onrender.com/api';
+      const response = await fetch(`${API_BASE}/brands/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -257,9 +260,8 @@ export const BrandManagement: React.FC = () => {
             </div>
 
             <div className="mt-4 pt-4 border-t border-zinc-800">
-              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                brand.isActive ? 'bg-green-500/20 text-green-400' : 'bg-zinc-700 text-zinc-400'
-              }`}>
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${brand.isActive ? 'bg-green-500/20 text-green-400' : 'bg-zinc-700 text-zinc-400'
+                }`}>
                 {brand.isActive ? 'Hoạt động' : 'Tạm dừng'}
               </span>
             </div>
