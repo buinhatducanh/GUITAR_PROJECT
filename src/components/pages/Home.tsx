@@ -7,7 +7,7 @@ import { ProductCard } from '@/components/organisms/ProductCard';
 import { HeroBanner } from '@/components/organisms/HeroBanner';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
 import { ProductGridSkeleton } from '@/components/atoms/SkeletonLayouts';
-import { useProducts } from '@/hooks/useProducts';
+import { useProducts, mapProduct } from '@/hooks/useProducts';
 import { useBlogs } from '@/hooks/useBlogs';
 import { useEvents } from '@/hooks/useEvents';
 import { useVouchers } from '@/hooks/useVouchers';
@@ -57,7 +57,7 @@ export const Home: React.FC = () => {
       queryFn: async () => {
         const res = await productsApi.getAll({ limit: 100 });
         return {
-          products: res.products,
+          products: res.products.map(mapProduct),
           pagination: res.pagination,
         };
       },

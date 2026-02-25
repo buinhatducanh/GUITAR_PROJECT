@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { ArrowLeft, Clock, Eye, Calendar, Tag, Search, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BlogPost } from '@/app/context/AppContext';
-import { useBlogs } from '@/hooks/useBlogs';
+import { useBlogs, mapBlogPost } from '@/hooks/useBlogs';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/app/lib/queryKeys';
 import { blogsApi } from '@/app/lib/api';
@@ -118,7 +118,7 @@ export const BlogList: React.FC = () => {
                     queryKey: queryKeys.blogs.detail(post.slug),
                     queryFn: async () => {
                       const p = await blogsApi.getBySlug(post.slug);
-                      return p; // Mapped internally by the hook
+                      return mapBlogPost(p);
                     },
                     staleTime: 5 * 60 * 1000,
                   });

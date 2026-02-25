@@ -4,7 +4,7 @@ import { queryKeys } from '@/app/lib/queryKeys';
 import { Product } from '@/app/context/AppContext';
 
 // Helper to map API response to AppContext Product type
-const mapProduct = (p: any): Product => ({
+export const mapProduct = (p: any): Product => ({
     id: p.id,
     name: p.name,
     price: Number(p.price),

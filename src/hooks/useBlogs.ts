@@ -4,7 +4,7 @@ import { queryKeys } from '@/app/lib/queryKeys';
 import { BlogPost } from '@/app/context/AppContext';
 
 // Helper to map API response to AppContext BlogPost type
-const mapBlogPost = (p: any): BlogPost => ({
+export const mapBlogPost = (p: any): BlogPost => ({
     id: p.id,
     slug: p.slug,
     title: p.title,

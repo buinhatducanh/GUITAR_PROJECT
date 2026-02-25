@@ -5,7 +5,7 @@ import { ArrowLeft, Filter, Search } from 'lucide-react';
 import { ProductCard } from '@/components/organisms/ProductCard';
 import { Product } from '@/app/context/AppContext';
 import { ProductGridSkeleton } from '@/components/atoms/SkeletonLayouts';
-import { useProducts } from '@/hooks/useProducts';
+import { useProducts, mapProduct } from '@/hooks/useProducts';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/app/lib/queryKeys';
 import { productsApi } from '@/app/lib/api';
@@ -107,7 +107,7 @@ export const Products: React.FC = () => {
                     queryKey: queryKeys.products.detail(product.id),
                     queryFn: async () => {
                       const p = await productsApi.getBySlug(product.id);
-                      return p; // Assuming the map is done in useProductDetail hook safely
+                      return mapProduct(p);
                     },
                     staleTime: 5 * 60 * 1000,
                   });
