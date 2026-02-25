@@ -1,22 +1,48 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Clock, Eye, Calendar, Tag, Share2, Heart } from 'lucide-react';
+import { ArrowLeft, Clock, Eye, Calendar, Tag, Share2, Heart, Loader2 } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { BlogPost } from '@/app/context/AppContext';
 import { blogsApi } from '@/app/lib/api';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
 
-interface BlogDetailProps {
-  post: BlogPost;
-  onBack: () => void;
-}
-
-export const BlogDetail: React.FC<BlogDetailProps> = ({ post, onBack }) => {
+export const BlogDetail: React.FC = () => {
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const settings = useSettingsStore((state) => state.settings);
+  const [post, setPost] = useState<BlogPost | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Trigger view count increment on the server by fetching the post by slug
-    blogsApi.getBySlug(post.slug).catch(() => {/* silently ignore */});
-  }, [post.slug]);
+    if (!slug) return;
+    const fetchPost = async () => {
+      try {
+        setLoading(true);
+        const data = await blogsApi.getBySlug(slug);
+        setPost({
+          id: data.id,
+          slug: data.slug,
+          title: data.title,
+          excerpt: data.excerpt ?? '',
+          content: data.content ?? '',
+          coverImage: data.coverImage ?? '',
+          authorName: data.authorName ?? '',
+          authorAvatar: data.authorAvatar ?? '',
+          category: data.category ?? '',
+          tags: Array.isArray(data.tags) ? data.tags : [],
+          publishedDate: data.publishedDate ?? null,
+          readTime: data.readTime ?? 5,
+          views: data.views ?? 0,
+          isPublished: data.isPublished ?? true,
+        });
+      } catch (err) {
+        console.error('Failed to fetch blog post:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPost();
+  }, [slug]);
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '';
@@ -27,13 +53,30 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ post, onBack }) => {
     });
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black pt-24 flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-emerald-400 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!post) {
+    return (
+      <div className="min-h-screen bg-black pt-24 flex flex-col items-center justify-center gap-4">
+        <p className="text-xl text-white/60">Không tìm thấy bài viết</p>
+        <button onClick={() => navigate('/blog')} className="text-emerald-400 hover:underline">Quay lại danh sách</button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-black pt-24 pb-16">
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Back Button */}
         <motion.button
           whileHover={{ x: -5 }}
-          onClick={onBack}
+          onClick={() => navigate('/blog')}
           className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-8"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -238,7 +281,7 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ post, onBack }) => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={onBack}
+            onClick={() => navigate('/blog')}
             className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/50 transition-all"
           >
             Xem thêm bài viết

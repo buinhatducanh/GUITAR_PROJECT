@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Clock, Eye, Calendar, Tag, Search, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { blogsApi } from '@/app/lib/api';
 import { BlogPost } from '@/app/context/AppContext';
 
-interface BlogListProps {
-  onBack: () => void;
-  onSelectPost: (post: BlogPost) => void;
-}
-
-export const BlogList: React.FC<BlogListProps> = ({ onBack, onSelectPost }) => {
+export const BlogList: React.FC = () => {
+  const navigate = useNavigate();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,8 +47,8 @@ export const BlogList: React.FC<BlogListProps> = ({ onBack, onSelectPost }) => {
 
   const filteredPosts = posts.filter(post => {
     const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+      post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCategory = selectedCategory === 'all' || post.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -78,7 +75,7 @@ export const BlogList: React.FC<BlogListProps> = ({ onBack, onSelectPost }) => {
         <div className="container mx-auto px-4 py-8">
           <motion.button
             whileHover={{ x: -5 }}
-            onClick={onBack}
+            onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-4"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -111,11 +108,10 @@ export const BlogList: React.FC<BlogListProps> = ({ onBack, onSelectPost }) => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-xl font-medium transition-all ${
-                  selectedCategory === category
-                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white'
-                    : 'bg-white/5 text-white/60 hover:bg-white/10'
-                }`}
+                className={`px-4 py-2 rounded-xl font-medium transition-all ${selectedCategory === category
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white'
+                  : 'bg-white/5 text-white/60 hover:bg-white/10'
+                  }`}
               >
                 {category === 'all' ? 'Tất cả' : category}
               </motion.button>
@@ -142,7 +138,7 @@ export const BlogList: React.FC<BlogListProps> = ({ onBack, onSelectPost }) => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.1 }}
                 whileHover={{ y: -5 }}
-                onClick={() => onSelectPost(post)}
+                onClick={() => navigate(`/blog/${post.slug}`)}
                 className="group cursor-pointer bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl overflow-hidden border border-white/10 hover:border-emerald-500/30 transition-all"
               >
                 {/* Cover Image */}
