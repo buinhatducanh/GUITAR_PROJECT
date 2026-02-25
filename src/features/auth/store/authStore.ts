@@ -12,7 +12,7 @@ interface AuthState {
 interface AuthActions {
     login: (phone: string, password: string) => Promise<void>;
     register: (name: string, phone: string, password: string) => Promise<void>;
-    googleLogin: (credential: string) => Promise<void>;
+    googleLogin: (accessToken: string) => Promise<void>;
     logout: () => void;
     setUser: (user: User | null) => void;
     updatePoints: (points: number) => void;
@@ -66,9 +66,9 @@ export const useAuthStore = create<AuthStore>()(
                 }
             },
 
-            googleLogin: async (credential: string) => {
+            googleLogin: async (accessToken: string) => {
                 try {
-                    const response = await authApi.googleLogin(credential);
+                    const response = await authApi.googleLogin(accessToken);
                     const { user, token } = response;
 
                     set({

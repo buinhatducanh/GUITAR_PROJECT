@@ -45,10 +45,10 @@ export const authApi = {
 
     getMe: () => request<any>('/auth/me'),
 
-    googleLogin: (credential: string) =>
+    googleLogin: (accessToken: string) =>
         request<{ user: any; token: string }>('/auth/google', {
             method: 'POST',
-            body: JSON.stringify({ credential }),
+            body: JSON.stringify({ accessToken }),
         }),
 };
 

@@ -93,20 +93,36 @@ router.post('/login', async (req, res) => {
 /** POST /api/auth/google — authenticate via Google Sign-In popup */
 router.post('/google', async (req, res) => {
     try {
-        const { credential } = req.body;
-        if (!credential) {
-            res.status(400).json({ error: 'Missing Google credential' });
+        const { credential, accessToken } = req.body;
+        if (!credential && !accessToken) {
+            res.status(400).json({ error: 'Missing Google credentials' });
             return;
         }
 
-        const ticket = await googleClient.verifyIdToken({
-            idToken: credential,
-            audience: process.env.GOOGLE_CLIENT_ID || '793211982417-tgutr9h682lucoqi66gpc778q23or95a.apps.googleusercontent.com',
-        });
-        const payload = ticket.getPayload();
+        let payload: any = null;
+
+        if (accessToken) {
+            // Verify and get user info using accessToken
+            const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            if (!response.ok) {
+                res.status(400).json({ error: 'Invalid Google access token' });
+                return;
+            }
+            payload = await response.json();
+            // UserInfo endpoint returns `sub` as the user ID, same as ID token
+        } else if (credential) {
+            // Verify ID Token (credential)
+            const ticket = await googleClient.verifyIdToken({
+                idToken: credential,
+                audience: process.env.GOOGLE_CLIENT_ID || '793211982417-tgutr9h682lucoqi66gpc778q23or95a.apps.googleusercontent.com',
+            });
+            payload = ticket.getPayload();
+        }
 
         if (!payload || !payload.email) {
-            res.status(400).json({ error: 'Invalid Google token' });
+            res.status(400).json({ error: 'Invalid Google token payload' });
             return;
         }
 
