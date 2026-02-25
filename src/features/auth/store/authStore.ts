@@ -11,6 +11,7 @@ interface AuthState {
 interface AuthActions {
     login: (phone: string, password: string) => Promise<void>;
     register: (name: string, phone: string, password: string) => Promise<void>;
+    googleLogin: (credential: string) => Promise<void>;
     logout: () => void;
     setUser: (user: User | null) => void;
     updatePoints: (points: number) => void;
@@ -80,6 +81,34 @@ export const useAuthStore = create<AuthStore>()(
                     localStorage.setItem('auth_token', token);
                 } catch (error) {
                     console.error('Registration error:', error);
+                    throw error;
+                }
+            },
+
+            googleLogin: async (credential: string) => {
+                try {
+                    const response = await fetch('/api/auth/google', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ credential }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Google Login failed');
+                    }
+
+                    const json = await response.json();
+                    const { user, token } = json.data ?? json;
+
+                    set({
+                        user,
+                        token,
+                        isAuthenticated: true,
+                    });
+
+                    localStorage.setItem('auth_token', token);
+                } catch (error) {
+                    console.error('Google Login error:', error);
                     throw error;
                 }
             },

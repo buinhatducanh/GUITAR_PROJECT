@@ -19,6 +19,10 @@ export interface GuestCheckoutDto {
     phone: string;
 }
 
+export interface GoogleAuthDto {
+    credential: string; // Google ID token from frontend
+}
+
 export interface AuthResponse {
     user: UserResponse;
     token: string;
@@ -27,13 +31,13 @@ export interface AuthResponse {
 export interface UserResponse {
     id: string;
     name: string;
-    phone: string;
+    phone: string | null;
     email: string | null;
     avatar: string | null;
     points: number;
     role: string;
     tier: string;
-    lastLogin?: Date;
+    lastLogin?: Date | null;
     createdAt: Date;
 }
 

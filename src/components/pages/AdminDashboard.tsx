@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +22,7 @@ import { LandingPagesTab } from '@/components/organisms/admin/LandingPagesTab';
 import { BlogPostsTab } from '@/components/organisms/admin/BlogPostsTab';
 import { OrdersTab } from '@/components/organisms/admin/OrdersTab';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
 const tabAnimation = {
   initial: { opacity: 0, y: 20 },
@@ -32,6 +33,7 @@ const tabAnimation = {
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const settings = useSettingsStore((state) => state.settings);
+
   const {
     products, setProducts,
     vouchers, setVouchers,
@@ -42,6 +44,12 @@ export const AdminDashboard: React.FC = () => {
   } = useApp();
 
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  // Real-time order notifications
+  const handleNewOrder = useCallback(() => {
+    setActiveTab('orders');
+  }, []);
+  useOrderNotifications(handleNewOrder);
 
   const deleteFrom = <T extends { id: string }>(items: T[], setItems: (v: T[]) => void, label: string) =>
     (id: string) => { setItems(items.filter(i => i.id !== id)); toast.success(`Đã xóa ${label}`); };

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { useAuthStore } from '../../features/auth/store/authStore';
 
 export interface Product {
   id: string;
@@ -201,6 +202,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [users, setUsers] = useState<UserData[]>([]);
   const [allReviews, setAllReviews] = useState<Review[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+
+  // Sync authStore user to AppContext user
+  const authStoreUser = useAuthStore((state) => state.user);
+  useEffect(() => {
+    setUser(authStoreUser as User | null);
+  }, [authStoreUser]);
 
   // Initialize login streak tracking
   useEffect(() => {

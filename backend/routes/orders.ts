@@ -2,11 +2,25 @@ import { Router } from 'express';
 import { randomUUID } from 'crypto';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin, type AuthRequest } from '../middleware/auth.js';
+import { rateLimit } from '../middleware/rateLimit.js';
+import { notifyNewOrder } from '../lib/notifications.js';
 
 const router = Router();
 
+const orderGuestLimiter = rateLimit({
+    windowMs: 60_000,  // 1 phút
+    max: 3,            // Max 3 đơn/phút cho guest
+    message: 'Bạn đã đặt quá nhiều đơn hàng. Vui lòng thử lại sau 1 phút.',
+});
+
+const orderAuthLimiter = rateLimit({
+    windowMs: 60_000,  // 1 phút
+    max: 5,            // Max 5 đơn/phút cho user đăng nhập
+    message: 'Bạn đã đặt quá nhiều đơn hàng. Vui lòng thử lại sau 1 phút.',
+});
+
 /** POST /api/orders/guest — create order without auth (guest checkout) */
-router.post('/guest', async (req, res) => {
+router.post('/guest', orderGuestLimiter, async (req, res) => {
     try {
         const { guestName, phone, items, address, notes, totalAmount, voucherCode } = req.body;
 
@@ -78,6 +92,9 @@ router.post('/guest', async (req, res) => {
         });
 
         res.status(201).json(order);
+
+        // Real-time notification to admin
+        notifyNewOrder(order);
     } catch (err: any) {
         console.error('Create guest order error:', err?.message || err);
         console.error('Full error:', JSON.stringify(err, null, 2));
@@ -107,7 +124,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
 });
 
 /** POST /api/orders — create order */
-router.post('/', authenticate, async (req: AuthRequest, res) => {
+router.post('/', authenticate, orderAuthLimiter, async (req: AuthRequest, res) => {
     try {
         const { items, address, phone, notes, totalAmount, voucherCode } = req.body;
 
@@ -204,6 +221,9 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
         });
 
         res.status(201).json(order);
+
+        // Real-time notification to admin
+        notifyNewOrder(order);
     } catch (err) {
         console.error('Create order error:', err);
         res.status(500).json({ error: 'Lỗi server' });

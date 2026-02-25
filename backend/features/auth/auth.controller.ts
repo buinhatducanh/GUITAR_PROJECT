@@ -51,6 +51,24 @@ export const login = async (req: Request, res: Response) => {
 };
 
 /**
+ * POST /api/auth/google
+ * Login/Register via Google OAuth
+ */
+export const googleLogin = async (req: Request, res: Response) => {
+    try {
+        const result = await authService.googleLogin(req.body);
+        return successResponse(res, result);
+    } catch (error) {
+        if (error instanceof Error) {
+            if (error.message === 'Token Google không hợp lệ') {
+                return errorResponse(res, error, 401);
+            }
+        }
+        return errorResponse(res, error);
+    }
+};
+
+/**
  * POST /api/auth/guest-checkout
  * Find or create user by phone for guest checkout
  */

@@ -20,6 +20,7 @@ import shippingRoutes from './routes/shipping.js';
 // ─── MVC Feature Routes ─────────────────────────────────
 import authRoutes from './features/auth/auth.routes.js';
 import brandsRoutes from './features/brands/brands.routes.js';
+import { addClient } from './lib/notifications.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -52,6 +53,11 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/shipping', shippingRoutes);
+
+// ─── SSE Notifications Stream ───────────────────
+app.get('/api/notifications/stream', (req, res) => {
+    addClient(req, res);
+});
 
 // ─── 404 handler ────────────────────────────────
 app.use((_req, res) => {

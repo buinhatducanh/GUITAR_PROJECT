@@ -5,9 +5,13 @@
 
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import prisma from '../../shared/lib/prisma.js';
 import { JWT_SECRET } from '../../shared/middleware/auth.js';
-import type { RegisterDto, LoginDto, GuestCheckoutDto, AuthResponse, UserResponse, TokenPayload } from './auth.types.js';
+import type { RegisterDto, LoginDto, GuestCheckoutDto, GoogleAuthDto, AuthResponse, UserResponse, TokenPayload } from './auth.types.js';
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 /**
  * Register new user
@@ -184,6 +188,82 @@ export const getCurrentUser = async (userId: string): Promise<UserResponse> => {
     }
 
     return user;
+};
+
+/**
+ * Login/Register via Google OAuth
+ */
+export const googleLogin = async (data: GoogleAuthDto): Promise<AuthResponse> => {
+    if (!data.credential) {
+        throw new Error('Token Google không hợp lệ');
+    }
+
+    // Verify Google ID token
+    const ticket = await googleClient.verifyIdToken({
+        idToken: data.credential,
+        audience: GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload || !payload.sub) {
+        throw new Error('Token Google không hợp lệ');
+    }
+
+    const { sub: googleId, email, name, picture } = payload;
+
+    // Try to find existing user by googleId
+    let user = await prisma.user.findUnique({ where: { googleId } });
+
+    if (!user && email) {
+        // Try to find by email and link Google account
+        user = await prisma.user.findUnique({ where: { email } });
+        if (user) {
+            user = await prisma.user.update({
+                where: { id: user.id },
+                data: { googleId, avatar: user.avatar || picture },
+            });
+        }
+    }
+
+    if (!user) {
+        // Create new user from Google info
+        const { randomUUID } = await import('crypto');
+        const hashedPassword = await bcrypt.hash(randomUUID(), 10);
+
+        user = await prisma.user.create({
+            data: {
+                googleId,
+                email: email || undefined,
+                name: name || 'Google User',
+                password: hashedPassword,
+                avatar: picture || undefined,
+                points: 100, // Welcome bonus
+            },
+        });
+    }
+
+    // Update last login
+    await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLogin: new Date() },
+    });
+
+    const token = generateToken({ userId: user.id, role: user.role });
+
+    return {
+        user: {
+            id: user.id,
+            name: user.name,
+            phone: user.phone,
+            email: user.email,
+            avatar: user.avatar,
+            points: user.points,
+            role: user.role,
+            tier: user.tier,
+            lastLogin: new Date(),
+            createdAt: user.createdAt,
+        },
+        token,
+    };
 };
 
 /**

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, CreditCard, CheckCircle2, Phone, MapPin, Store, Hash, Ticket, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +22,16 @@ export const Checkout: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        fullName: prev.fullName || user.name || '',
+        phone: prev.phone || user.phone || ''
+      }));
+    }
+  }, [user]);
 
   const [voucherInput, setVoucherInput] = useState('');
   const [appliedVoucher, setAppliedVoucher] = useState<{ code: string; discountAmount: number; message: string } | null>(null);
@@ -289,7 +299,7 @@ export const Checkout: React.FC = () => {
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-white/80 mb-2">Họ và tên</label>
+                    <label className="block text-white/80 mb-2">Họ và tên <span className="text-amber-500">*</span></label>
                     <input
                       type="text"
                       name="fullName"
@@ -316,7 +326,6 @@ export const Checkout: React.FC = () => {
                       />
                     </div>
                   </div>
-
                   {/* Address fields only shown for delivery */}
                   {!isPickup && (
                     <>

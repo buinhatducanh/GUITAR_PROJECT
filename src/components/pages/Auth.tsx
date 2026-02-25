@@ -5,6 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../features/auth/store/authStore';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
 import { toast } from 'sonner';
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 interface AuthProps {
   mode: 'login' | 'register';
@@ -12,7 +15,7 @@ interface AuthProps {
 
 export const Auth: React.FC<AuthProps> = ({ mode }) => {
   const navigate = useNavigate();
-  const { login, register } = useAuthStore();
+  const { login, register, googleLogin } = useAuthStore();
   const settings = useSettingsStore((state) => state.settings);
   const [formData, setFormData] = useState({
     name: '',
@@ -199,6 +202,49 @@ export const Auth: React.FC<AuthProps> = ({ mode }) => {
                   : mode === 'login' ? 'Đăng nhập' : 'Đăng ký'}
               </motion.button>
             </form>
+
+            <div className="mt-8 mb-4">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/10"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 text-white/40" style={{ background: 'linear-gradient(to bottom right, #18181b, #09090b)' }}>Hoặc tiếp tục với</span>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-center">
+                {GOOGLE_CLIENT_ID ? (
+                  <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+                    <GoogleLogin
+                      onSuccess={async (credentialResponse) => {
+                        if (credentialResponse.credential) {
+                          try {
+                            setIsLoading(true);
+                            await googleLogin(credentialResponse.credential);
+                            toast.success('Đăng nhập Google thành công!');
+                            navigate('/');
+                          } catch (error) {
+                            toast.error('Đăng nhập Google thất bại!');
+                          } finally {
+                            setIsLoading(false);
+                          }
+                        }
+                      }}
+                      onError={() => {
+                        toast.error('Đăng nhập Google thất bại!');
+                      }}
+                      theme="filled_black"
+                      shape="pill"
+                      text={mode === 'login' ? 'signin_with' : 'signup_with'}
+                    />
+                  </GoogleOAuthProvider>
+                ) : (
+                  <div className="text-amber-500 text-sm p-4 border border-amber-500/30 rounded-lg text-center w-full bg-amber-500/10">
+                    Chưa cấu hình Google (Thiếu <code>VITE_GOOGLE_CLIENT_ID</code> trong .env)
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* Toggle Mode */}
             <div className="mt-6 text-center">
