@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '../../../shared/types';
+import { authApi } from '@/app/lib/api';
 
 interface AuthState {
     user: User | null;
@@ -30,18 +31,8 @@ export const useAuthStore = create<AuthStore>()(
             // Actions
             login: async (phone: string, password: string) => {
                 try {
-                    const response = await fetch('/api/auth/login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ phone, password }),
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Login failed');
-                    }
-
-                    const json = await response.json();
-                    const { user, token } = json.data ?? json;
+                    const response = await authApi.login(phone, password);
+                    const { user, token } = response;
 
                     set({
                         user,
@@ -59,18 +50,8 @@ export const useAuthStore = create<AuthStore>()(
 
             register: async (name: string, phone: string, password: string) => {
                 try {
-                    const response = await fetch('/api/auth/register', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, phone, password }),
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Registration failed');
-                    }
-
-                    const json = await response.json();
-                    const { user, token } = json.data ?? json;
+                    const response = await authApi.register(name, phone, password);
+                    const { user, token } = response;
 
                     set({
                         user,
@@ -87,18 +68,8 @@ export const useAuthStore = create<AuthStore>()(
 
             googleLogin: async (credential: string) => {
                 try {
-                    const response = await fetch('/api/auth/google', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ credential }),
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Google Login failed');
-                    }
-
-                    const json = await response.json();
-                    const { user, token } = json.data ?? json;
+                    const response = await authApi.googleLogin(credential);
+                    const { user, token } = response;
 
                     set({
                         user,

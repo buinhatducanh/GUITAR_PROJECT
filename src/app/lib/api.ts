@@ -44,6 +44,12 @@ export const authApi = {
         }),
 
     getMe: () => request<any>('/auth/me'),
+
+    googleLogin: (credential: string) =>
+        request<{ user: any; token: string }>('/auth/google', {
+            method: 'POST',
+            body: JSON.stringify({ credential }),
+        }),
 };
 
 // ─── Products API ───────────────────────────────
