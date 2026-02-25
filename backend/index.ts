@@ -26,7 +26,15 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // ─── Middleware ─────────────────────────────────
-app.use(cors());
+app.use(cors({
+    origin: [
+        'http://localhost:5173',
+        'https://guitarproject.vercel.app',
+    ],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+}));
 app.use(express.json({ limit: '10mb' }));
 
 // ─── Health check ───────────────────────────────
