@@ -1,9 +1,9 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'https://srv-d6fauhddi7vc738mkimg.onrender.com/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 // ─── Helper ─────────────────────────────────────
 
 function getAuthHeaders(): Record<string, string> {
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token');
     return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -25,22 +25,24 @@ async function request<T>(
         throw new Error(error.error || `HTTP ${res.status}`);
     }
 
-    return res.json();
+    const json = await res.json();
+    // Backend wraps responses in { success, data }; unwrap for callers
+    return json.data !== undefined ? json.data : json;
 }
 
 // ─── Auth API ───────────────────────────────────
 
 export const authApi = {
-    login: (email: string, password: string) =>
+    login: (phone: string, password: string) =>
         request<{ user: any; token: string }>('/auth/login', {
             method: 'POST',
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ phone, password }),
         }),
 
-    register: (name: string, email: string, password: string) =>
+    register: (name: string, phone: string, password: string) =>
         request<{ user: any; token: string }>('/auth/register', {
             method: 'POST',
-            body: JSON.stringify({ name, email, password }),
+            body: JSON.stringify({ name, phone, password }),
         }),
 
     getMe: () => request<any>('/auth/me'),

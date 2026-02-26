@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type { User } from '../../../shared/types';
 import { authApi } from '@/app/lib/api';
 
@@ -41,7 +41,7 @@ export const useAuthStore = create<AuthStore>()(
                     });
 
                     // Save token to localStorage
-                    localStorage.setItem('auth_token', token);
+                    sessionStorage.setItem('auth_token', token);
                 } catch (error) {
                     console.error('Login error:', error);
                     throw error;
@@ -59,7 +59,7 @@ export const useAuthStore = create<AuthStore>()(
                         isAuthenticated: true,
                     });
 
-                    localStorage.setItem('auth_token', token);
+                    sessionStorage.setItem('auth_token', token);
                 } catch (error) {
                     console.error('Registration error:', error);
                     throw error;
@@ -77,7 +77,7 @@ export const useAuthStore = create<AuthStore>()(
                         isAuthenticated: true,
                     });
 
-                    localStorage.setItem('auth_token', token);
+                    sessionStorage.setItem('auth_token', token);
                 } catch (error) {
                     console.error('Google Login error:', error);
                     throw error;
@@ -90,7 +90,7 @@ export const useAuthStore = create<AuthStore>()(
                     token: null,
                     isAuthenticated: false,
                 });
-                localStorage.removeItem('auth_token');
+                sessionStorage.removeItem('auth_token');
             },
 
             setUser: (user: User | null) => {
@@ -114,6 +114,7 @@ export const useAuthStore = create<AuthStore>()(
         }),
         {
             name: 'auth-storage',
+            storage: createJSONStorage(() => sessionStorage),
             partialize: (state) => ({
                 user: state.user,
                 token: state.token,

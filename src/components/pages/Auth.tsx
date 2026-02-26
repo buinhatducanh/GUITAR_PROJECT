@@ -1,15 +1,38 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
-import { LogIn, UserPlus, ArrowLeft, Phone } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { LogIn, UserPlus, ArrowLeft, Phone, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../features/auth/store/authStore';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
 import { toast } from 'sonner';
-import { GoogleLogin } from '@react-oauth/google';
+import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 
 interface AuthProps {
   mode: 'login' | 'register';
 }
+
+interface FieldErrors {
+  name?: string;
+  phone?: string;
+  password?: string;
+  confirmPassword?: string;
+}
+
+const FieldError: React.FC<{ message?: string }> = ({ message }) => (
+  <AnimatePresence>
+    {message && (
+      <motion.p
+        initial={{ opacity: 0, y: -4, height: 0 }}
+        animate={{ opacity: 1, y: 0, height: 'auto' }}
+        exit={{ opacity: 0, y: -4, height: 0 }}
+        className="flex items-center gap-1.5 mt-1.5 text-red-400 text-sm"
+      >
+        <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+        {message}
+      </motion.p>
+    )}
+  </AnimatePresence>
+);
 
 export const Auth: React.FC<AuthProps> = ({ mode }) => {
   const navigate = useNavigate();
@@ -21,9 +44,14 @@ export const Auth: React.FC<AuthProps> = ({ mode }) => {
     password: '',
     confirmPassword: ''
   });
+  const [errors, setErrors] = useState<FieldErrors>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+    if (!credentialResponse.credential) {
+      toast.error('Đăng nhập Google thất bại!');
+      return;
+    }
     try {
       setIsLoading(true);
       await googleLogin(credentialResponse.credential);
@@ -41,14 +69,17 @@ export const Auth: React.FC<AuthProps> = ({ mode }) => {
   };
 
   const handleToggleMode = () => {
+    setErrors({});
     navigate(mode === 'login' ? '/register' : '/login', { replace: true });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    // Clear error for this field when user types
+    if (errors[name as keyof FieldErrors]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
 
   const validatePhone = (phone: string): boolean => {
@@ -56,43 +87,87 @@ export const Auth: React.FC<AuthProps> = ({ mode }) => {
     return phoneRegex.test(phone);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const validateForm = (): boolean => {
+    const newErrors: FieldErrors = {};
 
-    if (!validatePhone(formData.phone)) {
-      toast.error('Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại Việt Nam (VD: 0912345678)');
-      return;
+    // Phone validation
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Vui lòng nhập số điện thoại';
+    } else if (!validatePhone(formData.phone)) {
+      newErrors.phone = 'Số điện thoại không hợp lệ (VD: 0912345678)';
+    }
+
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = 'Vui lòng nhập mật khẩu';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
     }
 
     if (mode === 'register') {
-      if (formData.password !== formData.confirmPassword) {
-        toast.error('Mật khẩu không khớp!');
-        return;
+      // Name validation
+      if (!formData.name.trim()) {
+        newErrors.name = 'Vui lòng nhập họ và tên';
+      } else if (formData.name.trim().length < 2) {
+        newErrors.name = 'Họ và tên phải có ít nhất 2 ký tự';
       }
 
-      setIsLoading(true);
-      try {
-        await register(formData.name, formData.phone, formData.password);
-        toast.success('Đăng ký thành công!');
-        navigate('/');
-      } catch {
-        toast.error('Đăng ký thất bại! Số điện thoại có thể đã được sử dụng.');
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      setIsLoading(true);
-      try {
-        await login(formData.phone, formData.password);
-        toast.success('Đăng nhập thành công!');
-        navigate('/');
-      } catch {
-        toast.error('Số điện thoại hoặc mật khẩu không đúng!');
-      } finally {
-        setIsLoading(false);
+      // Confirm password
+      if (!formData.confirmPassword) {
+        newErrors.confirmPassword = 'Vui lòng xác nhận mật khẩu';
+      } else if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp';
       }
     }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+    try {
+      if (mode === 'register') {
+        await register(formData.name, formData.phone, formData.password);
+        toast.success('Đăng ký thành công!');
+      } else {
+        await login(formData.phone, formData.password);
+        toast.success('Đăng nhập thành công!');
+      }
+      navigate('/');
+    } catch (error: any) {
+      const msg = error?.message || '';
+
+      if (mode === 'login') {
+        // Map backend errors to inline field errors
+        if (msg.includes('mật khẩu không đúng') || msg.includes('điện thoại')) {
+          setErrors({ phone: ' ', password: 'Số điện thoại hoặc mật khẩu không đúng' });
+        } else {
+          toast.error(msg || 'Đăng nhập thất bại!');
+        }
+      } else {
+        if (msg.includes('đã được sử dụng')) {
+          setErrors({ phone: 'Số điện thoại này đã được đăng ký' });
+        } else if (msg.includes('điền đầy đủ')) {
+          toast.error('Vui lòng điền đầy đủ thông tin!');
+        } else {
+          toast.error(msg || 'Đăng ký thất bại!');
+        }
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const inputClass = (field: keyof FieldErrors) =>
+    `w-full px-4 py-3 bg-black/30 border rounded-xl text-white placeholder:text-white/40 focus:outline-none transition-colors ${errors[field]?.trim()
+      ? 'border-red-500/60 focus:border-red-400'
+      : 'border-white/10 focus:border-amber-500/50'
+    }`;
 
   return (
     <div className="min-h-screen bg-black pt-24 pb-16 flex items-center justify-center">
@@ -141,7 +216,7 @@ export const Auth: React.FC<AuthProps> = ({ mode }) => {
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               {mode === 'register' && (
                 <div>
                   <label className="block text-white/80 mb-2">Họ và tên</label>
@@ -150,10 +225,10 @@ export const Auth: React.FC<AuthProps> = ({ mode }) => {
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500/50 transition-colors"
+                    className={inputClass('name')}
                     placeholder="Nguyễn Văn A"
                   />
+                  <FieldError message={errors.name} />
                 </div>
               )}
 
@@ -166,11 +241,11 @@ export const Auth: React.FC<AuthProps> = ({ mode }) => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    required
-                    className="w-full pl-12 pr-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500/50 transition-colors"
+                    className={`${inputClass('phone')} !pl-12`}
                     placeholder="0912345678"
                   />
                 </div>
+                <FieldError message={errors.phone?.trim() ? errors.phone : undefined} />
               </div>
 
               <div>
@@ -180,10 +255,10 @@ export const Auth: React.FC<AuthProps> = ({ mode }) => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500/50 transition-colors"
+                  className={inputClass('password')}
                   placeholder="••••••••"
                 />
+                <FieldError message={errors.password} />
               </div>
 
               {mode === 'register' && (
@@ -194,10 +269,10 @@ export const Auth: React.FC<AuthProps> = ({ mode }) => {
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500/50 transition-colors"
+                    className={inputClass('confirmPassword')}
                     placeholder="••••••••"
                   />
+                  <FieldError message={errors.confirmPassword} />
                 </div>
               )}
 
@@ -226,8 +301,8 @@ export const Auth: React.FC<AuthProps> = ({ mode }) => {
               <div className="mt-6 flex justify-center">
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
-                  onError={() => toast.error('Đăng nhập Google thất bại!')}
-                  theme="filled_black"
+                  onError={() => toast.error('Đăng nhập Google thất bại. Vui lòng thử lại!')}
+                  theme="outline"
                   size="large"
                   width="100%"
                   text={mode === 'login' ? 'signin_with' : 'signup_with'}
