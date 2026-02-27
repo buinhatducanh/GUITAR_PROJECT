@@ -13,6 +13,7 @@ interface AuthActions {
     login: (phone: string, password: string) => Promise<void>;
     register: (name: string, phone: string, password: string) => Promise<void>;
     googleLogin: (credential: string) => Promise<void>;
+    fetchMe: () => Promise<void>;
     logout: () => void;
     setUser: (user: User | null) => void;
     updatePoints: (points: number) => void;
@@ -81,6 +82,26 @@ export const useAuthStore = create<AuthStore>()(
                 } catch (error) {
                     console.error('Google Login error:', error);
                     throw error;
+                }
+            },
+
+            fetchMe: async () => {
+                try {
+                    const data = await authApi.getMe();
+                    const current = get().user;
+                    if (current) {
+                        set({
+                            user: {
+                                ...current,
+                                ...data,
+                                joinDate: data.joinDate || data.createdAt || current.joinDate,
+                                totalOrders: data.totalOrders ?? 0,
+                                totalSpent: Number(data.totalSpent) || 0,
+                            },
+                        });
+                    }
+                } catch (error) {
+                    console.error('fetchMe error:', error);
                 }
             },
 

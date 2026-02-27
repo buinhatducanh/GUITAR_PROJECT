@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, User, Mail, Calendar, Star, ShoppingBag, Award, TrendingUp, Gift, Clock, CheckCircle, Truck, XCircle, Loader2 } from 'lucide-react';
 import { useApp } from '@/app/context/AppContext';
+import { useAuthStore } from '@/features/auth/store/authStore';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
 import { ordersApi } from '@/app/lib/api';
 
@@ -40,21 +41,37 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
   const handleBack = () => onBack ? onBack() : navigate(-1);
   const handleNavigate = (page: string) => onNavigate ? onNavigate(page) : navigate(`/${page}`);
 
+  const fetchMe = useAuthStore((state) => state.fetchMe);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [ordersError, setOrdersError] = useState<string | null>(null);
+  const [ordersRetry, setOrdersRetry] = useState(0);
+
+  // Refresh user stats (totalOrders, totalSpent) from backend on mount
+  useEffect(() => {
+    if (user) {
+      fetchMe();
+    }
+  }, [user, fetchMe]);
+
+  const loadOrders = React.useCallback(() => {
+    if (!user) return;
+    setLoadingOrders(true);
+    setOrdersError(null);
+    ordersApi.getAll().then(data => {
+      const fetchedOrders = Array.isArray(data) ? data : (data as any).orders || [];
+      setOrders(fetchedOrders);
+    }).catch((err) => {
+      console.error('Failed to load orders', err);
+      setOrdersError('Không thể tải đơn hàng. Vui lòng thử lại.');
+    }).finally(() => setLoadingOrders(false));
+  }, [user]);
 
   useEffect(() => {
-    if (activeTab === 'orders' && user) {
-      setLoadingOrders(true);
-      ordersApi.getAll().then(data => {
-        // Handle both raw array and wrapper objects just in case
-        const fetchedOrders = Array.isArray(data) ? data : (data as any).orders || [];
-        setOrders(fetchedOrders);
-      }).catch((err) => {
-        console.error('Failed to load orders', err);
-      }).finally(() => setLoadingOrders(false));
+    if (activeTab === 'orders') {
+      loadOrders();
     }
-  }, [activeTab, user]);
+  }, [activeTab, loadOrders, ordersRetry]);
 
   const getStatusLabel = (status: string) => {
     const map: Record<string, string> = {
@@ -93,11 +110,12 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
     );
   }
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: number | undefined | null) => {
+    const safePrice = Number(price) || 0;
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND'
-    }).format(price);
+    }).format(safePrice);
   };
 
   const formatDate = (date: string) => {
@@ -189,7 +207,7 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
               <ShoppingBag className="w-10 h-10 text-blue-400" />
             </div>
             <p className="text-blue-200 text-sm mb-1">Tổng đơn hàng</p>
-            <p className="text-3xl font-bold text-white">{user.totalOrders}</p>
+            <p className="text-3xl font-bold text-white">{user.totalOrders ?? 0}</p>
           </motion.div>
 
           <motion.div
@@ -320,6 +338,20 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
             {loadingOrders ? (
               <div className="flex justify-center py-20">
                 <Loader2 className="w-10 h-10 text-purple-400 animate-spin" />
+              </div>
+            ) : ordersError ? (
+              <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 border border-red-500/20 text-center">
+                <XCircle className="w-16 h-16 text-red-400/40 mx-auto mb-4" />
+                <h3 className="text-xl text-white mb-2">Lỗi tải dữ liệu</h3>
+                <p className="text-white/60 mb-6">{ordersError}</p>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setOrdersRetry(r => r + 1)}
+                  className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-xl"
+                >
+                  Thử lại
+                </motion.button>
               </div>
             ) : orders.length === 0 ? (
               <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 border border-white/10 text-center">
