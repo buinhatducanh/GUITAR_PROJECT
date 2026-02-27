@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, User, Mail, Calendar, Star, ShoppingBag, Award, TrendingUp, Gift, Clock, CheckCircle, Truck, XCircle, Loader2 } from 'lucide-react';
 import { useApp } from '@/app/context/AppContext';
@@ -47,15 +47,20 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
   const [ordersError, setOrdersError] = useState<string | null>(null);
   const [ordersRetry, setOrdersRetry] = useState(0);
 
-  // Refresh user stats (totalOrders, totalSpent) from backend on mount
+  // Refresh user stats (totalOrders, totalSpent) from backend — run once on mount only
+  const hasFetchedMe = useRef(false);
   useEffect(() => {
-    if (user) {
+    if (user && !hasFetchedMe.current) {
+      hasFetchedMe.current = true;
       fetchMe();
     }
   }, [user, fetchMe]);
 
+  const userRef = useRef(user);
+  userRef.current = user;
+
   const loadOrders = React.useCallback(() => {
-    if (!user) return;
+    if (!userRef.current) return;
     setLoadingOrders(true);
     setOrdersError(null);
     ordersApi.getAll().then(data => {
@@ -65,7 +70,7 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
       console.error('Failed to load orders', err);
       setOrdersError('Không thể tải đơn hàng. Vui lòng thử lại.');
     }).finally(() => setLoadingOrders(false));
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'orders') {
