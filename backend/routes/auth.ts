@@ -33,7 +33,16 @@ router.post('/register', async (req, res) => {
 
         const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
-        res.status(201).json({ user, token });
+        res.status(201).json({
+            user: {
+                ...user,
+                joinDate: user.createdAt,
+                lastLogin: new Date(),
+                totalOrders: 0,
+                totalSpent: 0,
+            },
+            token,
+        });
     } catch (err) {
         console.error('Register error:', err);
         res.status(500).json({ error: 'Lỗi server' });
