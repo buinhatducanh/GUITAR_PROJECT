@@ -9,6 +9,7 @@ import { OAuth2Client } from 'google-auth-library';
 import prisma from '../../shared/lib/prisma.js';
 import { JWT_SECRET } from '../../shared/middleware/auth.js';
 import type { RegisterDto, LoginDto, GuestCheckoutDto, GoogleAuthDto, AuthResponse, UserResponse, TokenPayload } from './auth.types.js';
+import { notifyWelcome } from '../../lib/notification.helper.js';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
@@ -56,6 +57,9 @@ export const register = async (data: RegisterDto): Promise<AuthResponse> => {
 
     // Generate JWT token
     const token = generateToken({ userId: user.id, role: user.role });
+
+    // Send welcome notification
+    notifyWelcome(user.id, user.name);
 
     return { user, token };
 };
@@ -253,6 +257,9 @@ export const googleLogin = async (data: GoogleAuthDto): Promise<AuthResponse> =>
                 points: 100, // Welcome bonus
             },
         });
+
+        // Send welcome notification for new Google users
+        notifyWelcome(user.id, user.name);
     }
 
     // Update last login

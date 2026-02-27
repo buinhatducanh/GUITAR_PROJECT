@@ -4,6 +4,7 @@ import { authenticate, requireAdmin, type AuthRequest } from '../middleware/auth
 import { deleteCloudinaryImages, collectImageUrls } from '../shared/utils/cloudinary-cleanup.js';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../shared/middleware/auth.js';
+import { notifyVoucherReceived } from '../lib/notification.helper.js';
 
 const router = Router();
 
@@ -113,6 +114,9 @@ router.post('/:id/redeem', authenticate, async (req: AuthRequest, res) => {
         ]);
 
         res.json({ message: 'Đổi voucher thành công', points: updatedUser.points });
+
+        // Notify user about voucher received
+        notifyVoucherReceived(req.userId!, voucher.title, voucher.code);
     } catch (err) {
         console.error('Redeem voucher error:', err);
         res.status(500).json({ error: 'Lỗi server' });

@@ -361,9 +361,36 @@ export const analyticsApi = {
 
 // ─── Notifications API ───────────────────────────
 
+export interface NotificationQuery {
+    page?: number;
+    limit?: number;
+    type?: string;
+    unread?: boolean;
+}
+
 export const notificationsApi = {
-    getAll: () => request<any[]>('/notifications'),
+    getAll: (params?: NotificationQuery) => {
+        const searchParams = new URLSearchParams();
+        if (params) {
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) {
+                    searchParams.set(key, String(value));
+                }
+            });
+        }
+        const query = searchParams.toString();
+        return request<{ notifications: any[]; pagination: any }>(`/notifications${query ? `?${query}` : ''}`);
+    },
     getUnreadCount: () => request<{ count: number }>('/notifications/unread-count'),
     markAsRead: (id: string) => request<any>(`/notifications/${id}/read`, { method: 'PUT' }),
-    markAllAsRead: () => request<any>('/notifications/read-all', { method: 'PUT' }),
+    markAllAsRead: () => request<{ success: boolean; count: number }>('/notifications/read-all', { method: 'PUT' }),
+    deleteOne: (id: string) => request<{ success: boolean }>(`/notifications/${id}`, { method: 'DELETE' }),
+    deleteAllRead: () => request<{ success: boolean; count: number }>('/notifications', { method: 'DELETE' }),
+
+    // Admin endpoints
+    broadcast: (data: { type?: string; title: string; message: string; link?: string; priority?: string }) =>
+        request<{ success: boolean; count: number }>('/notifications/admin/broadcast', { method: 'POST', body: JSON.stringify(data) }),
+    sendToUser: (data: { userId: string; type?: string; title: string; message: string; link?: string; priority?: string }) =>
+        request<any>('/notifications/admin/send', { method: 'POST', body: JSON.stringify(data) }),
+    getStats: () => request<{ total: number; unread: number; byType: { type: string; count: number }[] }>('/notifications/admin/stats'),
 };

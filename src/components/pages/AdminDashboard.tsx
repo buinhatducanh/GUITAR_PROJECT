@@ -21,6 +21,7 @@ import { SettingsTab } from '@/components/organisms/admin/SettingsTab';
 import { LandingPagesTab } from '@/components/organisms/admin/LandingPagesTab';
 import { BlogPostsTab } from '@/components/organisms/admin/BlogPostsTab';
 import { OrdersTab } from '@/components/organisms/admin/OrdersTab';
+import { NotificationsTab } from '@/components/organisms/admin/NotificationsTab';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
@@ -93,6 +94,7 @@ export const AdminDashboard: React.FC = () => {
               {activeTab === 'vouchers' && <motion.div key="vouchers" {...tabAnimation}><VouchersTab vouchers={vouchers} onDelete={deleteFrom(vouchers, setVouchers, 'voucher')} onEdit={stubEdit} onAdd={stubAdd} /></motion.div>}
               {activeTab === 'events' && <motion.div key="events" {...tabAnimation}><EventsTab events={events} onDelete={deleteFrom(events, setEvents, 'sự kiện')} onEdit={stubEdit} onAdd={stubAdd} /></motion.div>}
               {activeTab === 'shipping' && <motion.div key="shipping" {...tabAnimation}><ShippingTab /></motion.div>}
+              {activeTab === 'notifications' && <motion.div key="notifications" {...tabAnimation}><NotificationsTab /></motion.div>}
               {activeTab === 'settings' && <motion.div key="settings" {...tabAnimation}><SettingsTab /></motion.div>}
               {activeTab === 'landing' && <motion.div key="landing" {...tabAnimation}><LandingPagesTab pages={landingPages} onDelete={deleteFrom(landingPages, setLandingPages, 'landing page')} onEdit={stubEdit} onAdd={stubAdd} /></motion.div>}
               {activeTab === 'blog' && <motion.div key="blog" {...tabAnimation}><BlogPostsTab /></motion.div>}

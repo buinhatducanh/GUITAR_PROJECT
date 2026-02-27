@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Bell, Package, CheckCircle, Truck, XCircle, Gift, Info } from 'lucide-react';
+import {
+    Bell, Package, CheckCircle, Truck, XCircle, Gift, Info,
+    Star, Trophy, Megaphone, UserPlus, Trash2, X
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useNotificationStore, type Notification } from '@/features/notifications/store/notificationStore';
 import { useAuthStore } from '@/features/auth/store/authStore';
@@ -15,23 +18,34 @@ export const NotificationBell: React.FC = () => {
         fetchUnreadCount,
         markAsRead,
         markAllAsRead,
-        hasFetched
+        deleteNotification,
+        deleteAllRead,
+        hasFetched,
+        connectSSE,
     } = useNotificationStore();
 
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
-    // Initial fetch & polling
+    // Initial fetch, polling & SSE
     useEffect(() => {
         if (!user) return;
 
         fetchUnreadCount();
+
+        // Connect SSE for real-time notifications
+        const disconnectSSE = connectSSE();
+
+        // Fallback polling every 60s (in case SSE is not connected)
         const pollInterval = setInterval(() => {
             fetchUnreadCount();
-        }, 30000); // 30s
+        }, 60000);
 
-        return () => clearInterval(pollInterval);
-    }, [user, fetchUnreadCount]);
+        return () => {
+            clearInterval(pollInterval);
+            disconnectSSE?.();
+        };
+    }, [user, fetchUnreadCount, connectSSE]);
 
     // Fetch full list when opening
     useEffect(() => {
@@ -61,6 +75,11 @@ export const NotificationBell: React.FC = () => {
         }
     };
 
+    const handleDelete = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        deleteNotification(id);
+    };
+
     const formatTime = (dateString: string) => {
         const date = new Date(dateString);
         const now = new Date();
@@ -85,13 +104,27 @@ export const NotificationBell: React.FC = () => {
             case 'ORDER_SHIPPED': return <Truck className="w-5 h-5 text-purple-400" />;
             case 'ORDER_DELIVERED': return <CheckCircle className="w-5 h-5 text-green-400" />;
             case 'ORDER_CANCELLED': return <XCircle className="w-5 h-5 text-red-400" />;
-            case 'PROMO':
-            case 'VOUCHER_RECEIVED': return <Gift className="w-5 h-5 text-pink-400" />;
+            case 'VOUCHER_RECEIVED':
+            case 'VOUCHER_EXPIRING': return <Gift className="w-5 h-5 text-pink-400" />;
+            case 'POINTS_EARNED': return <Star className="w-5 h-5 text-amber-400" />;
+            case 'TIER_UPGRADE': return <Trophy className="w-5 h-5 text-yellow-400" />;
+            case 'PROMO': return <Megaphone className="w-5 h-5 text-orange-400" />;
+            case 'WELCOME': return <UserPlus className="w-5 h-5 text-emerald-400" />;
+            case 'REVIEW_REMINDER': return <Star className="w-5 h-5 text-blue-300" />;
             default: return <Info className="w-5 h-5 text-zinc-400" />;
         }
     };
 
+    const getPriorityIndicator = (priority?: string) => {
+        if (priority === 'URGENT') return 'border-l-2 border-l-red-500';
+        if (priority === 'HIGH') return 'border-l-2 border-l-amber-500';
+        return '';
+    };
+
     if (!user) return null;
+
+    const readNotifications = notifications.filter(n => n.isRead);
+    const hasReadNotifications = readNotifications.length > 0;
 
     return (
         <div className="relative" ref={menuRef}>
@@ -125,15 +158,33 @@ export const NotificationBell: React.FC = () => {
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-white/10 shrink-0">
-                            <h3 className="font-bold text-lg text-white">Thông báo</h3>
-                            {unreadCount > 0 && (
-                                <button
-                                    onClick={() => markAllAsRead()}
-                                    className="text-amber-500 hover:text-amber-400 text-sm font-medium transition-colors"
-                                >
-                                    Đánh dấu đã đọc
-                                </button>
-                            )}
+                            <div className="flex items-center gap-2">
+                                <h3 className="font-bold text-lg text-white">Thông báo</h3>
+                                {unreadCount > 0 && (
+                                    <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-xs font-semibold rounded-full">
+                                        {unreadCount} mới
+                                    </span>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {hasReadNotifications && (
+                                    <button
+                                        onClick={() => deleteAllRead()}
+                                        className="text-white/40 hover:text-red-400 transition-colors p-1"
+                                        title="Xóa thông báo đã đọc"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                )}
+                                {unreadCount > 0 && (
+                                    <button
+                                        onClick={() => markAllAsRead()}
+                                        className="text-amber-500 hover:text-amber-400 text-sm font-medium transition-colors"
+                                    >
+                                        Đọc tất cả
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {/* List */}
@@ -141,36 +192,49 @@ export const NotificationBell: React.FC = () => {
                             {notifications.length === 0 ? (
                                 <div className="py-8 text-center text-white/50">
                                     <Bell className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                                    <p>Bạn không có thông báo nào</p>
+                                    <p className="text-sm">Bạn không có thông báo nào</p>
+                                    <p className="text-xs text-white/30 mt-1">Thông báo mới sẽ hiển thị ở đây</p>
                                 </div>
                             ) : (
                                 notifications.map((notification) => (
                                     <motion.div
                                         key={notification.id}
                                         layout
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 10, height: 0 }}
                                         onClick={() => handleNotificationClick(notification)}
-                                        className={`flex gap-3 p-3 rounded-xl cursor-pointer transition-colors ${notification.isRead
-                                                ? 'hover:bg-white/5 opacity-80'
+                                        className={`group flex gap-3 p-3 rounded-xl cursor-pointer transition-colors ${getPriorityIndicator(notification.priority)} ${notification.isRead
+                                                ? 'hover:bg-white/5 opacity-70'
                                                 : 'bg-white/5 hover:bg-white/10'
                                             }`}
                                     >
-                                        <div className="flex-shrink-0 mt-1">
+                                        <div className="flex-shrink-0 mt-0.5">
                                             {getIcon(notification.type)}
                                         </div>
-                                        <div className="flex-1 min-w-0 pr-2">
-                                            <p className={`text-sm mb-1 ${notification.isRead ? 'text-white/90' : 'text-white font-semibold'}`}>
-                                                {/* Bold parts of the message that might be variables like order numbers if we had them formatted that way, but for now just show message */}
-                                                <span className="block">{notification.message}</span>
+                                        <div className="flex-1 min-w-0 pr-1">
+                                            <p className={`text-xs mb-0.5 ${notification.isRead ? 'text-white/50' : 'text-amber-400/80 font-medium'}`}>
+                                                {notification.title}
                                             </p>
-                                            <p className={`text-xs ${notification.isRead ? 'text-white/40' : 'text-amber-400/80 font-medium'}`}>
+                                            <p className={`text-sm leading-snug ${notification.isRead ? 'text-white/70' : 'text-white'}`}>
+                                                {notification.message}
+                                            </p>
+                                            <p className={`text-xs mt-1 ${notification.isRead ? 'text-white/30' : 'text-white/50'}`}>
                                                 {formatTime(notification.createdAt)}
                                             </p>
                                         </div>
-                                        {!notification.isRead && (
-                                            <div className="flex-shrink-0 flex items-center">
-                                                <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                                            </div>
-                                        )}
+                                        <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                                            {!notification.isRead && (
+                                                <div className="w-2 h-2 rounded-full bg-amber-500 mt-1"></div>
+                                            )}
+                                            <button
+                                                onClick={(e) => handleDelete(e, notification.id)}
+                                                className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all p-0.5"
+                                                title="Xóa"
+                                            >
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
                                     </motion.div>
                                 ))
                             )}

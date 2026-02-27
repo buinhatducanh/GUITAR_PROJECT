@@ -1,23 +1,25 @@
 import { Request, Response } from 'express';
 
 /**
- * SSE-based notification service for real-time admin events.
+ * SSE-based notification service for real-time events.
  *
- * Admin clients connect via GET /api/notifications/stream.
- * When an order is created, call `notifyNewOrder(order)` to push
- * the event to all connected admin clients.
+ * Supports two modes:
+ * 1. Admin stream: GET /api/notifications/stream (for admin dashboard)
+ * 2. User stream:  GET /api/notifications/stream/user (for logged-in user notifications)
  */
 
 interface SSEClient {
     id: string;
+    userId?: string; // If set, this is a user-specific client
+    role?: string;
     res: Response;
 }
 
 const clients: SSEClient[] = [];
 
-/** Add a new SSE client connection */
+/** Add a new SSE admin client connection */
 export function addClient(req: Request, res: Response): void {
-    const clientId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const clientId = `admin-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
     // SSE headers
     res.writeHead(200, {
@@ -31,11 +33,11 @@ export function addClient(req: Request, res: Response): void {
     res.write(`data: ${JSON.stringify({ type: 'connected', clientId })}\n\n`);
 
     clients.push({ id: clientId, res });
-    console.log(`📡 SSE client connected: ${clientId} (total: ${clients.length})`);
+    console.log(`📡 SSE admin client connected: ${clientId} (total: ${clients.length})`);
 
     // Keep-alive ping every 30s
     const keepAlive = setInterval(() => {
-        res.write(`: ping\n\n`);
+        try { res.write(`: ping\n\n`); } catch { /* client disconnected */ }
     }, 30_000);
 
     // Remove client on disconnect
@@ -43,18 +45,70 @@ export function addClient(req: Request, res: Response): void {
         clearInterval(keepAlive);
         const idx = clients.findIndex(c => c.id === clientId);
         if (idx !== -1) clients.splice(idx, 1);
-        console.log(`📡 SSE client disconnected: ${clientId} (total: ${clients.length})`);
+        console.log(`📡 SSE admin client disconnected: ${clientId} (total: ${clients.length})`);
     });
 }
 
-/** Broadcast an event to all connected clients */
-function broadcast(event: string, data: any): void {
+/** Add a user-specific SSE client connection */
+export function addUserClient(req: Request, res: Response, userId: string): void {
+    const clientId = `user-${userId}-${Date.now()}`;
+
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+    });
+
+    res.write(`data: ${JSON.stringify({ type: 'connected', clientId })}\n\n`);
+
+    clients.push({ id: clientId, userId, res });
+    console.log(`📡 SSE user client connected: ${clientId} (total: ${clients.length})`);
+
+    const keepAlive = setInterval(() => {
+        try { res.write(`: ping\n\n`); } catch { /* client disconnected */ }
+    }, 30_000);
+
+    req.on('close', () => {
+        clearInterval(keepAlive);
+        const idx = clients.findIndex(c => c.id === clientId);
+        if (idx !== -1) clients.splice(idx, 1);
+        console.log(`📡 SSE user client disconnected: ${clientId} (total: ${clients.length})`);
+    });
+}
+
+/** Broadcast an event to all connected admin clients (those without userId) */
+function broadcastAdmin(event: string, data: any): void {
     const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-    clients.forEach(client => {
+    clients.filter(c => !c.userId).forEach(client => {
         try {
             client.res.write(payload);
         } catch {
             // Client disconnected, will be cleaned up
+        }
+    });
+}
+
+/** Broadcast an event to a specific user */
+export function broadcastToUser(userId: string, event: string, data: any): void {
+    const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+    clients.filter(c => c.userId === userId).forEach(client => {
+        try {
+            client.res.write(payload);
+        } catch {
+            // Client disconnected
+        }
+    });
+}
+
+/** Broadcast an event to all user clients */
+export function broadcastToAllUsers(event: string, data: any): void {
+    const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+    clients.filter(c => !!c.userId).forEach(client => {
+        try {
+            client.res.write(payload);
+        } catch {
+            // Client disconnected
         }
     });
 }
@@ -69,7 +123,7 @@ export function notifyNewOrder(order: {
     items?: any[];
     createdAt?: Date;
 }): void {
-    broadcast('new_order', {
+    broadcastAdmin('new_order', {
         id: order.id,
         orderNumber: order.orderNumber,
         totalAmount: order.totalAmount,
@@ -81,10 +135,17 @@ export function notifyNewOrder(order: {
 }
 
 /** Notify admin about order status change */
-export function notifyOrderStatusChange(order: {
+export function notifyOrderStatusChangeSSE(order: {
     id: string;
     orderNumber: string;
     status: string;
 }): void {
-    broadcast('order_status', order);
+    broadcastAdmin('order_status', order);
+}
+
+/** Get connected clients count */
+export function getClientStats() {
+    const adminClients = clients.filter(c => !c.userId).length;
+    const userClients = clients.filter(c => !!c.userId).length;
+    return { total: clients.length, admin: adminClients, user: userClients };
 }

@@ -308,18 +308,47 @@ enum OrderStatus {
 }
 
 model Notification {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
   userId    String
-  type      String
+  type      NotificationType @default(SYSTEM)
   title     String
   message   String
   link      String?
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isRead    Boolean          @default(false)
+  priority  NotificationPriority @default(NORMAL)
+  metadata  Json?
+  expiresAt DateTime?
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@index([type])
   @@map("notifications")
+}
+
+enum NotificationType {
+  ORDER_PLACED
+  ORDER_CONFIRMED
+  ORDER_PROCESSING
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  ORDER_CANCELLED
+  VOUCHER_RECEIVED
+  VOUCHER_EXPIRING
+  POINTS_EARNED
+  TIER_UPGRADE
+  PROMO
+  SYSTEM
+  WELCOME
+  REVIEW_REMINDER
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
 }
 
 model SiteSettings {

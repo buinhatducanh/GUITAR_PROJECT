@@ -22,7 +22,7 @@ import shippingRoutes from './routes/shipping.js';
 // ─── MVC Feature Routes ─────────────────────────────────
 import authRoutes from './features/auth/auth.routes.js';
 import brandsRoutes from './features/brands/brands.routes.js';
-import { addClient } from './lib/notifications.js';
+import { addClient, getClientStats } from './lib/notifications.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -72,6 +72,11 @@ app.use('/api/shipping', shippingRoutes);
 // ─── SSE Notifications Stream ───────────────────
 app.get('/api/notifications/stream', (req, res) => {
     addClient(req, res);
+});
+
+// ─── SSE Stats (debug) ─────────────────────────
+app.get('/api/notifications/sse-stats', (_req, res) => {
+    res.json(getClientStats());
 });
 
 // ─── 404 handler ────────────────────────────────
