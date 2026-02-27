@@ -109,4 +109,12 @@ export const routes: RouteObject[] = [
             </AdminGuard>
         ),
     },
+    {
+        path: '/admin/:tab',
+        element: (
+            <AdminGuard>
+                <AdminDashboard />
+            </AdminGuard>
+        ),
+    },
 ];

@@ -1,21 +1,40 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { LandingPageData } from '@/app/context/AppContext';
+import { LandingPageData, useApp } from '@/app/context/AppContext';
+import { useParams, useNavigate } from 'react-router-dom';
 
 interface LandingPageViewProps {
-  landingPage: LandingPageData;
-  onBack: () => void;
+  landingPage?: LandingPageData;
+  onBack?: () => void;
 }
 
-export const LandingPageView: React.FC<LandingPageViewProps> = ({ landingPage, onBack }) => {
+export const LandingPageView: React.FC<LandingPageViewProps> = ({
+  landingPage: propLandingPage,
+  onBack: propOnBack
+}) => {
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+  const { landingPages } = useApp();
+
+  const landingPage = propLandingPage || landingPages.find(p => p.slug === slug);
+  const handleBack = propOnBack || (() => navigate(-1));
+
+  if (!landingPage) {
+    return (
+      <div className="min-h-screen bg-black pt-24 flex items-center justify-center">
+        <div className="text-white text-xl">Không tìm thấy trang</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-black pt-24 pb-16">
       {/* Back Button */}
       <div className="container mx-auto px-4 mb-8">
         <motion.button
           whileHover={{ x: -5 }}
-          onClick={onBack}
+          onClick={handleBack}
           className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -158,7 +177,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ landingPage, o
               >
                 <div className="bg-gradient-to-r from-amber-900/30 via-orange-900/30 to-amber-900/30 rounded-3xl p-16 text-center border border-amber-500/20 relative overflow-hidden">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(251,191,36,0.15),transparent_70%)]" />
-                  
+
                   <div className="relative">
                     {section.title && (
                       <h2 className="text-5xl font-bold text-white mb-6">
