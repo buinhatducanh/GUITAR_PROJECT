@@ -1,7 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApp } from '@/app/context/AppContext';
 import { toast } from 'sonner';
 
@@ -44,12 +44,32 @@ export const AdminDashboard: React.FC = () => {
     landingPages, setLandingPages,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const { tab: urlTab } = useParams<{ tab: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const initialTab = urlTab || searchParams.get('tab') || 'dashboard';
+  const [activeTab, setActiveTabState] = useState(initialTab);
+
+  const setActiveTab = useCallback((newTab: string) => {
+    setActiveTabState(newTab);
+    if (urlTab) {
+      navigate(`/admin/${newTab}`, { replace: true });
+    } else {
+      setSearchParams({ tab: newTab }, { replace: true });
+    }
+  }, [navigate, urlTab, setSearchParams]);
+
+  useEffect(() => {
+    const tabToUse = urlTab || searchParams.get('tab');
+    if (tabToUse && tabToUse !== activeTab) {
+      setActiveTabState(tabToUse);
+    }
+  }, [urlTab, searchParams, activeTab]);
 
   // Real-time order notifications
   const handleNewOrder = useCallback(() => {
     setActiveTab('orders');
-  }, []);
+  }, [setActiveTab]);
   useOrderNotifications(handleNewOrder);
 
   const deleteFrom = <T extends { id: string }>(items: T[], setItems: (v: T[]) => void, label: string) =>

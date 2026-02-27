@@ -151,6 +151,30 @@ export function notifyOrderPlaced(userId: string, orderNumber: string) {
     );
 }
 
+export async function notifyAdminsNewOrder(orderNumber: string, totalAmount: number) {
+    try {
+        const admins = await prisma.user.findMany({
+            where: { role: 'ADMIN' },
+            select: { id: true }
+        });
+
+        const inputs: CreateNotificationInput[] = admins.map(admin => ({
+            userId: admin.id,
+            type: 'SYSTEM',
+            title: 'Có đơn hàng mới!',
+            message: `Đơn hàng ${orderNumber} trị giá ${totalAmount.toLocaleString('vi-VN')}đ vừa được đặt.`,
+            link: '/admin/orders',
+            priority: 'HIGH',
+            metadata: { orderNumber, totalAmount }
+        }));
+
+        return await createBulkNotifications(inputs);
+    } catch (error) {
+        console.error('Failed to notify admins of new order:', error);
+        return null;
+    }
+}
+
 export function notifyOrderStatusChange(
     userId: string,
     orderNumber: string,

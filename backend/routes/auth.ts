@@ -81,6 +81,8 @@ router.post('/login', async (req, res) => {
                 role: user.role,
                 tier: user.tier,
                 lastLogin: new Date(),
+                totalOrders: 0,
+                totalSpent: 0,
             },
             token,
         });
@@ -175,6 +177,8 @@ router.post('/google', async (req, res) => {
                 role: user.role,
                 tier: user.tier,
                 lastLogin: new Date(),
+                totalOrders: 0,
+                totalSpent: 0,
             },
             token,
         });
@@ -200,7 +204,20 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
             return;
         }
 
-        res.json(user);
+        const aggregations = await prisma.order.aggregate({
+            where: {
+                userId: req.userId,
+                status: { not: 'CANCELLED' }
+            },
+            _count: { id: true },
+            _sum: { totalAmount: true }
+        });
+
+        res.json({
+            ...user,
+            totalOrders: aggregations._count.id || 0,
+            totalSpent: aggregations._sum.totalAmount ? Number(aggregations._sum.totalAmount.toString()) : 0
+        });
     } catch (err) {
         console.error('Get me error:', err);
         res.status(500).json({ error: 'Lỗi server' });
