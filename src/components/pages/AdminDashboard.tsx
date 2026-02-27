@@ -1,7 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApp } from '@/app/context/AppContext';
 import { toast } from 'sonner';
 
@@ -21,6 +21,7 @@ import { SettingsTab } from '@/components/organisms/admin/SettingsTab';
 import { LandingPagesTab } from '@/components/organisms/admin/LandingPagesTab';
 import { BlogPostsTab } from '@/components/organisms/admin/BlogPostsTab';
 import { OrdersTab } from '@/components/organisms/admin/OrdersTab';
+import { NotificationsTab } from '@/components/organisms/admin/NotificationsTab';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
@@ -43,12 +44,32 @@ export const AdminDashboard: React.FC = () => {
     landingPages, setLandingPages,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const { tab: urlTab } = useParams<{ tab: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const initialTab = urlTab || searchParams.get('tab') || 'dashboard';
+  const [activeTab, setActiveTabState] = useState(initialTab);
+
+  const setActiveTab = useCallback((newTab: string) => {
+    setActiveTabState(newTab);
+    if (urlTab) {
+      navigate(`/admin/${newTab}`, { replace: true });
+    } else {
+      setSearchParams({ tab: newTab }, { replace: true });
+    }
+  }, [navigate, urlTab, setSearchParams]);
+
+  useEffect(() => {
+    const tabToUse = urlTab || searchParams.get('tab');
+    if (tabToUse && tabToUse !== activeTab) {
+      setActiveTabState(tabToUse);
+    }
+  }, [urlTab, searchParams, activeTab]);
 
   // Real-time order notifications
   const handleNewOrder = useCallback(() => {
     setActiveTab('orders');
-  }, []);
+  }, [setActiveTab]);
   useOrderNotifications(handleNewOrder);
 
   const deleteFrom = <T extends { id: string }>(items: T[], setItems: (v: T[]) => void, label: string) =>
@@ -93,6 +114,7 @@ export const AdminDashboard: React.FC = () => {
               {activeTab === 'vouchers' && <motion.div key="vouchers" {...tabAnimation}><VouchersTab vouchers={vouchers} onDelete={deleteFrom(vouchers, setVouchers, 'voucher')} onEdit={stubEdit} onAdd={stubAdd} /></motion.div>}
               {activeTab === 'events' && <motion.div key="events" {...tabAnimation}><EventsTab events={events} onDelete={deleteFrom(events, setEvents, 'sự kiện')} onEdit={stubEdit} onAdd={stubAdd} /></motion.div>}
               {activeTab === 'shipping' && <motion.div key="shipping" {...tabAnimation}><ShippingTab /></motion.div>}
+              {activeTab === 'notifications' && <motion.div key="notifications" {...tabAnimation}><NotificationsTab /></motion.div>}
               {activeTab === 'settings' && <motion.div key="settings" {...tabAnimation}><SettingsTab /></motion.div>}
               {activeTab === 'landing' && <motion.div key="landing" {...tabAnimation}><LandingPagesTab pages={landingPages} onDelete={deleteFrom(landingPages, setLandingPages, 'landing page')} onEdit={stubEdit} onAdd={stubAdd} /></motion.div>}
               {activeTab === 'blog' && <motion.div key="blog" {...tabAnimation}><BlogPostsTab /></motion.div>}

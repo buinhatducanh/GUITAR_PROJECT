@@ -5,12 +5,14 @@ import { useApp, Voucher } from '@/app/context/AppContext';
 import { toast } from 'sonner';
 import { RewardsGridSkeleton } from '@/components/atoms/SkeletonLayouts';
 import { useVouchers } from '@/hooks/useVouchers';
+import { useNavigate } from 'react-router-dom';
 
 interface RewardsProps {
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
+  const navigate = useNavigate();
   const { user, userVouchers, redeemVoucher } = useApp();
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
   const [filter, setFilter] = useState<'all' | 'redeemed'>('all');
@@ -82,7 +84,7 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
         <div className="container mx-auto px-4 py-8">
           <motion.button
             whileHover={{ x: -5 }}
-            onClick={onBack}
+            onClick={onBack || (() => navigate(-1))}
             className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-4"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -164,7 +166,7 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={onBack}
+              onClick={onBack || (() => navigate(-1))}
               className="px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl"
             >
               Đăng nhập ngay

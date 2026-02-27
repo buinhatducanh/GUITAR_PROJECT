@@ -2,15 +2,26 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Award, Heart, Users, Zap } from 'lucide-react';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface LandingPagesProps {
-  page: string;
-  onBack: () => void;
-  onNavigate: (page: string) => void;
+  page?: string;
+  onBack?: () => void;
+  onNavigate?: (page: string) => void;
 }
 
-export const LandingPages: React.FC<LandingPagesProps> = ({ page, onBack, onNavigate }) => {
+export const LandingPages: React.FC<LandingPagesProps> = ({
+  page: propPage,
+  onBack: propOnBack,
+  onNavigate: propOnNavigate
+}) => {
   const settings = useSettingsStore((state) => state.settings);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const page = propPage || location.pathname;
+  const onBack = propOnBack || (() => navigate(-1));
+  const onNavigate = propOnNavigate || ((p: string) => navigate(`/${p}`));
   if (page === '/landing/collection-2026') {
     return (
       <div className="min-h-screen bg-black pt-24 pb-16">

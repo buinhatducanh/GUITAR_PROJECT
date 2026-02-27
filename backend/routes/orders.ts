@@ -3,8 +3,8 @@ import { randomUUID } from 'crypto';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin, type AuthRequest } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
-import { notifyNewOrder } from '../lib/notifications.js';
-import { createNotification } from '../lib/notification.helper.js';
+import { notifyNewOrder, notifyOrderStatusChangeSSE } from '../lib/notifications.js';
+import { notifyOrderPlaced, notifyOrderStatusChange, notifyPointsEarned, notifyAdminsNewOrder } from '../lib/notification.helper.js';
 
 const router = Router();
 
@@ -94,17 +94,14 @@ router.post('/guest', orderGuestLimiter, async (req, res) => {
 
         res.status(201).json(order);
 
-        // Notify User
-        createNotification(
-            user.id,
-            'ORDER_PLACED',
-            'Đặt hàng thành công',
-            `Đơn hàng ${orderNumber} của bạn đã được đặt thành công.`,
-            `/account?tab=orders`
-        );
+        // Notify user (persistent + SSE)
+        notifyOrderPlaced(user.id, orderNumber);
 
-        // Real-time notification to admin
+        // Notify admins via SSE
         notifyNewOrder(order);
+
+        // Persistent notification to admins
+        await notifyAdminsNewOrder(orderNumber, finalAmount);
     } catch (err: any) {
         console.error('Create guest order error:', err?.message || err);
         console.error('Full error:', JSON.stringify(err, null, 2));
@@ -228,21 +225,21 @@ router.post('/', authenticate, orderAuthLimiter, async (req: AuthRequest, res) =
             }
 
             return newOrder;
+        }, {
+            maxWait: 5000, // default is 2000
+            timeout: 20000, // default is 5000
         });
 
         res.status(201).json(order);
 
-        // Notify User
-        createNotification(
-            req.userId!,
-            'ORDER_PLACED',
-            'Đặt hàng thành công',
-            `Đơn hàng ${orderNumber} của bạn đã được đặt thành công.`,
-            `/account?tab=orders`
-        );
+        // Notify user (persistent + SSE)
+        notifyOrderPlaced(req.userId!, orderNumber);
 
-        // Real-time notification to admin
+        // Notify admins via SSE
         notifyNewOrder(order);
+
+        // Persistent notification to admins
+        await notifyAdminsNewOrder(orderNumber, finalAmount);
     } catch (err) {
         console.error('Create order error:', err);
         res.status(500).json({ error: 'Lỗi server' });
@@ -258,24 +255,30 @@ router.put('/:id/status', authenticate, requireAdmin, async (req: AuthRequest, r
             include: { items: true },
         });
 
-        // Notify user about status change
-        const statusMap: Record<string, string> = {
-            'CONFIRMED': 'đã được xác nhận',
-            'PROCESSING': 'đang được xử lý',
-            'SHIPPED': 'đã được giao cho đơn vị vận chuyển',
-            'DELIVERED': 'đã giao thành công',
-            'CANCELLED': 'đã bị hủy',
-        };
+        // Notify user about status change (persistent + SSE)
+        notifyOrderStatusChange(order.userId, order.orderNumber, req.body.status);
 
-        const statusMessage = statusMap[req.body.status];
-        if (statusMessage) {
-            createNotification(
-                order.userId,
-                `ORDER_${req.body.status}` as any,
-                'Cập nhật trạng thái đơn hàng',
-                `Đơn hàng ${order.orderNumber} của bạn ${statusMessage}.`,
-                `/account?tab=orders`
-            );
+        // Notify admins via SSE
+        notifyOrderStatusChangeSSE({
+            id: order.id,
+            orderNumber: order.orderNumber,
+            status: req.body.status,
+        });
+
+        // Award points on delivery
+        if (req.body.status === 'DELIVERED') {
+            const pointsToAward = Math.floor(Number(order.totalAmount) / 10000); // 1 point per 10,000 VND
+            if (pointsToAward > 0) {
+                await prisma.user.update({
+                    where: { id: order.userId },
+                    data: { points: { increment: pointsToAward } }
+                });
+                notifyPointsEarned(
+                    order.userId,
+                    pointsToAward,
+                    `Hoàn thành đơn hàng ${order.orderNumber}`
+                );
+            }
         }
 
         res.json(order);
