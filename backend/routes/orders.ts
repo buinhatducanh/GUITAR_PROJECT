@@ -4,7 +4,7 @@ import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin, type AuthRequest } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { notifyNewOrder, notifyOrderStatusChangeSSE } from '../lib/notifications.js';
-import { notifyOrderPlaced, notifyOrderStatusChange, notifyPointsEarned } from '../lib/notification.helper.js';
+import { notifyOrderPlaced, notifyOrderStatusChange, notifyPointsEarned, notifyAdminsNewOrder } from '../lib/notification.helper.js';
 
 const router = Router();
 
@@ -99,6 +99,9 @@ router.post('/guest', orderGuestLimiter, async (req, res) => {
 
         // Notify admins via SSE
         notifyNewOrder(order);
+
+        // Persistent notification to admins
+        await notifyAdminsNewOrder(orderNumber, finalAmount);
     } catch (err: any) {
         console.error('Create guest order error:', err?.message || err);
         console.error('Full error:', JSON.stringify(err, null, 2));
@@ -222,6 +225,9 @@ router.post('/', authenticate, orderAuthLimiter, async (req: AuthRequest, res) =
             }
 
             return newOrder;
+        }, {
+            maxWait: 5000, // default is 2000
+            timeout: 20000, // default is 5000
         });
 
         res.status(201).json(order);
@@ -231,6 +237,9 @@ router.post('/', authenticate, orderAuthLimiter, async (req: AuthRequest, res) =
 
         // Notify admins via SSE
         notifyNewOrder(order);
+
+        // Persistent notification to admins
+        await notifyAdminsNewOrder(orderNumber, finalAmount);
     } catch (err) {
         console.error('Create order error:', err);
         res.status(500).json({ error: 'Lỗi server' });

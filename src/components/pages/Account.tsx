@@ -5,6 +5,8 @@ import { useApp } from '@/app/context/AppContext';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
 import { ordersApi } from '@/app/lib/api';
 
+import { useNavigate, useSearchParams } from 'react-router-dom';
+
 interface Order {
   id: string;
   orderNumber: string;
@@ -18,14 +20,26 @@ interface Order {
 }
 
 interface AccountProps {
-  onBack: () => void;
-  onNavigate: (page: string) => void;
+  onBack?: () => void;
+  onNavigate?: (page: string) => void;
 }
 
 export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
   const { user, userVouchers, vouchers } = useApp();
   const settings = useSettingsStore((state) => state.settings);
-  const [activeTab, setActiveTab] = useState<'info' | 'orders' | 'vouchers'>('info');
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const urlTab = searchParams.get('tab') as 'info' | 'orders' | 'vouchers';
+  const activeTab = urlTab || 'info';
+
+  const setActiveTab = (tab: 'info' | 'orders' | 'vouchers') => {
+    setSearchParams({ tab }, { replace: true });
+  };
+
+  const handleBack = () => onBack ? onBack() : navigate(-1);
+  const handleNavigate = (page: string) => onNavigate ? onNavigate(page) : navigate(`/${page}`);
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
 
@@ -33,8 +47,12 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
     if (activeTab === 'orders' && user) {
       setLoadingOrders(true);
       ordersApi.getAll().then(data => {
-        setOrders(data as Order[]);
-      }).catch(() => {}).finally(() => setLoadingOrders(false));
+        // Handle both raw array and wrapper objects just in case
+        const fetchedOrders = Array.isArray(data) ? data : (data as any).orders || [];
+        setOrders(fetchedOrders);
+      }).catch((err) => {
+        console.error('Failed to load orders', err);
+      }).finally(() => setLoadingOrders(false));
     }
   }, [activeTab, user]);
 
@@ -115,7 +133,7 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
         <div className="container mx-auto px-4 py-8">
           <motion.button
             whileHover={{ x: -5 }}
-            onClick={onBack}
+            onClick={handleBack}
             className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-4"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -206,8 +224,8 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
           <button
             onClick={() => setActiveTab('info')}
             className={`px-6 py-3 font-medium transition-all relative ${activeTab === 'info'
-                ? 'text-purple-400'
-                : 'text-white/60 hover:text-white'
+              ? 'text-purple-400'
+              : 'text-white/60 hover:text-white'
               }`}
           >
             Thông tin
@@ -222,8 +240,8 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
           <button
             onClick={() => setActiveTab('orders')}
             className={`px-6 py-3 font-medium transition-all relative ${activeTab === 'orders'
-                ? 'text-purple-400'
-                : 'text-white/60 hover:text-white'
+              ? 'text-purple-400'
+              : 'text-white/60 hover:text-white'
               }`}
           >
             Đơn hàng
@@ -238,8 +256,8 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
           <button
             onClick={() => setActiveTab('vouchers')}
             className={`px-6 py-3 font-medium transition-all relative ${activeTab === 'vouchers'
-                ? 'text-purple-400'
-                : 'text-white/60 hover:text-white'
+              ? 'text-purple-400'
+              : 'text-white/60 hover:text-white'
               }`}
           >
             Voucher ({myVouchers.length})
@@ -311,7 +329,7 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => onNavigate('products')}
+                  onClick={() => handleNavigate('products')}
                   className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-xl"
                 >
                   Khám phá sản phẩm
@@ -338,16 +356,18 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
 
                     {/* Order Items */}
                     <div className="space-y-2 mb-4">
-                      {order.items.map(item => (
+                      {order.items && order.items.length > 0 ? order.items.map(item => (
                         <div key={item.id} className="flex justify-between text-sm">
                           <span className="text-white/70 line-clamp-1 flex-1 pr-4">
                             {item.name} <span className="text-white/40">×{item.quantity}</span>
                           </span>
                           <span className="text-white/60 shrink-0">
-                            {formatPrice(item.price * item.quantity)}
+                            {formatPrice(Number(item.price) * item.quantity)}
                           </span>
                         </div>
-                      ))}
+                      )) : (
+                        <div className="text-sm text-white/40 italic">Không tải được sản phẩm</div>
+                      )}
                     </div>
 
                     {/* Order Footer */}
@@ -361,7 +381,7 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
                       <div className="text-right">
                         <p className="text-xs text-white/40 mb-0.5">Tổng cộng</p>
                         <p className="text-lg font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
-                          {formatPrice(order.totalAmount)}
+                          {formatPrice(Number(order.totalAmount))}
                         </p>
                       </div>
                     </div>
@@ -385,7 +405,7 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => onNavigate('rewards')}
+                  onClick={() => handleNavigate('rewards')}
                   className="px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-xl"
                 >
                   Đổi voucher ngay
