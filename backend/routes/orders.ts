@@ -4,6 +4,7 @@ import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin, type AuthRequest } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { notifyNewOrder } from '../lib/notifications.js';
+import { createNotification } from '../lib/notification.helper.js';
 
 const router = Router();
 
@@ -92,6 +93,15 @@ router.post('/guest', orderGuestLimiter, async (req, res) => {
         });
 
         res.status(201).json(order);
+
+        // Notify User
+        createNotification(
+            user.id,
+            'ORDER_PLACED',
+            'Đặt hàng thành công',
+            `Đơn hàng ${orderNumber} của bạn đã được đặt thành công.`,
+            `/account?tab=orders`
+        );
 
         // Real-time notification to admin
         notifyNewOrder(order);
@@ -222,6 +232,15 @@ router.post('/', authenticate, orderAuthLimiter, async (req: AuthRequest, res) =
 
         res.status(201).json(order);
 
+        // Notify User
+        createNotification(
+            req.userId!,
+            'ORDER_PLACED',
+            'Đặt hàng thành công',
+            `Đơn hàng ${orderNumber} của bạn đã được đặt thành công.`,
+            `/account?tab=orders`
+        );
+
         // Real-time notification to admin
         notifyNewOrder(order);
     } catch (err) {
@@ -238,6 +257,27 @@ router.put('/:id/status', authenticate, requireAdmin, async (req: AuthRequest, r
             data: { status: req.body.status },
             include: { items: true },
         });
+
+        // Notify user about status change
+        const statusMap: Record<string, string> = {
+            'CONFIRMED': 'đã được xác nhận',
+            'PROCESSING': 'đang được xử lý',
+            'SHIPPED': 'đã được giao cho đơn vị vận chuyển',
+            'DELIVERED': 'đã giao thành công',
+            'CANCELLED': 'đã bị hủy',
+        };
+
+        const statusMessage = statusMap[req.body.status];
+        if (statusMessage) {
+            createNotification(
+                order.userId,
+                `ORDER_${req.body.status}` as any,
+                'Cập nhật trạng thái đơn hàng',
+                `Đơn hàng ${order.orderNumber} của bạn ${statusMessage}.`,
+                `/account?tab=orders`
+            );
+        }
+
         res.json(order);
     } catch (err) {
         console.error('Update order status error:', err);

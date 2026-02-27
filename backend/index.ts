@@ -12,6 +12,7 @@ import eventRoutes from './routes/events.js';
 import uploadRoutes from './routes/upload.js';
 import orderRoutes from './routes/orders.js';
 import landingPageRoutes from './routes/landing-pages.js';
+import notificationRoutes from './routes/notifications.routes.js';
 // Old routes (to be refactored)
 import settingsRoutes from './routes/settings.js';
 import inventoryRoutes from './routes/inventory.js';
@@ -62,6 +63,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/landing-pages', landingPageRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/analytics', analyticsRoutes);

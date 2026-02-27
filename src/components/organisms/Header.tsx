@@ -6,6 +6,7 @@ import { useApp } from '@/app/context/AppContext';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { useCartStore } from '@/features/cart/store/cartStore';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
+import { NotificationBell } from './NotificationBell';
 
 export const Header: React.FC = () => {
   const navigate = useNavigate();
@@ -150,8 +151,8 @@ export const Header: React.FC = () => {
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg ${isAdmin
-                        ? 'bg-gradient-to-br from-violet-500 to-purple-700 ring-2 ring-violet-500/50'
-                        : 'bg-gradient-to-br from-amber-500 to-orange-600'
+                      ? 'bg-gradient-to-br from-violet-500 to-purple-700 ring-2 ring-violet-500/50'
+                      : 'bg-gradient-to-br from-amber-500 to-orange-600'
                       }`}
                   >
                     {user.name.charAt(0).toUpperCase()}
@@ -253,6 +254,9 @@ export const Header: React.FC = () => {
                 </motion.button>
               )}
             </div>
+
+            {/* Notifications */}
+            <NotificationBell />
 
             {/* Cart */}
             <motion.button

@@ -358,3 +358,12 @@ export const analyticsApi = {
 
     getCategories: () => request<any>('/analytics/categories'),
 };
+
+// ─── Notifications API ───────────────────────────
+
+export const notificationsApi = {
+    getAll: () => request<any[]>('/notifications'),
+    getUnreadCount: () => request<{ count: number }>('/notifications/unread-count'),
+    markAsRead: (id: string) => request<any>(`/notifications/${id}/read`, { method: 'PUT' }),
+    markAllAsRead: () => request<any>('/notifications/read-all', { method: 'PUT' }),
+};
