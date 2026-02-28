@@ -2,11 +2,41 @@ import { Router } from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin, type AuthRequest } from '../middleware/auth.js';
 import { broadcastNotificationToAll, createNotification } from '../lib/notification.helper.js';
-import { addUserClient } from '../lib/notifications.js';
+import { addClient, addUserClient, getClientStats } from '../lib/notifications.js';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'guitar-nova-secret-2024';
 const router = Router();
+
+// ─── SSE Streams (must be before parameterized routes) ───
+
+/** GET /api/notifications/stream — SSE stream for admin order notifications */
+router.get('/stream', (req, res) => {
+    addClient(req, res);
+});
+
+/** GET /api/notifications/stream/user — SSE stream for user-specific notifications */
+router.get('/stream/user', (req, res) => {
+    const token = req.query.token as string;
+    if (!token) {
+        res.status(401).json({ error: 'Token required' });
+        return;
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; role: string };
+        addUserClient(req, res, decoded.userId);
+    } catch {
+        res.status(401).json({ error: 'Token không hợp lệ' });
+    }
+});
+
+/** GET /api/notifications/sse-stats — Debug endpoint for SSE client stats */
+router.get('/sse-stats', (_req, res) => {
+    res.json(getClientStats());
+});
+
+// ─── REST Endpoints ─────────────────────────────
 
 /** GET /api/notifications — Get user's notifications with pagination & filtering */
 router.get('/', authenticate, async (req: AuthRequest, res) => {
@@ -224,23 +254,6 @@ router.get('/admin/stats', authenticate, requireAdmin, async (_req: AuthRequest,
     } catch (error) {
         console.error('Get notification stats error:', error);
         res.status(500).json({ error: 'Lỗi server' });
-    }
-});
-
-/** GET /api/notifications/stream/user — SSE stream for user-specific notifications */
-router.get('/stream/user', (req, res) => {
-    // Extract token from query param for SSE (EventSource can't set headers)
-    const token = req.query.token as string;
-    if (!token) {
-        res.status(401).json({ error: 'Token required' });
-        return;
-    }
-
-    try {
-        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; role: string };
-        addUserClient(req, res, decoded.userId);
-    } catch {
-        res.status(401).json({ error: 'Token không hợp lệ' });
     }
 });
 

@@ -21,12 +21,11 @@ const clients: SSEClient[] = [];
 export function addClient(req: Request, res: Response): void {
     const clientId = `admin-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-    // SSE headers
+    // SSE headers (CORS is handled by the cors() middleware)
     res.writeHead(200, {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*',
     });
 
     // Send initial connected event
@@ -57,7 +56,6 @@ export function addUserClient(req: Request, res: Response, userId: string): void
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*',
     });
 
     res.write(`data: ${JSON.stringify({ type: 'connected', clientId })}\n\n`);
