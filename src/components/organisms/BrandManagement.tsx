@@ -41,7 +41,7 @@ export const BrandManagement: React.FC = () => {
 
   const fetchBrands = async () => {
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || 'https://srv-d6fauhddi7vc738mkimg.onrender.com/api';
+      const API_BASE = import.meta.env.VITE_API_URL || '/api';
       const response = await fetch(`${API_BASE}/brands`);
       const data = await response.json();
       setBrands(data.brands || []);
@@ -56,7 +56,7 @@ export const BrandManagement: React.FC = () => {
     e.preventDefault();
 
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || 'https://srv-d6fauhddi7vc738mkimg.onrender.com/api';
+      const API_BASE = import.meta.env.VITE_API_URL || '/api';
       const url = editingBrand
         ? `${API_BASE}/brands/${editingBrand.id}`
         : `${API_BASE}/brands`;
@@ -87,7 +87,7 @@ export const BrandManagement: React.FC = () => {
     if (!confirm('Bạn có chắc muốn xóa brand này?')) return;
 
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || 'https://srv-d6fauhddi7vc738mkimg.onrender.com/api';
+      const API_BASE = import.meta.env.VITE_API_URL || '/api';
       const response = await fetch(`${API_BASE}/brands/${id}`, {
         method: 'DELETE',
         headers: {

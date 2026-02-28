@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://srv-d6fauhddi7vc738mkimg.onrender.com';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 interface OrderNotification {
     id: string;
