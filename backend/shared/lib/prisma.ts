@@ -5,7 +5,18 @@ import pg from 'pg';
 
 const connectionString = process.env.DATABASE_URL!;
 
-const pool = new pg.Pool({ connectionString });
+const pool = new pg.Pool({
+    connectionString,
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10000,
+});
+
+pool.on('error', (err) => {
+    console.error('Unexpected PostgreSQL pool error:', err);
+});
 const adapter = new PrismaPg(pool);
 
 const globalForPrisma = globalThis as unknown as { prisma: InstanceType<typeof PrismaClient> };
