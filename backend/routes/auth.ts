@@ -8,30 +8,6 @@ import { JWT_SECRET, authenticate, type AuthRequest } from '../middleware/auth.j
 const router = Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || '793211982417-tgutr9h682lucoqi66gpc778q23or95a.apps.googleusercontent.com');
 
-/** Build user response with computed order stats */
-async function buildUserResponse(user: { id: string; name: string; phone: string | null; email: string | null; avatar: string | null; points: number; role: string; tier: string; lastLogin: Date | null; createdAt: Date }) {
-    const aggregations = await prisma.order.aggregate({
-        where: { userId: user.id, status: { not: 'CANCELLED' } },
-        _count: { id: true },
-        _sum: { totalAmount: true },
-    });
-
-    return {
-        id: user.id,
-        name: user.name,
-        phone: user.phone,
-        email: user.email,
-        avatar: user.avatar,
-        points: user.points,
-        role: user.role,
-        tier: user.tier,
-        joinDate: user.createdAt,
-        lastLogin: user.lastLogin ?? new Date(),
-        totalOrders: aggregations._count.id || 0,
-        totalSpent: aggregations._sum.totalAmount ? Number(aggregations._sum.totalAmount.toString()) : 0,
-    };
-}
-
 /** POST /api/auth/register */
 router.post('/register', async (req, res) => {
     try {
@@ -52,11 +28,12 @@ router.post('/register', async (req, res) => {
 
         const user = await prisma.user.create({
             data: { name, phone, email, password: hashedPassword },
+            select: { id: true, name: true, phone: true, email: true, avatar: true, points: true, role: true, tier: true, createdAt: true },
         });
 
         const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
-        res.status(201).json({ user: await buildUserResponse(user), token });
+        res.status(201).json({ user, token });
     } catch (err) {
         console.error('Register error:', err);
         res.status(500).json({ error: 'Lỗi server' });
@@ -94,7 +71,19 @@ router.post('/login', async (req, res) => {
         const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
         res.json({
-            user: await buildUserResponse(user),
+            user: {
+                id: user.id,
+                name: user.name,
+                phone: user.phone,
+                email: user.email,
+                avatar: user.avatar,
+                points: user.points,
+                role: user.role,
+                tier: user.tier,
+                lastLogin: new Date(),
+                totalOrders: 0,
+                totalSpent: 0,
+            },
             token,
         });
     } catch (err) {
@@ -178,7 +167,19 @@ router.post('/google', async (req, res) => {
         const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
         res.json({
-            user: await buildUserResponse(user),
+            user: {
+                id: user.id,
+                name: user.name,
+                phone: user.phone,
+                email: user.email,
+                avatar: user.avatar,
+                points: user.points,
+                role: user.role,
+                tier: user.tier,
+                lastLogin: new Date(),
+                totalOrders: 0,
+                totalSpent: 0,
+            },
             token,
         });
     } catch (err) {
@@ -192,6 +193,10 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
     try {
         const user = await prisma.user.findUnique({
             where: { id: req.userId },
+            select: {
+                id: true, name: true, phone: true, email: true, avatar: true,
+                points: true, role: true, tier: true, lastLogin: true, createdAt: true,
+            },
         });
 
         if (!user) {
@@ -199,7 +204,20 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
             return;
         }
 
-        res.json(await buildUserResponse(user));
+        const aggregations = await prisma.order.aggregate({
+            where: {
+                userId: req.userId,
+                status: { not: 'CANCELLED' }
+            },
+            _count: { id: true },
+            _sum: { totalAmount: true }
+        });
+
+        res.json({
+            ...user,
+            totalOrders: aggregations._count.id || 0,
+            totalSpent: aggregations._sum.totalAmount ? Number(aggregations._sum.totalAmount.toString()) : 0
+        });
     } catch (err) {
         console.error('Get me error:', err);
         res.status(500).json({ error: 'Lỗi server' });

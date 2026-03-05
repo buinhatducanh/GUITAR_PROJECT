@@ -301,11 +301,23 @@ export const Home: React.FC = () => {
                   transition={{ delay: idx * 0.1 }}
                   whileHover={{ scale: 1.05, rotate: idx % 2 === 0 ? 2 : -2 }}
                 >
-                  <ProductCard
-                    product={product}
-                    onViewDetail={onViewProduct}
-                    onBuyNow={onBuyNow}
-                  />
+                  <div className="relative">
+                    {/* Sale Badge */}
+                    {product.discount && (
+                      <motion.div
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 1, repeat: Infinity }}
+                        className="absolute -top-3 -right-3 z-10 bg-gradient-to-r from-red-500 to-orange-500 text-white px-4 py-2 rounded-full font-bold text-sm shadow-lg shadow-red-500/50"
+                      >
+                        -{product.discount}%
+                      </motion.div>
+                    )}
+                    <ProductCard
+                      product={product}
+                      onViewDetail={onViewProduct}
+                      onBuyNow={onBuyNow}
+                    />
+                  </div>
                 </motion.div>
               ))}
             </div>
