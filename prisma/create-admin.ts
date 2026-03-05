@@ -9,21 +9,21 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter } as any);
 
 async function main() {
-    const phone = '0378443602';
-    const password = 'ducanhnhatbui123';
+    const email = 'admin@guitar.vn';
+    const password = 'admin123';
     const name = 'Admin';
 
     const hashed = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.upsert({
-        where: { phone },
+        where: { email },
         update: { role: 'ADMIN', password: hashed },
-        create: { phone, name, password: hashed, role: 'ADMIN' },
+        create: { email, name, password: hashed, role: 'ADMIN' },
     });
 
     console.log('✅ Admin ready!');
-    console.log('   SĐT:      ', user.phone);
-    console.log('   Mật khẩu: ducanhnhatbui123');
+    console.log('   Email:    ', user.email);
+    console.log('   Mật khẩu: ', password);
     console.log('   Role:     ', user.role);
 }
 
