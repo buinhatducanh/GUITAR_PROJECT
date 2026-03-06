@@ -40,6 +40,7 @@ export interface UserResponse {
     tier: string;
     lastLogin?: Date | null;
     createdAt: Date;
+    googleId?: string | null;
 }
 
 export interface TokenPayload {

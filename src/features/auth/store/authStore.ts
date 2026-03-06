@@ -16,6 +16,7 @@ interface AuthActions {
     logout: () => void;
     setUser: (user: User | null) => void;
     updatePoints: (points: number) => void;
+    updateProfile: (data: { name: string; email: string }) => void;
 }
 
 type AuthStore = AuthState & AuthActions;
@@ -107,6 +108,19 @@ export const useAuthStore = create<AuthStore>()(
                         user: {
                             ...currentUser,
                             points: currentUser.points + points,
+                        },
+                    });
+                }
+            },
+
+            updateProfile: (data: { name: string; email: string }) => {
+                const currentUser = get().user;
+                if (currentUser) {
+                    set({
+                        user: {
+                            ...currentUser,
+                            name: data.name,
+                            email: data.email,
                         },
                     });
                 }
