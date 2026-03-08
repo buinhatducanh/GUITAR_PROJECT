@@ -8,7 +8,7 @@ interface AuthState {
     token: string | null;
     isAuthenticated: boolean;
 }
-
+//ss
 interface AuthActions {
     login: (phone: string, password: string) => Promise<void>;
     register: (name: string, phone: string, password: string) => Promise<void>;
