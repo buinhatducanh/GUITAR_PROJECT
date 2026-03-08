@@ -97,6 +97,13 @@ export const login = async (data: LoginDto): Promise<AuthResponse> => {
     // Generate JWT token
     const token = generateToken({ userId: user.id, role: user.role });
 
+    // Fetch stats
+    const aggregations = await prisma.order.aggregate({
+        where: { userId: user.id, status: { not: 'CANCELLED' } },
+        _count: { id: true },
+        _sum: { totalAmount: true }
+    });
+
     // Return user data and token
     return {
         user: {
@@ -110,6 +117,8 @@ export const login = async (data: LoginDto): Promise<AuthResponse> => {
             tier: user.tier,
             lastLogin: new Date(),
             createdAt: user.createdAt,
+            totalOrders: aggregations._count.id || 0,
+            totalSpent: aggregations._sum.totalAmount ? Number(aggregations._sum.totalAmount.toString()) : 0
         },
         token,
     };
@@ -150,6 +159,13 @@ export const guestCheckout = async (data: GuestCheckoutDto): Promise<AuthRespons
 
     const token = generateToken({ userId: user.id, role: user.role });
 
+    // Fetch stats
+    const aggregations = await prisma.order.aggregate({
+        where: { userId: user.id, status: { not: 'CANCELLED' } },
+        _count: { id: true },
+        _sum: { totalAmount: true }
+    });
+
     return {
         user: {
             id: user.id,
@@ -162,6 +178,8 @@ export const guestCheckout = async (data: GuestCheckoutDto): Promise<AuthRespons
             tier: user.tier,
             lastLogin: new Date(),
             createdAt: user.createdAt,
+            totalOrders: aggregations._count.id || 0,
+            totalSpent: aggregations._sum.totalAmount ? Number(aggregations._sum.totalAmount.toString()) : 0
         },
         token,
     };
@@ -192,7 +210,20 @@ export const getCurrentUser = async (userId: string): Promise<UserResponse> => {
         throw new Error('User không tồn tại');
     }
 
-    return user;
+    const aggregations = await prisma.order.aggregate({
+        where: {
+            userId,
+            status: { not: 'CANCELLED' }
+        },
+        _count: { id: true },
+        _sum: { totalAmount: true }
+    });
+
+    return {
+        ...user,
+        totalOrders: aggregations._count.id || 0,
+        totalSpent: aggregations._sum.totalAmount ? Number(aggregations._sum.totalAmount.toString()) : 0
+    };
 };
 
 /**
@@ -324,6 +355,13 @@ export const googleLogin = async (data: GoogleAuthDto): Promise<AuthResponse> =>
 
     const token = generateToken({ userId: user.id, role: user.role });
 
+    // Fetch stats
+    const aggregations = await prisma.order.aggregate({
+        where: { userId: user.id, status: { not: 'CANCELLED' } },
+        _count: { id: true },
+        _sum: { totalAmount: true }
+    });
+
     return {
         user: {
             id: user.id,
@@ -336,6 +374,8 @@ export const googleLogin = async (data: GoogleAuthDto): Promise<AuthResponse> =>
             tier: user.tier,
             lastLogin: new Date(),
             createdAt: user.createdAt,
+            totalOrders: aggregations._count.id || 0,
+            totalSpent: aggregations._sum.totalAmount ? Number(aggregations._sum.totalAmount.toString()) : 0
         },
         token,
     };

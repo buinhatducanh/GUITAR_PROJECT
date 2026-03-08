@@ -41,6 +41,8 @@ export interface UserResponse {
     lastLogin?: Date | null;
     createdAt: Date;
     googleId?: string | null;
+    totalOrders?: number;
+    totalSpent?: number;
 }
 
 export interface TokenPayload {
