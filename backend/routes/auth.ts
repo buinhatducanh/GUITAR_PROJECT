@@ -83,6 +83,7 @@ router.post('/login', async (req, res) => {
                 lastLogin: new Date(),
                 totalOrders: 0,
                 totalSpent: 0,
+                createdAt: user.createdAt,
             },
             token,
         });
@@ -179,6 +180,7 @@ router.post('/google', async (req, res) => {
                 lastLogin: new Date(),
                 totalOrders: 0,
                 totalSpent: 0,
+                createdAt: user.createdAt,
             },
             token,
         });
@@ -223,5 +225,6 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
         res.status(500).json({ error: 'Lỗi server' });
     }
 });
+
 
 export default router;

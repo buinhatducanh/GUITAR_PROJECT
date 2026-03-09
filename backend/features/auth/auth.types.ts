@@ -40,6 +40,9 @@ export interface UserResponse {
     tier: string;
     lastLogin?: Date | null;
     createdAt: Date;
+    googleId?: string | null;
+    totalOrders?: number;
+    totalSpent?: number;
 }
 
 export interface TokenPayload {

@@ -13,18 +13,18 @@ model User {
   name             String
   password         String
   avatar           String?
-  googleId         String?        @unique
   points           Int            @default(0)
   role             Role           @default(USER)
   tier             Tier           @default(BRONZE)
   lastLogin        DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+  googleId         String?        @unique
+  notifications    Notification[]
   orders           Order[]
   reviews          Review[]
-  redeemedVouchers UserVoucher[]
   stockChanges     StockHistory[]
-  notifications    Notification[]
+  redeemedVouchers UserVoucher[]
 
   @@map("users")
 }
@@ -50,8 +50,8 @@ model Product {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   orderItems    OrderItem[]
-  category      Category?      @relation(fields: [categoryId], references: [id])
   brand         Brand?         @relation(fields: [brandId], references: [id])
+  category      Category?      @relation(fields: [categoryId], references: [id])
   reviews       Review[]
   stockHistory  StockHistory[]
 
@@ -65,8 +65,8 @@ model Category {
   id       String     @id @default(cuid())
   name     String
   slug     String     @unique
-  icon     String?
   parentId String?
+  icon     String?
   parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
   children Category[] @relation("CategoryTree")
   products Product[]
@@ -146,8 +146,8 @@ model UserVoucher {
   id         String   @id @default(cuid())
   userId     String
   voucherId  String
-  isUsed     Boolean  @default(false)
   redeemedAt DateTime @default(now())
+  isUsed     Boolean  @default(false)
   user       User     @relation(fields: [userId], references: [id])
   voucher    Voucher  @relation(fields: [voucherId], references: [id])
 
@@ -193,11 +193,11 @@ model Order {
   address        String
   phone          String
   notes          String?
-  voucherCode    String?
-  discountAmount Decimal?    @db.Decimal(12, 0)
-  voucherId      String?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
+  discountAmount Decimal?    @db.Decimal(12, 0)
+  voucherCode    String?
+  voucherId      String?
   items          OrderItem[]
   user           User        @relation(fields: [userId], references: [id])
 
@@ -244,8 +244,8 @@ model StockHistory {
   reason      String?
   createdBy   String?
   createdAt   DateTime @default(now())
-  product     Product  @relation(fields: [productId], references: [id])
   user        User?    @relation(fields: [createdBy], references: [id])
+  product     Product  @relation(fields: [productId], references: [id])
 
   @@index([productId])
   @@map("stock_history")
@@ -265,6 +265,53 @@ model ShippingMethod {
   updatedAt     DateTime @updatedAt
 
   @@map("shipping_methods")
+}
+
+model Notification {
+  id        String               @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean              @default(false)
+  createdAt DateTime             @default(now())
+  expiresAt DateTime?
+  metadata  Json?
+  priority  NotificationPriority @default(NORMAL)
+  type      NotificationType     @default(SYSTEM)
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@index([type])
+  @@map("notifications")
+}
+
+model SiteSettings {
+  id              String   @id @default(cuid())
+  siteName        String   @default("Guitar NOVA")
+  slogan          String?
+  logo            String?
+  favicon         String?
+  cardTitle       String?
+  cardLogo        String?
+  email           String?
+  phone           String?
+  address         String?
+  facebookUrl     String?
+  instagramUrl    String?
+  youtubeUrl      String?
+  tiktokUrl       String?
+  metaTitle       String?
+  metaDescription String?
+  metaKeywords    String?
+  businessHours   String?
+  paymentMethods  String[]
+  shippingInfo    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("site_settings")
 }
 
 enum Role {
@@ -307,26 +354,6 @@ enum OrderStatus {
   CANCELLED
 }
 
-model Notification {
-  id        String           @id @default(cuid())
-  userId    String
-  type      NotificationType @default(SYSTEM)
-  title     String
-  message   String
-  link      String?
-  isRead    Boolean          @default(false)
-  priority  NotificationPriority @default(NORMAL)
-  metadata  Json?
-  expiresAt DateTime?
-  createdAt DateTime         @default(now())
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, isRead])
-  @@index([userId, createdAt])
-  @@index([type])
-  @@map("notifications")
-}
-
 enum NotificationType {
   ORDER_PLACED
   ORDER_CONFIRMED
@@ -349,31 +376,4 @@ enum NotificationPriority {
   NORMAL
   HIGH
   URGENT
-}
-
-model SiteSettings {
-  id              String   @id @default(cuid())
-  siteName        String   @default("Guitar NOVA")
-  slogan          String?
-  logo            String?
-  favicon         String?
-  cardTitle       String?
-  cardLogo        String?
-  email           String?
-  phone           String?
-  address         String?
-  facebookUrl     String?
-  instagramUrl    String?
-  youtubeUrl      String?
-  tiktokUrl       String?
-  metaTitle       String?
-  metaDescription String?
-  metaKeywords    String?
-  businessHours   String?
-  paymentMethods  String[]
-  shippingInfo    String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@map("site_settings")
 }
