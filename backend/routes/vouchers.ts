@@ -246,4 +246,71 @@ router.post('/validate', async (req, res) => {
     }
 });
 
+/** GET /api/vouchers/my-vouchers — user's redeemed vouchers */
+router.get('/my-vouchers', authenticate, async (req: AuthRequest, res) => {
+    try {
+        const redeemed = await prisma.userVoucher.findMany({
+            where: { userId: req.userId },
+            include: {
+                voucher: {
+                    select: {
+                        id: true,
+                        title: true,
+                        description: true,
+                        discountType: true,
+                        discountValue: true,
+                        pointsCost: true,
+                        image: true,
+                        expiryDate: true,
+                    }
+                }
+            },
+            orderBy: { redeemedAt: 'desc' },
+        });
+
+        // Format response as requested by user
+        const result = redeemed.map(rv => ({
+            voucherId: rv.voucher.id,
+            title: rv.voucher.title,
+            discount: rv.voucher.discountValue,
+            redeemedAt: rv.redeemedAt,
+            // Include other useful fields
+            description: rv.voucher.description,
+            image: rv.voucher.image,
+            expiryDate: rv.voucher.expiryDate,
+        }));
+
+        res.json(result);
+    } catch (err) {
+        console.error('Get my vouchers error:', err);
+        res.status(500).json({ error: 'Lỗi server' });
+    }
+});
+
+/** GET /api/vouchers/redeem-history — all redemption history (admin only) */
+router.get('/redeem-history', authenticate, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+        const { userId, voucherId } = req.query;
+
+        const where: any = {};
+        if (userId) where.userId = userId as string;
+        if (voucherId) where.voucherId = voucherId as string;
+
+        const history = await prisma.userVoucher.findMany({
+            where,
+            include: {
+                user: { select: { id: true, name: true, phone: true } },
+                voucher: { select: { id: true, title: true, code: true } },
+            },
+            orderBy: { redeemedAt: 'desc' },
+        });
+
+        res.json(history);
+    } catch (err) {
+        console.error('Get redeem history error:', err);
+        res.status(500).json({ error: 'Lỗi server' });
+    }
+});
+
 export default router;
+
