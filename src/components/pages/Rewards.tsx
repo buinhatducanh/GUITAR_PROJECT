@@ -5,6 +5,7 @@ import { useApp, Voucher } from '@/app/context/AppContext';
 import { toast } from 'sonner';
 import { RewardsGridSkeleton } from '@/components/atoms/SkeletonLayouts';
 import { useVouchers } from '@/hooks/useVouchers';
+import { vouchersApi } from '@/app/lib/api';
 import { useNavigate } from 'react-router-dom';
 
 interface RewardsProps {
@@ -13,9 +14,25 @@ interface RewardsProps {
 
 export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
   const navigate = useNavigate();
-  const { user, userVouchers, redeemVoucher } = useApp();
+  const { user, addPoints } = useApp();
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
   const [filter, setFilter] = useState<'all' | 'redeemed'>('all');
+  const [redeemedVouchers, setRedeemedVouchers] = useState<any[]>([]);
+
+  const fetchRedeemedVouchers = async () => {
+    try {
+      const data = await vouchersApi.getMyVouchers();
+      setRedeemedVouchers(data || []);
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách voucher đã đổi:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchRedeemedVouchers();
+    }
+  }, [user]);
 
   const { data: vouchers = [], isLoading } = useVouchers();
 
@@ -34,7 +51,7 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
     });
   };
 
-  const handleRedeemVoucher = (voucher: Voucher) => {
+  const handleRedeemVoucher = async (voucher: Voucher) => {
     if (!user) {
       toast.error('Vui lòng đăng nhập để đổi quà');
       return;
@@ -45,19 +62,27 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
       return;
     }
 
-    if (userVouchers.includes(voucher.id)) {
+    const isRedeemed = redeemedVouchers.some(rv => rv.voucherId === voucher.id);
+    if (isRedeemed) {
       toast.error('Bạn đã đổi voucher này rồi');
       return;
     }
 
-    redeemVoucher(voucher.id);
-    toast.success(`Đã đổi voucher ${voucher.title} thành công!`);
-    setSelectedVoucher(null);
+    try {
+      await vouchersApi.redeem(voucher.id);
+      addPoints(-voucher.pointsCost);
+      toast.success(`Đã đổi voucher ${voucher.title} thành công!`);
+      setSelectedVoucher(null);
+      await fetchRedeemedVouchers();
+    } catch (err) {
+      console.error('Redeem error:', err);
+      toast.error(err instanceof Error ? err.message : 'Lỗi khi đổi quà');
+    }
   };
 
   const filteredVouchers = filter === 'all'
-    ? vouchers.filter(v => v.isActive)
-    : vouchers.filter(v => userVouchers.includes(v.id));
+    ? vouchers.filter((v: Voucher) => v.isActive)
+    : vouchers.filter((v: Voucher) => redeemedVouchers.some(rv => rv.voucherId === v.id));
 
   const getTierColor = () => {
     if (!user) return 'from-zinc-500 to-zinc-600';
@@ -153,7 +178,7 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
           >
             <div className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5" />
-              <span>Đã đổi ({userVouchers.length})</span>
+              <span>Đã đổi ({redeemedVouchers.length})</span>
             </div>
           </motion.button>
         </div>
@@ -166,7 +191,7 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={onBack || (() => navigate(-1))}
+              onClick={onBack || (() => navigate("/login"))}
               className="px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl"
             >
               Đăng nhập ngay
@@ -174,17 +199,51 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
           </div>
         ) : isLoading ? (
           <RewardsGridSkeleton count={6} />
+        ) : filter === 'redeemed' ? (
+          /* Danh sách voucher đã đổi */
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {redeemedVouchers.map((rv: any) => (
+              <motion.div
+                key={rv.voucherId}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-5 border border-green-500/50"
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  {rv.image && (
+                    <img src={rv.image} alt={rv.title} className="w-16 h-16 rounded-lg object-cover" />
+                  )}
+                  <div>
+                    <h3 className="text-lg font-bold text-white">{rv.title}</h3>
+                    <p className="text-amber-400 font-semibold">Giảm: {rv.discount}%</p>
+                  </div>
+                </div>
+                <div className="text-xs text-white/50 space-y-1">
+                  <p>Ngày đổi: {new Date(rv.redeemedAt).toLocaleDateString('vi-VN')}</p>
+                  {rv.expiryDate && (
+                    <p>Hết hạn: {new Date(rv.expiryDate).toLocaleDateString('vi-VN')}</p>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+            {redeemedVouchers.length === 0 && (
+              <div className="col-span-full text-center py-20">
+                <Gift className="w-20 h-20 text-white/20 mx-auto mb-4" />
+                <p className="text-xl text-white/60">Bạn chưa đổi voucher nào</p>
+              </div>
+            )}
+          </div>
         ) : filteredVouchers.length === 0 ? (
           <div className="text-center py-20">
             <Gift className="w-20 h-20 text-white/20 mx-auto mb-4" />
             <p className="text-xl text-white/60">
-              {filter === 'all' ? 'Không có voucher nào khả dụng' : 'Bạn chưa đổi voucher nào'}
+              Không có voucher nào khả dụng
             </p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredVouchers.map((voucher, idx) => {
-              const isRedeemed = userVouchers.includes(voucher.id);
+            {filteredVouchers.map((voucher: Voucher, idx: number) => {
+              const isRedeemed = redeemedVouchers.some(rv => rv.voucherId === voucher.id);
               const canAfford = user && user.points >= voucher.pointsCost;
               const isExpired = new Date(voucher.expiryDate) < new Date();
 
@@ -378,7 +437,7 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
                 </div>
 
                 {/* Action Button */}
-                {user && !userVouchers.includes(selectedVoucher.id) && (
+                {user && !redeemedVouchers.some(rv => rv.voucherId === selectedVoucher.id) && (
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -395,7 +454,7 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
                   </motion.button>
                 )}
 
-                {userVouchers.includes(selectedVoucher.id) && (
+                {redeemedVouchers.some(rv => rv.voucherId === selectedVoucher.id) && (
                   <div className="p-4 bg-green-500/20 border border-green-500/40 rounded-xl text-center">
                     <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
                     <p className="text-green-400 font-semibold">Bạn đã đổi voucher này</p>

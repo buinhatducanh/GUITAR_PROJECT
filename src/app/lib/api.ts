@@ -171,6 +171,8 @@ export const vouchersApi = {
 
     redeem: (id: string) =>
         request<any>(`/vouchers/${id}/redeem`, { method: 'POST' }),
+
+    getMyVouchers: () => request<any[]>('/vouchers/my-vouchers'),
 };
 
 // ─── Events API ─────────────────────────────────
