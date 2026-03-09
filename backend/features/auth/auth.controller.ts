@@ -105,3 +105,24 @@ export const getCurrentUser = async (req: AuthRequest, res: Response) => {
         return errorResponse(res, error);
     }
 };
+
+/**
+ * PUT /api/auth/profile
+ * Update current user profile
+ */
+export const updateProfile = async (req: AuthRequest, res: Response) => {
+    try {
+        if (!req.userId) {
+            return errorResponse(res, new Error('Unauthorized'), 401);
+        }
+
+        const { name, email } = req.body;
+        const user = await authService.updateProfile(req.userId, { name, email });
+        return successResponse(res, user);
+    } catch (error) {
+        if (error instanceof Error && error.message.includes('Email này đã được sử dụng')) {
+            return errorResponse(res, error, 409);
+        }
+        return errorResponse(res, error);
+    }
+};

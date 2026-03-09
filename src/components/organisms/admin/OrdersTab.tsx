@@ -185,16 +185,22 @@ export const OrdersTab: React.FC = () => {
 
                       {/* Status update */}
                       <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                        <select
-                          value={order.status}
-                          onChange={e => handleStatusChange(order.id, e.target.value)}
-                          disabled={updating === order.id}
-                          className="bg-zinc-800 border border-white/10 rounded-lg px-2 py-1.5 text-white/80 text-xs focus:outline-none focus:border-purple-500 disabled:opacity-50 cursor-pointer"
-                        >
-                          {ALL_STATUSES.map(s => (
-                            <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-                          ))}
-                        </select>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <select
+                            value={order.status}
+                            onChange={e => {
+                              e.stopPropagation();
+                              handleStatusChange(order.id, e.target.value);
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            disabled={updating === order.id}
+                            className="bg-zinc-800 border border-white/10 rounded-lg px-2 py-1.5 text-white/80 text-xs focus:outline-none focus:border-purple-500 disabled:opacity-50 cursor-pointer relative z-10"
+                          >
+                            {ALL_STATUSES.map(s => (
+                              <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                            ))}
+                          </select>
+                        </div>
                       </td>
                     </motion.tr>
 

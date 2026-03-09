@@ -4,6 +4,7 @@ import { ArrowLeft, CreditCard, CheckCircle2, Phone, MapPin, Store, Hash, Ticket
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/app/context/AppContext';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
+import { useAuthStore } from '@/features/auth/store/authStore';
 import { ordersApi, vouchersApi } from '@/app/lib/api';
 import { toast } from 'sonner';
 
@@ -105,6 +106,11 @@ export const Checkout: React.FC = () => {
           totalAmount: total,
           voucherCode: appliedVoucher?.code,
         });
+
+      // Refresh user stats if logged in
+      if (user) {
+        await useAuthStore.getState().refreshUser();
+      }
 
       setOrderNumber(result.orderNumber);
       setIsProcessing(false);

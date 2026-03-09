@@ -52,6 +52,7 @@ export interface User {
     totalSpent: number;
     lastLogin: string;
     role?: 'USER' | 'ADMIN';
+    googleId?: string;
 }
 
 export interface Voucher {

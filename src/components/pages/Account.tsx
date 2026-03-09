@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, User, Mail, Calendar, Star, ShoppingBag, Award, TrendingUp, Gift, Clock, CheckCircle, Truck, XCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, User, Mail, Calendar, Star, ShoppingBag, Award, TrendingUp, Gift, Clock, CheckCircle, Truck, XCircle, Loader2, Edit3, Save, X } from 'lucide-react';
 import { useApp } from '@/app/context/AppContext';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
-import { ordersApi } from '@/app/lib/api';
+import { useAuthStore } from '@/features/auth/store/authStore';
+import { ordersApi, authApi } from '@/app/lib/api';
+import { toast } from 'sonner';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -42,6 +44,12 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const updateStoreProfile = useAuthStore(state => state.updateProfile);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(user?.name || '');
+  const [editEmail, setEditEmail] = useState(user?.email || '');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   useEffect(() => {
     if (activeTab === 'orders' && user) {
@@ -55,6 +63,33 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
       }).finally(() => setLoadingOrders(false));
     }
   }, [activeTab, user]);
+
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) {
+      toast.error('Họ tên không được để trống');
+      return;
+    }
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (editEmail.trim() && !emailRegex.test(editEmail.trim())) {
+      toast.error('Email không hợp lệ');
+      return;
+    }
+
+    try {
+      setIsSavingProfile(true);
+      await authApi.updateProfile({ name: editName.trim(), email: editEmail.trim() });
+      updateStoreProfile({ name: editName.trim(), email: editEmail.trim() });
+      toast.success('Cập nhật thông tin thành công');
+      setIsEditing(false);
+    } catch (error: any) {
+      console.error('Lỗi khi cập nhật:', error);
+      toast.error(error.message || 'Lỗi khi cập nhật thông tin');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   const getStatusLabel = (status: string) => {
     const map: Record<string, string> = {
@@ -101,7 +136,10 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
   };
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('vi-VN', {
+    if (!date) return 'Chưa cập nhật';
+    const parsedDate = new Date(date);
+    if (isNaN(parsedDate.getTime())) return 'Chưa cập nhật';
+    return parsedDate.toLocaleDateString('vi-VN', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
@@ -202,7 +240,7 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
               <TrendingUp className="w-10 h-10 text-green-400" />
             </div>
             <p className="text-green-200 text-sm mb-1">Tổng chi tiêu</p>
-            <p className="text-xl font-bold text-white">{formatPrice(user.totalSpent)}</p>
+            <p className="text-xl font-bold text-white">{formatPrice(Number(user.totalSpent) || 0)}</p>
           </motion.div>
 
           <motion.div
@@ -277,22 +315,77 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
             animate={{ opacity: 1, y: 0 }}
             className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-8 border border-white/10"
           >
-            <h2 className="text-2xl font-bold text-white mb-6">Thông tin cá nhân</h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">Thông tin cá nhân</h2>
+              {!isEditing ? (
+                 <button onClick={() => setIsEditing(true)} className="text-purple-400 hover:text-purple-300 text-sm font-medium flex items-center gap-1 transition-colors"><Edit3 className="w-4 h-4"/> Sửa</button>
+              ) : (
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => {
+                        setIsEditing(false);
+                        setEditName(user?.name || '');
+                        setEditEmail(user?.email || '');
+                    }} 
+                    disabled={isSavingProfile}
+                    className="p-2 text-zinc-400 hover:text-white transition-colors"
+                  >
+                    <X className="w-5 h-5"/>
+                  </button>
+                  <button 
+                    onClick={handleSaveProfile} 
+                    disabled={isSavingProfile}
+                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                  >
+                    {isSavingProfile ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>} 
+                    Lưu
+                  </button>
+                </div>
+              )}
+            </div>
 
             <div className="space-y-4">
-              <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl">
-                <User className="w-5 h-5 text-purple-400" />
-                <div>
-                  <p className="text-white/60 text-sm">Họ và tên</p>
-                  <p className="text-white font-medium">{user.name}</p>
+              <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/5">
+                <User className="w-5 h-5 text-purple-400 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-white/60 text-sm mb-1">Họ và tên</p>
+                  {isEditing ? (
+                    <input 
+                      type="text" 
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500 transition-colors"
+                      placeholder="Nhập họ và tên..."
+                    />
+                  ) : (
+                    <p className="text-white font-medium">{user.name}</p>
+                  )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl">
-                <Mail className="w-5 h-5 text-purple-400" />
-                <div>
-                  <p className="text-white/60 text-sm">Email</p>
-                  <p className="text-white font-medium">{user.email}</p>
+              <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/5">
+                <Mail className="w-5 h-5 text-purple-400 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-white/60 text-sm mb-1">Email</p>
+                  {isEditing ? (
+                    <div className="relative">
+                      <input 
+                        type="email" 
+                        value={editEmail}
+                        onChange={(e) => setEditEmail(e.target.value)}
+                        disabled={!!(user as any).googleId}
+                        className={`w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500 transition-colors ${!!(user as any).googleId ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        placeholder="Nhập địa chỉ email..."
+                      />
+                      {!!(user as any).googleId && (
+                        <p className="text-[10px] text-zinc-500 mt-1 italic">
+                          Tài khoản liên kết Google không thể thay đổi email
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-white font-medium">{user.email || 'Chưa cập nhật'}</p>
+                  )}
                 </div>
               </div>
 
@@ -300,7 +393,7 @@ export const Account: React.FC<AccountProps> = ({ onBack, onNavigate }) => {
                 <Calendar className="w-5 h-5 text-purple-400" />
                 <div>
                   <p className="text-white/60 text-sm">Ngày tham gia</p>
-                  <p className="text-white font-medium">{formatDate(user.joinDate)}</p>
+                  <p className="text-white font-medium">{formatDate((user as any).createdAt || user.joinDate)}</p>
                 </div>
               </div>
 

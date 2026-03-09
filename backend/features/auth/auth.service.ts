@@ -97,6 +97,13 @@ export const login = async (data: LoginDto): Promise<AuthResponse> => {
     // Generate JWT token
     const token = generateToken({ userId: user.id, role: user.role });
 
+    // Fetch stats
+    const aggregations = await prisma.order.aggregate({
+        where: { userId: user.id, status: { not: 'CANCELLED' } },
+        _count: { id: true },
+        _sum: { totalAmount: true }
+    });
+
     // Return user data and token
     return {
         user: {
@@ -110,6 +117,8 @@ export const login = async (data: LoginDto): Promise<AuthResponse> => {
             tier: user.tier,
             lastLogin: new Date(),
             createdAt: user.createdAt,
+            totalOrders: aggregations._count.id || 0,
+            totalSpent: aggregations._sum.totalAmount ? Number(aggregations._sum.totalAmount.toString()) : 0
         },
         token,
     };
@@ -150,6 +159,13 @@ export const guestCheckout = async (data: GuestCheckoutDto): Promise<AuthRespons
 
     const token = generateToken({ userId: user.id, role: user.role });
 
+    // Fetch stats
+    const aggregations = await prisma.order.aggregate({
+        where: { userId: user.id, status: { not: 'CANCELLED' } },
+        _count: { id: true },
+        _sum: { totalAmount: true }
+    });
+
     return {
         user: {
             id: user.id,
@@ -162,6 +178,8 @@ export const guestCheckout = async (data: GuestCheckoutDto): Promise<AuthRespons
             tier: user.tier,
             lastLogin: new Date(),
             createdAt: user.createdAt,
+            totalOrders: aggregations._count.id || 0,
+            totalSpent: aggregations._sum.totalAmount ? Number(aggregations._sum.totalAmount.toString()) : 0
         },
         token,
     };
@@ -184,12 +202,79 @@ export const getCurrentUser = async (userId: string): Promise<UserResponse> => {
             tier: true,
             lastLogin: true,
             createdAt: true,
+            googleId: true,
         },
     });
 
     if (!user) {
         throw new Error('User không tồn tại');
     }
+
+    const aggregations = await prisma.order.aggregate({
+        where: {
+            userId,
+            status: { not: 'CANCELLED' }
+        },
+        _count: { id: true },
+        _sum: { totalAmount: true }
+    });
+
+    return {
+        ...user,
+        totalOrders: aggregations._count.id || 0,
+        totalSpent: aggregations._sum.totalAmount ? Number(aggregations._sum.totalAmount.toString()) : 0
+    };
+};
+
+/**
+ * Update current user profile (name and email)
+ */
+export const updateProfile = async (userId: string, data: { name?: string; email?: string }): Promise<UserResponse> => {
+    // If email is being updated, check if it's already taken
+    if (data.email) {
+        const existingEmailUser = await prisma.user.findFirst({
+            where: {
+                email: data.email,
+                id: { not: userId }
+            }
+        });
+
+        if (existingEmailUser) {
+            throw new Error('Email này đã được sử dụng bởi tài khoản khác');
+        }
+    }
+
+    // Check if user is trying to change email but is a Google user
+    if (data.email) {
+        const currentUser = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { googleId: true, email: true }
+        });
+
+        if (currentUser?.googleId && currentUser.email !== data.email) {
+            throw new Error('Tài khoản liên kết Google không thể thay đổi email');
+        }
+    }
+
+    const user = await prisma.user.update({
+        where: { id: userId },
+        data: {
+            ...(data.name && { name: data.name }),
+            ...(data.email && { email: data.email })
+        },
+        select: {
+            id: true,
+            name: true,
+            phone: true,
+            email: true,
+            avatar: true,
+            points: true,
+            role: true,
+            tier: true,
+            lastLogin: true,
+            createdAt: true,
+        },
+    });
 
     return user;
 };
@@ -270,6 +355,13 @@ export const googleLogin = async (data: GoogleAuthDto): Promise<AuthResponse> =>
 
     const token = generateToken({ userId: user.id, role: user.role });
 
+    // Fetch stats
+    const aggregations = await prisma.order.aggregate({
+        where: { userId: user.id, status: { not: 'CANCELLED' } },
+        _count: { id: true },
+        _sum: { totalAmount: true }
+    });
+
     return {
         user: {
             id: user.id,
@@ -282,6 +374,8 @@ export const googleLogin = async (data: GoogleAuthDto): Promise<AuthResponse> =>
             tier: user.tier,
             lastLogin: new Date(),
             createdAt: user.createdAt,
+            totalOrders: aggregations._count.id || 0,
+            totalSpent: aggregations._sum.totalAmount ? Number(aggregations._sum.totalAmount.toString()) : 0
         },
         token,
     };

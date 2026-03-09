@@ -52,6 +52,12 @@ export const authApi = {
             method: 'POST',
             body: JSON.stringify({ credential }),
         }),
+
+    updateProfile: (data: { name: string; email: string }) =>
+        request<any>('/auth/profile', {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        }),
 };
 
 // ─── Products API ───────────────────────────────

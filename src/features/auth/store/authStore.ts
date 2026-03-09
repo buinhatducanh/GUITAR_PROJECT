@@ -8,7 +8,7 @@ interface AuthState {
     token: string | null;
     isAuthenticated: boolean;
 }
-
+//ss
 interface AuthActions {
     login: (phone: string, password: string) => Promise<void>;
     register: (name: string, phone: string, password: string) => Promise<void>;
@@ -16,6 +16,8 @@ interface AuthActions {
     logout: () => void;
     setUser: (user: User | null) => void;
     updatePoints: (points: number) => void;
+    updateProfile: (data: { name: string; email: string }) => void;
+    refreshUser: () => Promise<void>;
 }
 
 type AuthStore = AuthState & AuthActions;
@@ -109,6 +111,30 @@ export const useAuthStore = create<AuthStore>()(
                             points: currentUser.points + points,
                         },
                     });
+                }
+            },
+
+            updateProfile: (data: { name: string; email: string }) => {
+                const currentUser = get().user;
+                if (currentUser) {
+                    set({
+                        user: {
+                            ...currentUser,
+                            name: data.name,
+                            email: data.email,
+                        },
+                    });
+                }
+            },
+
+            refreshUser: async () => {
+                try {
+                    const user = await authApi.getMe();
+                    if (user) {
+                        set({ user });
+                    }
+                } catch (error) {
+                    console.error('Refresh user error:', error);
                 }
             },
         }),
