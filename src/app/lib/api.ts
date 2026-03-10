@@ -178,6 +178,17 @@ export const vouchersApi = {
 export const eventsApi = {
     getAll: () => request<any[]>('/events'),
 
+    getMyStatus: () => request<any[]>('/events/my-status'),
+
+    join: (id: string) =>
+        request<any>(`/events/${id}/join`, { method: 'POST' }),
+
+    checkin: (id: string) =>
+        request<any>(`/events/${id}/checkin`, { method: 'POST' }),
+
+    claimReward: (id: string) =>
+        request<any>(`/events/${id}/claim-reward`, { method: 'POST' }),
+
     create: (data: any) =>
         request<any>('/events', { method: 'POST', body: JSON.stringify(data) }),
 

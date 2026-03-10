@@ -75,6 +75,18 @@ export interface Voucher {
   usedCount: number;
 }
 
+export interface UserEvent {
+  id: string;
+  userId: string;
+  eventId: string;
+  progress: number;
+  completed: boolean;
+  rewardClaimed: boolean;
+  rewardCode?: string;
+  rewardValue?: number;
+  lastCheckIn?: string;
+}
+
 export interface Event {
   id: string;
   title: string;
@@ -169,6 +181,8 @@ interface AppContextType {
   userVouchers: string[];
   redeemVoucher: (voucherId: string) => void;
   addPoints: (points: number) => void;
+  userEventStatuses: UserEvent[];
+  setUserEventStatuses: (statuses: UserEvent[]) => void;
   landingPages: LandingPageData[];
   setLandingPages: (pages: LandingPageData[]) => void;
   users: UserData[];
@@ -209,6 +223,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [userVouchers, setUserVouchers] = useState<string[]>([]);
+  const [userEventStatuses, setUserEventStatuses] = useState<UserEvent[]>([]);
   const [landingPages, setLandingPages] = useState<LandingPageData[]>([]);
   const [users, setUsers] = useState<UserData[]>([]);
   const [allReviews, setAllReviews] = useState<Review[]>([]);
@@ -220,25 +235,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setUser(authStoreUser as User | null);
   }, [authStoreUser]);
 
-  // Initialize login streak tracking
-  useEffect(() => {
-    if (user) {
-      const today = new Date().toDateString();
-      const lastLogin = localStorage.getItem('lastLogin');
-
-      if (lastLogin !== today) {
-        localStorage.setItem('lastLogin', today);
-
-        const streakCount = parseInt(localStorage.getItem('loginStreak') || '0') + 1;
-        localStorage.setItem('loginStreak', streakCount.toString());
-
-        if (streakCount === 7) {
-          addPoints(1000);
-          localStorage.setItem('loginStreak', '0');
-        }
-      }
-    }
-  }, [user]);
+  // Initialize login streak tracking - MOVED TO BACKEND
 
   const addToCart = (product: Product) => {
     setCart(prevCart => {
@@ -320,7 +317,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         allReviews,
         setAllReviews,
         blogPosts,
-        setBlogPosts
+        setBlogPosts,
+        userEventStatuses,
+        setUserEventStatuses
       }}
     >
       {children}

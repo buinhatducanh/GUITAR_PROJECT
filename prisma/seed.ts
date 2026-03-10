@@ -272,18 +272,107 @@ async function main() {
     console.log(`✅ ${vouchers.length} vouchers seeded`);
 
     // ─── Events ─────────────────────────────────────
-    const existingEvents = await prisma.event.count();
-    if (existingEvents === 0) {
-        await prisma.event.createMany({
-            data: [
-                { title: 'Đăng nhập liên tục 7 ngày', description: 'Đăng nhập mỗi ngày trong 7 ngày liên tiếp để nhận 1000 điểm thưởng', type: 'LOGIN_STREAK', rewardType: 'POINTS', rewardValue: 1000, conditions: { days: 7 }, startDate: new Date('2026-02-01'), endDate: new Date('2026-12-31'), isActive: true },
-                { title: 'Valentine Couple Deal', description: 'Mua guitar cùng người yêu vào ngày Valentine để được giảm 10%', type: 'PURCHASE_COUPLE', rewardType: 'DISCOUNT', rewardValue: 10, conditions: { specificDate: '2026-02-14', requireCoupleCode: true }, startDate: new Date('2026-02-10'), endDate: new Date('2026-02-14'), isActive: true },
-                { title: 'Khách hàng mới - Giảm ngay 15%', description: 'Đơn hàng đầu tiên được giảm 15%, tối đa 1 triệu đồng', type: 'FIRST_PURCHASE', rewardType: 'DISCOUNT', rewardValue: 15, conditions: {}, startDate: new Date('2026-01-01'), endDate: new Date('2026-12-31'), isActive: true },
-                { title: 'Giới thiệu bạn bè', description: 'Giới thiệu bạn bè mua hàng, cả hai nhận 500 điểm', type: 'REFERRAL', rewardType: 'POINTS', rewardValue: 500, conditions: {}, startDate: new Date('2026-02-01'), endDate: new Date('2026-12-31'), isActive: true },
-            ],
-        });
-        console.log('✅ 4 events seeded');
-    }
+    await prisma.event.deleteMany();
+    await prisma.event.createMany({
+        data: [
+            {
+                title: 'Đăng nhập liên tục 7 ngày',
+                description: 'Đăng nhập mỗi ngày trong 7 ngày liên tiếp để nhận 1000 điểm thưởng',
+                type: 'LOGIN_STREAK',
+                rewardType: 'POINTS',
+                rewardValue: 1000,
+                conditions: { days: 7 },
+                startDate: new Date('2026-01-01'),
+                endDate: new Date('2026-12-31'),
+                isActive: true,
+                image: 'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=800'
+            },
+            {
+                title: 'Valentine Đôi Lứa',
+                description: 'Nhập mã COUPLE khi mua từ 2 sản phẩm trở lên để nhận giảm 10%',
+                type: 'PURCHASE_COUPLE',
+                rewardType: 'DISCOUNT',
+                rewardValue: 10,
+                conditions: { specificDate: '2026-02-14', requireCoupleCode: true },
+                startDate: new Date('2026-02-01'),
+                endDate: new Date('2026-02-15'),
+                isActive: false,
+                image: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=800'
+            },
+            {
+                title: 'Mua hàng lần đầu',
+                description: 'Nhận ngay 200 điểm thưởng và giảm 15% khi đặt đơn hàng đầu tiên',
+                type: 'FIRST_PURCHASE',
+                rewardType: 'DISCOUNT',
+                rewardValue: 15,
+                conditions: {},
+                startDate: new Date('2026-01-01'),
+                endDate: new Date('2026-12-31'),
+                isActive: true,
+                image: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=800'
+            },
+            {
+                title: 'Giới thiệu bạn bè',
+                description: 'Giới thiệu bạn bè mua hàng, cả hai nhận ngay 500 điểm thưởng',
+                type: 'REFERRAL',
+                rewardType: 'POINTS',
+                rewardValue: 500,
+                conditions: {},
+                startDate: new Date('2026-01-01'),
+                endDate: new Date('2026-12-31'),
+                isActive: true,
+                image: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800'
+            },
+            {
+                title: 'Sự kiện Siêu Hội Thành Viên',
+                description: 'Tham gia ngày hội thành viên để nhận voucher giảm giá 50% sản phẩm phụ kiện',
+                type: 'SPECIAL_DAY',
+                rewardType: 'VOUCHER',
+                rewardValue: 50,
+                conditions: { targetProgress: 1 },
+                startDate: new Date('2026-03-01'),
+                endDate: new Date('2026-04-30'),
+                isActive: true,
+                image: 'https://images.unsplash.com/photo-1540317580384-e5d43616b9aa?w=800'
+            },
+            {
+                title: 'Thử thách Check-in 30 ngày',
+                description: 'Duy trì thói quen check-in 30 ngày để nhận bộ dây đàn Elixir cao cấp',
+                type: 'LOGIN_STREAK',
+                rewardType: 'VOUCHER',
+                rewardValue: 100,
+                conditions: { days: 30 },
+                startDate: new Date('2026-01-01'),
+                endDate: new Date('2026-12-31'),
+                isActive: true,
+                image: 'https://images.unsplash.com/photo-1510915228340-29c85a43dcfe?w=800'
+            },
+            {
+                title: 'Lễ Hội Âm Nhạc Mùa Hè',
+                description: 'Sự kiện âm nhạc lớn nhất năm sắp diễn ra với nhiều ưu đãi hấp dẫn',
+                type: 'SPECIAL_DAY',
+                rewardType: 'VOUCHER',
+                rewardValue: 30,
+                conditions: { targetProgress: 1 },
+                startDate: new Date('2026-06-01'),
+                endDate: new Date('2026-06-30'),
+                isActive: true,
+                image: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800'
+            },
+            {
+                title: 'Sự kiện Tết Nguyên Đán',
+                description: 'Chương trình ưu đãi nhân dịp Tết Nguyên Đán đã kết thúc tốt đẹp',
+                type: 'SPECIAL_DAY',
+                rewardType: 'DISCOUNT',
+                rewardValue: 50,
+                conditions: {},
+                startDate: new Date('2026-01-01'),
+                endDate: new Date('2026-02-15'),
+                isActive: true,
+                image: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800'
+            },
+        ],
+    });
 
     // ─── Landing Pages ──────────────────────────────
     const landingPages = [
