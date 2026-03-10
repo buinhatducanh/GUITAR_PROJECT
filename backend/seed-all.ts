@@ -103,8 +103,8 @@ async function main() {
             rewardValue: 10,
             conditions: { requireCoupleCode: true, minPurchase: 1000000 },
             startDate: new Date('2026-02-01'),
-            endDate: new Date('2026-03-31'),
-            isActive: true,
+            endDate: new Date('2026-02-15'),
+            isActive: false,
             image: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=400&q=80',
         },
         {
