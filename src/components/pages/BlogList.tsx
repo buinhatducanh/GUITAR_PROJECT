@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'motion/react';
 import { ArrowLeft, Clock, Eye, Calendar, Tag, Search, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -44,6 +45,12 @@ export const BlogList: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black pt-24 pb-16">
+      <Helmet>
+        <title>Blog & Tin Tức Guitar | Guitar NOVA</title>
+        <meta name="description" content="Cập nhật tin tức, hướng dẫn và kiến thức về guitar. Bài viết từ chuyên gia tại Guitar NOVA." />
+        <meta property="og:title" content="Blog & Tin Tức Guitar | Guitar NOVA" />
+        <meta property="og:description" content="Kiến thức, hướng dẫn và câu chuyện về guitar" />
+      </Helmet>
       {/* Header */}
       <div className="bg-gradient-to-r from-emerald-900/30 to-teal-900/30 border-b border-emerald-500/20 mb-8">
         <div className="container mx-auto px-4 py-8">

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Filter, Search } from 'lucide-react';
@@ -33,6 +34,12 @@ export const Products: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black pt-24 pb-16">
+      <Helmet>
+        <title>Sản Phẩm Guitar | Guitar NOVA</title>
+        <meta name="description" content="Khám phá bộ sưu tập guitar acoustic, classic, electric chính hãng tại Guitar NOVA. Giá tốt nhất, giao hàng toàn quốc." />
+        <meta property="og:title" content="Sản Phẩm Guitar | Guitar NOVA" />
+        <meta property="og:description" content="Bộ sưu tập guitar chính hãng tại Guitar NOVA" />
+      </Helmet>
       <div className="container mx-auto px-4">
         {/* Back Button */}
         <motion.button

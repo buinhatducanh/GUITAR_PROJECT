@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Calendar, Gift, Star, Heart, Users, Trophy, Sparkles, CheckCircle2, Clock } from 'lucide-react';
@@ -93,6 +94,11 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
 
   return (
     <div className="min-h-screen bg-black pt-24 pb-16">
+      <Helmet>
+        <title>Sự Kiện & Nhiệm Vụ | Guitar NOVA</title>
+        <meta name="description" content="Tham gia sự kiện và hoàn thành nhiệm vụ để nhận điểm thưởng và voucher hấp dẫn tại Guitar NOVA." />
+        <meta property="og:title" content="Sự Kiện & Nhiệm Vụ | Guitar NOVA" />
+      </Helmet>
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-b border-purple-500/20 mb-8">
         <div className="container mx-auto px-4 py-8">
