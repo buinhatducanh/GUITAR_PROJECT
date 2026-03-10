@@ -61,11 +61,20 @@ export const Footer: React.FC = () => {
           <div>
             <h4 className="text-white font-semibold mb-4">Liên kết nhanh</h4>
             <ul className="space-y-2">
-              {['Về chúng tôi', 'Sản phẩm', 'Khuyến mãi', 'Liên hệ', 'Chính sách bảo hành'].map((link) => (
-                <li key={link}>
-                  <a href="#" className="text-white/60 hover:text-amber-500 transition-colors">
-                    {link}
-                  </a>
+              {[
+                { label: 'Về chúng tôi', path: '/landing/about' },
+                { label: 'Sản phẩm', path: '/products' },
+                { label: 'Khuyến mãi', path: '/promo' },
+                { label: 'Blog', path: '/blog' },
+                { label: 'Sự kiện', path: '/events' },
+              ].map((link) => (
+                <li key={link.label}>
+                  <button
+                    onClick={() => navigate(link.path)}
+                    className="text-white/60 hover:text-amber-500 transition-colors"
+                  >
+                    {link.label}
+                  </button>
                 </li>
               ))}
             </ul>
@@ -117,8 +126,8 @@ export const Footer: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-white/40 text-sm">
           <p>© {new Date().getFullYear()} {settings?.siteName || 'Guitar NOVA'}. All rights reserved.</p>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-amber-500 transition-colors">Điều khoản sử dụng</a>
-            <a href="#" className="hover:text-amber-500 transition-colors">Chính sách bảo mật</a>
+            <button onClick={() => navigate('/landing/terms')} className="hover:text-amber-500 transition-colors">Điều khoản sử dụng</button>
+            <button onClick={() => navigate('/landing/privacy')} className="hover:text-amber-500 transition-colors">Chính sách bảo mật</button>
           </div>
         </div>
       </div>
