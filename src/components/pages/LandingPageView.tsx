@@ -1,4 +1,5 @@
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'motion/react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { LandingPageData, useApp } from '@/app/context/AppContext';
@@ -30,6 +31,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 
   return (
     <div className="min-h-screen bg-black pt-24 pb-16">
+      <Helmet>
+        <title>{landingPage.title} | Guitar NOVA</title>
+        <meta name="description" content={landingPage.sections?.[0]?.content?.slice(0, 160) || landingPage.title} />
+        <meta property="og:title" content={`${landingPage.title} | Guitar NOVA`} />
+      </Helmet>
       {/* Back Button */}
       <div className="container mx-auto px-4 mb-8">
         <motion.button
@@ -156,7 +162,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                       >
                         <img
                           src={image}
-                          alt={`Gallery ${imgIdx + 1}`}
+                          alt={section.title ? `${section.title} - Ảnh ${imgIdx + 1}` : `Ảnh ${imgIdx + 1}`}
+                          loading="lazy"
                           className="w-full h-full object-cover"
                         />
                       </motion.div>
