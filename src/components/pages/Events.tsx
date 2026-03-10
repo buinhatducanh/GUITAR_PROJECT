@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Calendar, Gift, Star, Heart, Users, Trophy, Sparkles, CheckCircle2, Clock } from 'lucide-react';
+import { ArrowLeft, Calendar, Gift, Star, Heart, Users, Trophy, Sparkles, CheckCircle2, Clock, Copy, Check, History } from 'lucide-react';
 import { useApp, Event } from '@/app/context/AppContext';
 import { toast } from 'sonner';
 import { EventsListSkeleton } from '@/components/atoms/SkeletonLayouts';
 import { useEvents } from '@/hooks/useEvents';
+import { eventsApi } from '@/app/lib/api';
 
 interface EventsProps {
   onBack?: () => void;
@@ -13,11 +14,31 @@ interface EventsProps {
 
 export const Events: React.FC<EventsProps> = ({ onBack }) => {
   const navigate = useNavigate();
-  const { user } = useApp();
+  const { user, userEventStatuses, setUserEventStatuses, addPoints } = useApp();
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [filter, setFilter] = useState<'active' | 'upcoming' | 'past'>('active');
+  const [filter, setFilter] = useState<'active' | 'upcoming' | 'past' | 'history'>('active');
+  const [processingEventId, setProcessingEventId] = useState<string | null>(null);
+  const [rewardClaimed, setRewardClaimed] = useState<{ type: string; code?: string; value?: number; title?: string } | null>(null);
 
-  const { data: events = [], isLoading } = useEvents();
+  const { data: events = [], isLoading, refetch: refetchEvents } = useEvents();
+
+  const fetchUserStatuses = async () => {
+    if (!user) return;
+    try {
+      const statuses = await eventsApi.getMyStatus();
+      setUserEventStatuses(statuses);
+    } catch (err) {
+      console.error('Fetch user statuses error:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserStatuses();
+  }, [user]);
+
+  const getEventStatus = (eventId: string) => {
+    return userEventStatuses.find(s => s.eventId === eventId);
+  };
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('vi-VN', {
@@ -28,7 +49,7 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
   };
 
   const getEventIcon = (type: string) => {
-    switch (type) {
+    switch (type.toLowerCase()) {
       case 'login_streak':
         return Calendar;
       case 'purchase_couple':
@@ -45,7 +66,7 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
   };
 
   const getEventColor = (type: string) => {
-    switch (type) {
+    switch (type.toLowerCase()) {
       case 'login_streak':
         return 'from-blue-500 to-blue-600';
       case 'purchase_couple':
@@ -75,20 +96,138 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
   };
 
   const filteredEvents = events.filter((event) => {
+    if (filter === 'history') {
+      const status = getEventStatus(event.id);
+      return status?.rewardClaimed;
+    }
     if (filter === 'active') return isEventActive(event);
     if (filter === 'upcoming') return isEventUpcoming(event);
     if (filter === 'past') return !isEventActive(event) && !isEventUpcoming(event);
     return true;
   });
 
-  const handleJoinEvent = (event: Event) => {
+  const handleAction = async (event: Event) => {
     if (!user) {
       toast.error('Vui lòng đăng nhập để tham gia sự kiện');
       return;
     }
 
-    toast.success(`Bạn đã tham gia sự kiện: ${event.title}`);
-    setSelectedEvent(null);
+    const status = getEventStatus(event.id);
+    const eventType = event.type.toLowerCase();
+
+    // 1. Social/Action events that don't require server check-in if not joined (Special case for referral)
+    if (!status && eventType === 'referral') {
+      const shareData = {
+        title: event.title,
+        text: event.description,
+        url: window.location.href,
+      };
+
+      if (navigator.share) {
+        navigator.share(shareData)
+          .then(() => toast.success('Đã chia sẻ thành công!'))
+          .catch(() => toast.error('Lỗi khi chia sẻ'));
+      } else {
+        navigator.clipboard.writeText(`${event.title}: ${event.description} - ${window.location.href}`)
+          .then(() => toast.success(' Đã sao chép link giới thiệu vào bộ nhớ tạm!'))
+          .catch(() => toast.error('Không thể sao chép link'));
+      }
+      return;
+    }
+
+    setProcessingEventId(event.id);
+    try {
+      let currentStatus = status;
+
+      if (!currentStatus) {
+        // Tham gia
+        const joinRes = await eventsApi.join(event.id);
+        toast.success(`Bạn đã tham gia sự kiện: ${event.title}`);
+
+        // Refresh local status reference from API response
+        currentStatus = joinRes;
+      }
+
+      // Check if we can claim reward immediately (One-click reward)
+      if (currentStatus && currentStatus.completed && !currentStatus.rewardClaimed) {
+        // Nhận quà
+        const res = await eventsApi.claimReward(event.id);
+        toast.success(res.message || 'Nhận thưởng thành công!');
+
+        // Refresh statuses to get the rewardCode/rewardValue in history
+        await fetchUserStatuses();
+
+        if (res.rewardDetails) {
+          setRewardClaimed({
+            ...res.rewardDetails,
+            title: event.title
+          });
+        }
+
+        // Update points if reward was points
+        if (event.reward?.type === 'points') {
+          addPoints(event.reward.value);
+        }
+      } else if (currentStatus && !currentStatus.completed) {
+        // Hành động cho từng loại sự kiện khi chưa hoàn thành
+        switch (eventType) {
+          case 'first_purchase':
+          case 'purchase_couple':
+            navigate('/products');
+            setSelectedEvent(null);
+            return;
+          case 'referral':
+            // Xử lý chia sẻ lại nếu cần (đã xử lý ở trên nhưng đề phòng trường hợp đã join)
+            break;
+          case 'login_streak':
+          case 'special_day':
+          default:
+            // Điểm danh cho các sự kiện tích lũy
+            const isToday = currentStatus.lastCheckIn && new Date(currentStatus.lastCheckIn).toDateString() === new Date().toDateString();
+            if (isToday) {
+              toast.info('Bạn đã điểm danh hôm nay rồi');
+              return;
+            }
+            await eventsApi.checkin(event.id);
+            toast.success('Điểm danh thành công!');
+            break;
+        }
+      }
+
+      // Refresh user statuses
+      await fetchUserStatuses();
+      setSelectedEvent(null);
+    } catch (err: any) {
+      toast.error(err.message || 'Có lỗi xảy ra');
+    } finally {
+      setProcessingEventId(null);
+    }
+  };
+
+  const getEventActionButtonLabel = (event: Event) => {
+    const status = getEventStatus(event.id);
+    const eventType = event.type.toLowerCase();
+
+    if (!status) {
+      if (eventType === 'purchase_couple' || eventType === 'first_purchase') return 'Mua ngay';
+      if (eventType === 'referral') return 'Chia sẻ';
+      return 'Tham gia ngay';
+    }
+
+    if (status.rewardClaimed) return 'Đã nhận thưởng';
+    if (status.completed) return 'Nhận thưởng';
+
+    // Incomplete states
+    switch (eventType) {
+      case 'first_purchase':
+      case 'purchase_couple':
+        return 'Mua ngay';
+      case 'referral':
+        return 'Chia sẻ';
+      default:
+        const isToday = status.lastCheckIn && new Date(status.lastCheckIn).toDateString() === new Date().toDateString();
+        return isToday ? 'Đã điểm danh' : 'Điểm danh';
+    }
   };
 
   return (
@@ -162,6 +301,21 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
               <span>Đã kết thúc</span>
             </div>
           </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setFilter('history')}
+            className={`px-6 py-3 rounded-xl font-medium transition-all ${filter === 'history'
+              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+              }`}
+          >
+            <div className="flex items-center gap-2">
+              <History className="w-5 h-5" />
+              <span>Lịch sử nhận quà</span>
+            </div>
+          </motion.button>
         </div>
 
         {/* Events Grid */}
@@ -174,6 +328,7 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
               {filter === 'active' && 'Không có sự kiện nào đang diễn ra'}
               {filter === 'upcoming' && 'Không có sự kiện nào sắp diễn ra'}
               {filter === 'past' && 'Không có sự kiện nào đã kết thúc'}
+              {filter === 'history' && 'Bạn chưa nhận phần thưởng từ sự kiện nào'}
             </p>
           </div>
         ) : (
@@ -236,38 +391,87 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
 
                     {/* Reward */}
                     <div className="flex items-center gap-2 p-3 bg-white/5 rounded-lg mb-4">
-                      {event.reward.type === 'points' && (
+                      {filter === 'history' ? (
+                        getEventStatus(event.id)?.rewardCode ? (
+                          <div className="flex flex-col w-full gap-2 py-1">
+                            <div className="flex items-center justify-between text-purple-400 font-bold">
+                              <div className="flex items-center gap-2">
+                                <Gift className="w-4 h-4" />
+                                <span className="text-xs">Mã của bạn:</span>
+                              </div>
+                              <span className="text-base tracking-wider select-all px-2 py-0.5 bg-purple-500/10 rounded border border-purple-500/20">
+                                {getEventStatus(event.id)?.rewardCode}
+                              </span>
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const code = getEventStatus(event.id)?.rewardCode;
+                                if (code) {
+                                  navigator.clipboard.writeText(code);
+                                  toast.success('Đã sao chép mã voucher!');
+                                }
+                              }}
+                              className="w-full py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-[10px] rounded flex items-center justify-center gap-2 transition-colors border border-purple-500/10"
+                            >
+                              <Copy className="w-3 h-3" />
+                              Sao chép mã
+                            </button>
+                          </div>
+                        ) : getEventStatus(event.id)?.rewardValue ? (
+                          <div className="flex items-center gap-2 text-amber-400 font-bold">
+                            <Star className="w-5 h-5 fill-amber-400" />
+                            <span>Đã nhận +{getEventStatus(event.id)?.rewardValue?.toLocaleString('vi-VN')} điểm</span>
+                          </div>
+                        ) : (
+                          <div className="text-white/40 text-xs italic">
+                            Phần thưởng đã nhận (Vui lòng kiểm tra mục Thông báo để xem mã)
+                          </div>
+                        )
+                      ) : (
                         <>
-                          <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
-                          <span className="text-amber-400 font-bold">
-                            +{event.reward.value.toLocaleString('vi-VN')} điểm
-                          </span>
-                        </>
-                      )}
-                      {event.reward.type === 'discount' && (
-                        <>
-                          <Gift className="w-5 h-5 text-green-400" />
-                          <span className="text-green-400 font-bold">
-                            Giảm {event.reward.value}%
-                          </span>
+                          {event.reward?.type === 'points' && (
+                            <>
+                              <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
+                              <span className="text-amber-400 font-bold">
+                                +{event.reward.value?.toLocaleString('vi-VN')} điểm
+                              </span>
+                            </>
+                          )}
+                          {event.reward?.type === 'discount' && (
+                            <>
+                              <Gift className="w-5 h-5 text-green-400" />
+                              <span className="text-green-400 font-bold">
+                                Giảm {event.reward.value}%
+                              </span>
+                            </>
+                          )}
+                          {event.reward?.type === 'voucher' && (
+                            <>
+                              <Gift className="w-5 h-5 text-purple-400" />
+                              <span className="text-purple-400 font-bold">
+                                Voucher {event.reward.value}%
+                              </span>
+                            </>
+                          )}
                         </>
                       )}
                     </div>
 
                     {/* Progress (if applicable) */}
-                    {event.progress !== undefined && event.conditions.days && (
+                    {getEventStatus(event.id) && event.conditions?.days && (
                       <div className="mb-4">
                         <div className="flex items-center justify-between mb-2 text-xs">
                           <span className="text-white/60">Tiến độ</span>
                           <span className="text-white font-semibold">
-                            {event.progress}/{event.conditions.days} ngày
+                            {getEventStatus(event.id)?.progress}/{event.conditions.days} ngày
                           </span>
                         </div>
                         <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{
-                              width: `${((event.progress || 0) / (event.conditions.days || 1)) * 100}%`
+                              width: `${((getEventStatus(event.id)?.progress || 0) / (event.conditions.days || 1)) * 100}%`
                             }}
                             className={`h-full bg-gradient-to-r ${eventColor}`}
                           />
@@ -283,20 +487,23 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
                       </span>
                     </div>
 
-                    {/* View Details Button */}
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
+                      disabled={!!processingEventId || getEventStatus(event.id)?.rewardClaimed}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedEvent(event);
+                        // If status is claimed, don't do anything
+                        if (getEventStatus(event.id)?.rewardClaimed) return;
+
+                        isActive ? handleAction(event) : setSelectedEvent(event);
                       }}
-                      className={`w-full py-3 rounded-xl font-semibold transition-all ${isActive
-                        ? `bg-gradient-to-r ${eventColor} text-white hover:shadow-lg`
-                        : 'bg-white/5 text-white/60 hover:bg-white/10'
+                      className={`w-full py-3 rounded-xl font-semibold transition-all ${isActive && !getEventStatus(event.id)?.rewardClaimed
+                        ? 'bg-orange-500 text-white hover:bg-orange-600 hover:shadow-lg'
+                        : 'bg-white/5 text-white/60 cursor-not-allowed'
                         }`}
                     >
-                      {isActive ? 'Tham gia ngay' : 'Xem chi tiết'}
+                      {processingEventId === event.id ? 'Đang xử lý...' : isActive ? getEventActionButtonLabel(event) : 'Xem chi tiết'}
                     </motion.button>
                   </div>
                 </motion.div>
@@ -373,18 +580,18 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
                 {/* Reward Section */}
                 <div className="bg-gradient-to-br from-white/5 to-white/0 border border-white/10 rounded-xl p-5 mb-6">
                   <h3 className="text-white/60 text-sm uppercase tracking-wider mb-3">Phần thưởng</h3>
-                  {selectedEvent.reward.type === 'points' && (
+                  {selectedEvent.reward?.type === 'points' && (
                     <div className="flex items-center gap-3">
                       <Star className="w-8 h-8 text-amber-400 fill-amber-400" />
                       <div>
                         <p className="text-2xl font-bold text-amber-400">
-                          +{selectedEvent.reward.value.toLocaleString('vi-VN')} điểm
+                          +{selectedEvent.reward.value?.toLocaleString('vi-VN')} điểm
                         </p>
                         <p className="text-sm text-white/60">Tích lũy vào tài khoản</p>
                       </div>
                     </div>
                   )}
-                  {selectedEvent.reward.type === 'discount' && (
+                  {selectedEvent.reward?.type === 'discount' && (
                     <div className="flex items-center gap-3">
                       <Gift className="w-8 h-8 text-green-400" />
                       <div>
@@ -395,17 +602,28 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
                       </div>
                     </div>
                   )}
+                  {selectedEvent.reward?.type === 'voucher' && (
+                    <div className="flex items-center gap-3">
+                      <Gift className="w-8 h-8 text-purple-400" />
+                      <div>
+                        <p className="text-2xl font-bold text-purple-400">
+                          Voucher {selectedEvent.reward.value}%
+                        </p>
+                        <p className="text-sm text-white/60">Quà tặng đặc biệt</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Conditions */}
-                {Object.keys(selectedEvent.conditions).length > 0 && (
+                {Object.keys(selectedEvent.conditions || {}).length > 0 && (
                   <div className="mb-6">
                     <h3 className="text-white/60 text-sm uppercase tracking-wider mb-3">Điều kiện</h3>
                     <div className="space-y-2">
-                      {selectedEvent.conditions.days && (
+                      {selectedEvent.conditions?.days && (
                         <p className="text-white/80">• Hoàn thành {selectedEvent.conditions.days} ngày liên tục</p>
                       )}
-                      {selectedEvent.conditions.minPurchase && (
+                      {selectedEvent.conditions?.minPurchase && (
                         <p className="text-white/80">
                           • Đơn hàng tối thiểu:{' '}
                           {new Intl.NumberFormat('vi-VN', {
@@ -414,12 +632,12 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
                           }).format(selectedEvent.conditions.minPurchase)}
                         </p>
                       )}
-                      {selectedEvent.conditions.specificDate && (
+                      {selectedEvent.conditions?.specificDate && (
                         <p className="text-white/80">
                           • Áp dụng vào ngày: {formatDate(selectedEvent.conditions.specificDate)}
                         </p>
                       )}
-                      {selectedEvent.conditions.requireCoupleCode && (
+                      {selectedEvent.conditions?.requireCoupleCode && (
                         <p className="text-white/80">• Cần mã cặp đôi khi mua hàng</p>
                       )}
                     </div>
@@ -427,19 +645,19 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
                 )}
 
                 {/* Progress Bar (if applicable) */}
-                {selectedEvent.progress !== undefined && selectedEvent.conditions.days && (
+                {getEventStatus(selectedEvent.id) && selectedEvent.conditions?.days && (
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-white/60 text-sm">Tiến độ của bạn</span>
                       <span className="text-white font-semibold">
-                        {selectedEvent.progress}/{selectedEvent.conditions.days} ngày
+                        {getEventStatus(selectedEvent.id)?.progress}/{selectedEvent.conditions.days} ngày
                       </span>
                     </div>
                     <div className="h-3 bg-white/10 rounded-full overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{
-                          width: `${((selectedEvent.progress || 0) / (selectedEvent.conditions.days || 1)) * 100}%`
+                          width: `${((getEventStatus(selectedEvent.id)?.progress || 0) / (selectedEvent.conditions.days || 1)) * 100}%`
                         }}
                         className={`h-full bg-gradient-to-r ${getEventColor(selectedEvent.type)}`}
                       />
@@ -461,12 +679,14 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => handleJoinEvent(selectedEvent)}
-                      className={`flex-1 py-4 rounded-xl font-semibold text-lg bg-gradient-to-r ${getEventColor(
-                        selectedEvent.type
-                      )} text-white hover:shadow-lg transition-all`}
+                      disabled={!!processingEventId || getEventStatus(selectedEvent.id)?.rewardClaimed}
+                      onClick={() => handleAction(selectedEvent)}
+                      className={`flex-1 py-4 rounded-xl font-semibold text-lg transition-all ${getEventStatus(selectedEvent.id)?.rewardClaimed
+                        ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                        : 'bg-orange-500 text-white hover:bg-orange-600 hover:shadow-lg'
+                        }`}
                     >
-                      Tham gia sự kiện
+                      {processingEventId === selectedEvent.id ? 'Đang xử lý...' : getEventActionButtonLabel(selectedEvent)}
                     </motion.button>
                   )}
 
@@ -481,6 +701,104 @@ export const Events: React.FC<EventsProps> = ({ onBack }) => {
                   </motion.button>
                 </div>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Reward Success Modal */}
+      <AnimatePresence>
+        {rewardClaimed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 backdrop-blur-md z-[60] flex items-center justify-center p-4"
+            onClick={() => setRewardClaimed(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0, y: 100 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.5, opacity: 0, y: 100 }}
+              className="bg-zinc-900 border border-purple-500/30 rounded-3xl max-w-md w-full p-8 shadow-[0_0_50px_rgba(168,85,247,0.2)] text-center relative overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Background Sparkles */}
+              <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20">
+                <Sparkles className="absolute top-10 left-10 text-purple-400 w-8 h-8 animate-pulse" />
+                <Sparkles className="absolute bottom-10 right-10 text-pink-400 w-6 h-6 animate-pulse" />
+                <Star className="absolute top-20 right-20 text-amber-400 w-4 h-4 animate-bounce" />
+              </div>
+
+              <div className="mb-6 relative">
+                <div className="w-24 h-24 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-full mx-auto flex items-center justify-center shadow-lg shadow-purple-500/40">
+                  <Trophy className="w-12 h-12 text-white" />
+                </div>
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="absolute -bottom-2 -right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center border-4 border-zinc-900"
+                >
+                  <Check className="w-6 h-6 text-white" />
+                </motion.div>
+              </div>
+
+              <h2 className="text-3xl font-bold text-white mb-2 italic">Chúc Mừng!</h2>
+              <p className="text-zinc-400 mb-8">
+                Bạn đã nhận thưởng thành công từ sự kiện <br />
+                <span className="text-purple-400 font-semibold">"{rewardClaimed.title}"</span>
+              </p>
+
+              <div className="bg-black/40 border border-white/10 rounded-2xl p-6 mb-8 relative group">
+                {rewardClaimed.type === 'VOUCHER' ? (
+                  <>
+                    <p className="text-xs text-zinc-500 uppercase tracking-[0.2em] mb-3 font-medium">Mã Voucher Của Bạn</p>
+                    <div className="flex items-center justify-center gap-4">
+                      <span className="text-4xl font-black text-white tracking-widest font-mono">
+                        {rewardClaimed.code}
+                      </span>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => {
+                          if (rewardClaimed.code) {
+                            navigator.clipboard.writeText(rewardClaimed.code);
+                            toast.success('Đã sao chép mã voucher!');
+                          }
+                        }}
+                        className="p-3 bg-white/5 hover:bg-white/10 rounded-xl text-purple-400 transition-colors"
+                        title="Sao chép"
+                      >
+                        <Copy className="w-5 h-5" />
+                      </motion.button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs text-zinc-500 uppercase tracking-widest mb-2">Điểm thưởng đã nhận</p>
+                    <div className="flex items-center justify-center gap-2">
+                      <Star className="w-8 h-8 text-amber-400 fill-amber-400" />
+                      <span className="text-4xl font-bold text-white">+{rewardClaimed.value}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <p className="text-xs text-zinc-500 mb-8">
+                {rewardClaimed.type === 'VOUCHER'
+                  ? 'Mã khuyến mãi đã được lưu vào kho voucher của bạn.'
+                  : 'Điểm thưởng đã được cộng trực tiếp vào ví của bạn.'}
+              </p>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setRewardClaimed(null)}
+                className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl font-bold text-lg shadow-lg shadow-purple-500/25 transition-all"
+              >
+                Tuyệt vời!
+              </motion.button>
             </motion.div>
           </motion.div>
         )}

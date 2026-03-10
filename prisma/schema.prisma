@@ -25,6 +25,7 @@ model User {
   redeemedVouchers UserVoucher[]
   stockChanges     StockHistory[]
   notifications    Notification[]
+  userEvents       UserEvent[]
 
   @@map("users")
 }
@@ -156,7 +157,7 @@ model UserVoucher {
 }
 
 model Event {
-  id          String     @id @default(cuid())
+  id          String      @id @default(cuid())
   title       String
   description String
   type        EventType
@@ -165,10 +166,33 @@ model Event {
   conditions  Json
   startDate   DateTime
   endDate     DateTime
-  isActive    Boolean    @default(true)
+  isActive    Boolean     @default(true)
   image       String?
+  userEvents  UserEvent[]
 
   @@map("events")
+}
+
+model UserEvent {
+  id            String   @id @default(cuid())
+  userId        String
+  eventId       String
+  progress      Int      @default(0)
+  completed     Boolean  @default(false)
+  rewardClaimed Boolean   @default(false)
+  rewardCode    String?
+  rewardValue   Int?
+  lastCheckIn   DateTime?
+  joinedAt      DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@index([userId])
+  @@index([eventId])
+  @@map("user_events")
 }
 
 model LandingPage {
