@@ -7,6 +7,9 @@ import { useSettingsStore } from '@/features/settings/store/settingsStore';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { ordersApi, vouchersApi } from '@/app/lib/api';
 import { toast } from 'sonner';
+import { useMyVouchers } from '@/hooks/useMyVouchers';
+import { VoucherSelectorModal } from '@/components/molecules/VoucherSelectorModal';
+import { Voucher } from '@/app/context/AppContext';
 
 export const Checkout: React.FC = () => {
   const navigate = useNavigate();
@@ -38,6 +41,9 @@ export const Checkout: React.FC = () => {
   const [appliedVoucher, setAppliedVoucher] = useState<{ code: string; discountAmount: number; message: string } | null>(null);
   const [voucherError, setVoucherError] = useState('');
   const [isValidatingVoucher, setIsValidatingVoucher] = useState(false);
+  const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
+
+  const { data: myVouchers = [], isLoading: isLoadingVouchers } = useMyVouchers();
 
   const isPickup = formData.deliveryMethod === 'pickup';
 
@@ -165,6 +171,29 @@ export const Checkout: React.FC = () => {
     setAppliedVoucher(null);
     setVoucherInput('');
     setVoucherError('');
+  };
+
+  const handleSelectVoucher = (voucher: Voucher) => {
+    setAppliedVoucher({
+      code: voucher.code,
+      discountAmount: calculateDiscount(voucher, subtotal),
+      message: `Đã áp dụng: ${voucher.title}`
+    });
+    setVoucherInput(voucher.code);
+    setIsVoucherModalOpen(false);
+    toast.success(`Đã áp dụng mã ${voucher.code}`);
+  };
+
+  const calculateDiscount = (voucher: Voucher, amount: number) => {
+    if (voucher.discountType === 'percentage') {
+      const discount = (amount * Number(voucher.discountValue)) / 100;
+      if (voucher.maxDiscount) {
+        return Math.min(discount, Number(voucher.maxDiscount));
+      }
+      return discount;
+    } else {
+      return Number(voucher.discountValue);
+    }
   };
 
   // Redirect if cart is empty and not showing success
@@ -481,6 +510,23 @@ export const Checkout: React.FC = () => {
                         {isValidatingVoucher ? 'Đang kiểm tra...' : 'Áp dụng'}
                       </motion.button>
                     </div>
+                    
+                    {user && (
+                      <button
+                        type="button"
+                        onClick={() => setIsVoucherModalOpen(true)}
+                        className="w-full py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 text-sm font-bold rounded-xl border border-amber-500/30 transition-all flex items-center justify-center gap-2"
+                      >
+                        <Ticket className="w-4 h-4" />
+                        Chọn Voucher của tôi
+                        {myVouchers.length > 0 && (
+                          <span className="bg-amber-500 text-black text-[10px] px-1.5 py-0.5 rounded-full ml-1">
+                            {myVouchers.length}
+                          </span>
+                        )}
+                      </button>
+                    )}
+
                     {voucherError && (
                       <p className="text-red-400 text-sm">{voucherError}</p>
                     )}
@@ -601,6 +647,15 @@ export const Checkout: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Voucher Selector Modal */}
+      <VoucherSelectorModal
+        isOpen={isVoucherModalOpen}
+        onClose={() => setIsVoucherModalOpen(false)}
+        vouchers={myVouchers}
+        onSelect={handleSelectVoucher}
+        subtotal={subtotal}
+        selectedVoucherCode={appliedVoucher?.code}
+      />
     </div>
   );
 };

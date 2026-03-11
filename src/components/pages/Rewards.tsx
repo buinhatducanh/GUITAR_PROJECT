@@ -204,10 +204,12 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {redeemedVouchers.map((rv: any) => (
               <motion.div
-                key={rv.voucherId}
+                key={rv.id || rv.voucherId}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-5 border border-green-500/50"
+                className={`bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl p-5 border ${
+                  rv.isUsed ? 'border-white/10 opacity-60' : 'border-green-500/50'
+                }`}
               >
                 <div className="flex items-center gap-4 mb-4">
                   {rv.image && (
@@ -215,7 +217,14 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
                   )}
                   <div>
                     <h3 className="text-lg font-bold text-white">{rv.title}</h3>
-                    <p className="text-amber-400 font-semibold">Giảm: {rv.discount}%</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-amber-400 font-semibold">Giảm: {rv.discount || rv.discountValue}%</p>
+                      {rv.isUsed && (
+                        <span className="px-2 py-0.5 bg-white/10 text-white/40 text-[10px] font-bold rounded uppercase">
+                          Đã sử dụng
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="text-xs text-white/50 space-y-1">

@@ -199,9 +199,9 @@ router.post('/validate', async (req, res) => {
 
             res.json({
                 valid: true,
-                discountType: voucher.discountType,
-                discountValue: voucher.discountValue,
-                discountAmount,
+                discountType: voucher.discountType.toLowerCase(),
+                discountValue: Number(voucher.discountValue),
+                discountAmount: Number(discountAmount),
                 voucherId: voucher.id,
                 message: 'Áp dụng mã thành công'
             });
@@ -228,9 +228,9 @@ router.post('/validate', async (req, res) => {
                     discountAmount = Math.min(discountAmount, numericSubtotal);
                     res.json({
                         valid: true,
-                        discountType: 'PERCENTAGE',
-                        discountValue: ev.rewardValue,
-                        discountAmount,
+                        discountType: 'percentage',
+                        discountValue: Number(ev.rewardValue),
+                        discountAmount: Number(discountAmount),
                         eventId: ev.id,
                         message: 'Áp dụng mã sự kiện thành công'
                     });
@@ -255,11 +255,14 @@ router.get('/my-vouchers', authenticate, async (req: AuthRequest, res) => {
                 voucher: {
                     select: {
                         id: true,
+                        code: true,
                         title: true,
                         description: true,
                         discountType: true,
                         discountValue: true,
                         pointsCost: true,
+                        minPurchase: true,
+                        maxDiscount: true,
                         image: true,
                         expiryDate: true,
                     }
@@ -268,16 +271,21 @@ router.get('/my-vouchers', authenticate, async (req: AuthRequest, res) => {
             orderBy: { redeemedAt: 'desc' },
         });
 
-        // Format response as requested by user
+        // Format response
         const result = redeemed.map(rv => ({
-            voucherId: rv.voucher.id,
+            id: rv.voucher.id,
+            code: rv.voucher.code,
             title: rv.voucher.title,
-            discount: rv.voucher.discountValue,
-            redeemedAt: rv.redeemedAt,
-            // Include other useful fields
             description: rv.voucher.description,
+            discountType: rv.voucher.discountType.toLowerCase(),
+            discountValue: Number(rv.voucher.discountValue),
+            minPurchase: Number(rv.voucher.minPurchase),
+            maxDiscount: rv.voucher.maxDiscount ? Number(rv.voucher.maxDiscount) : undefined,
+            pointsCost: rv.voucher.pointsCost,
             image: rv.voucher.image,
             expiryDate: rv.voucher.expiryDate,
+            redeemedAt: rv.redeemedAt,
+            isUsed: rv.isUsed,
         }));
 
         res.json(result);
