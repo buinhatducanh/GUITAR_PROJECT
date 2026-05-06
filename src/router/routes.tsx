@@ -22,6 +22,7 @@ const BlogList = React.lazy(() => import('../components/pages/BlogList').then(m 
 const BlogDetail = React.lazy(() => import('../components/pages/BlogDetail').then(m => ({ default: m.BlogDetail })));
 const LandingPages = React.lazy(() => import('../components/pages/LandingPages').then(m => ({ default: m.LandingPages })));
 const LandingPageView = React.lazy(() => import('../components/pages/LandingPageView').then(m => ({ default: m.LandingPageView })));
+const SpecialPromo = React.lazy(() => import('../components/pages/SpecialPromo').then(m => ({ default: m.SpecialPromo })));
 const AdminLogin = React.lazy(() => import('../components/pages/AdminLogin').then(m => ({ default: m.AdminLogin })));
 const AdminDashboard = React.lazy(() => import('../components/pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 
@@ -93,6 +94,10 @@ export const routes: RouteObject[] = [
             {
                 path: '/landing/:slug',
                 element: <LandingPageView />,
+            },
+            {
+                path: '/special-collection',
+                element: <SpecialPromo />,
             },
         ],
     },
