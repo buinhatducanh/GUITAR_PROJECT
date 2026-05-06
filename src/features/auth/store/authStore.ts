@@ -41,9 +41,6 @@ export const useAuthStore = create<AuthStore>()(
                         token,
                         isAuthenticated: true,
                     });
-
-                    // Save token to localStorage
-                    sessionStorage.setItem('auth_token', token);
                 } catch (error) {
                     console.error('Login error:', error);
                     throw error;
@@ -60,8 +57,6 @@ export const useAuthStore = create<AuthStore>()(
                         token,
                         isAuthenticated: true,
                     });
-
-                    sessionStorage.setItem('auth_token', token);
                 } catch (error) {
                     console.error('Registration error:', error);
                     throw error;
@@ -78,8 +73,6 @@ export const useAuthStore = create<AuthStore>()(
                         token,
                         isAuthenticated: true,
                     });
-
-                    sessionStorage.setItem('auth_token', token);
                 } catch (error) {
                     console.error('Google Login error:', error);
                     throw error;
@@ -92,6 +85,7 @@ export const useAuthStore = create<AuthStore>()(
                     token: null,
                     isAuthenticated: false,
                 });
+                // Clear the legacy auth_token to ensure full cleanup
                 sessionStorage.removeItem('auth_token');
             },
 
@@ -131,10 +125,12 @@ export const useAuthStore = create<AuthStore>()(
                 try {
                     const user = await authApi.getMe();
                     if (user) {
-                        set({ user });
+                        set({ user, isAuthenticated: true });
                     }
-                } catch (error) {
+                } catch (error: any) {
                     console.error('Refresh user error:', error);
+                    // Logout/clear auth state if getMe fails (e.g., 401 Unauthorized or token expired)
+                    get().logout();
                 }
             },
         }),
