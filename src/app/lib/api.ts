@@ -3,6 +3,19 @@ const API_BASE = import.meta.env.VITE_API_URL || '/api';
 // ─── Helper ─────────────────────────────────────
 
 function getAuthHeaders(): Record<string, string> {
+    try {
+        const authStorageStr = sessionStorage.getItem('auth-storage');
+        if (authStorageStr) {
+            const { state } = JSON.parse(authStorageStr);
+            if (state && state.token) {
+                return { Authorization: `Bearer ${state.token}` };
+            }
+        }
+    } catch (e) {
+        // Ignore parse error
+    }
+
+    // Fallback to legacy token if it still exists during migration
     const token = sessionStorage.getItem('auth_token');
     return token ? { Authorization: `Bearer ${token}` } : {};
 }
