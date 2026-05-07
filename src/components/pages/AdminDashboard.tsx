@@ -22,6 +22,7 @@ import { LandingPagesTab } from '@/components/organisms/admin/LandingPagesTab';
 import { BlogPostsTab } from '@/components/organisms/admin/BlogPostsTab';
 import { OrdersTab } from '@/components/organisms/admin/OrdersTab';
 import { NotificationsTab } from '@/components/organisms/admin/NotificationsTab';
+import { PostTestsTab } from '@/components/organisms/admin/PostTestsTab';
 import { useSettingsStore } from '@/features/settings/store/settingsStore';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
@@ -118,6 +119,7 @@ export const AdminDashboard: React.FC = () => {
               {activeTab === 'settings' && <motion.div key="settings" {...tabAnimation}><SettingsTab /></motion.div>}
               {activeTab === 'landing' && <motion.div key="landing" {...tabAnimation}><LandingPagesTab pages={landingPages} onDelete={deleteFrom(landingPages, setLandingPages, 'landing page')} onEdit={stubEdit} onAdd={stubAdd} /></motion.div>}
               {activeTab === 'blog' && <motion.div key="blog" {...tabAnimation}><BlogPostsTab /></motion.div>}
+              {activeTab === 'post-test' && <motion.div key="post-test" {...tabAnimation}><PostTestsTab /></motion.div>}
             </AnimatePresence>
           </div>
         </div>
