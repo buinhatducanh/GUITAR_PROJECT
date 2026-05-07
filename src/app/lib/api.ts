@@ -213,6 +213,26 @@ export const landingPagesApi = {
         request<any>(`/landing-pages/${id}`, { method: 'DELETE' }),
 };
 
+// ─── Cart API ───────────────────────────────────
+
+export const cartApi = {
+    get: () => request<any>('/cart'),
+
+    addItem: (productId: string, quantity: number) =>
+        request<any>('/cart/items', { method: 'POST', body: JSON.stringify({ productId, quantity }) }),
+
+    updateItem: (productId: string, quantity: number) =>
+        request<any>(`/cart/items/${productId}`, { method: 'PUT', body: JSON.stringify({ quantity }) }),
+
+    removeItem: (productId: string) =>
+        request<any>(`/cart/items/${productId}`, { method: 'DELETE' }),
+
+    clear: () => request<any>('/cart', { method: 'DELETE' }),
+
+    sync: (items: { productId: string; quantity: number }[]) =>
+        request<any>('/cart/sync', { method: 'POST', body: JSON.stringify({ items }) }),
+};
+
 // ─── Orders API ─────────────────────────────────
 
 export const ordersApi = {

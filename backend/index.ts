@@ -18,6 +18,7 @@ import settingsRoutes from './routes/settings.js';
 import inventoryRoutes from './routes/inventory.js';
 import analyticsRoutes from './routes/analytics.js';
 import shippingRoutes from './routes/shipping.js';
+import cartRoutes from './routes/cart.js';
 
 // ─── MVC Feature Routes ─────────────────────────────────
 import authRoutes from './features/auth/auth.routes.js';
@@ -55,6 +56,7 @@ app.use('/api/brands', brandsRoutes);
 // Old Structure (To be refactored)
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/cart', cartRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/banners', bannerRoutes);
 app.use('/api/vouchers', voucherRoutes);
