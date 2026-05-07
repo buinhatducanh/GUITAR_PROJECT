@@ -18,6 +18,7 @@ import settingsRoutes from './routes/settings.js';
 import inventoryRoutes from './routes/inventory.js';
 import analyticsRoutes from './routes/analytics.js';
 import shippingRoutes from './routes/shipping.js';
+import postTestRoutes from './routes/post-tests.js';
 
 // ─── MVC Feature Routes ─────────────────────────────────
 import authRoutes from './features/auth/auth.routes.js';
@@ -67,6 +68,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/shipping', shippingRoutes);
+app.use('/api/post-tests', postTestRoutes);
 
 // ─── 404 handler ────────────────────────────────
 app.use((_req, res) => {

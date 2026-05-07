@@ -402,3 +402,31 @@ export const notificationsApi = {
         request<any>('/notifications/admin/send', { method: 'POST', body: JSON.stringify(data) }),
     getStats: () => request<{ total: number; unread: number; byType: { type: string; count: number }[] }>('/notifications/admin/stats'),
 };
+
+// ─── Post Tests API ──────────────────────────────
+
+export const postTestsApi = {
+    getAll: (params?: { page?: number; limit?: number; search?: string }) => {
+        const searchParams = new URLSearchParams();
+        if (params) {
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) {
+                    searchParams.set(key, String(value));
+                }
+            });
+        }
+        const query = searchParams.toString();
+        return request<{ posts: any[]; pagination: any }>(`/post-tests${query ? `?${query}` : ''}`);
+    },
+
+    getById: (id: string) => request<any>(`/post-tests/${id}`),
+
+    create: (data: { title: string; content: string }) =>
+        request<any>('/post-tests', { method: 'POST', body: JSON.stringify(data) }),
+
+    update: (id: string, data: { title?: string; content?: string }) =>
+        request<any>(`/post-tests/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+    delete: (id: string) =>
+        request<any>(`/post-tests/${id}`, { method: 'DELETE' }),
+};
