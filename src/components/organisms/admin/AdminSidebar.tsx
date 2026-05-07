@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import {
   BarChart3, Package, Users, FileText, Image, Star,
-  Gift, Calendar, Award, Settings as SettingsIcon, Truck, Warehouse, ShoppingBag, FolderTree, Bell,
+  Gift, Calendar, Award, Settings as SettingsIcon, Truck, Warehouse, ShoppingBag, FolderTree, Bell, Newspaper,
 } from 'lucide-react';
 
 const tabs = [
@@ -22,6 +22,7 @@ const tabs = [
   { id: 'settings', label: 'Cài đặt', icon: SettingsIcon },
   { id: 'landing', label: 'Landing Pages', icon: FileText },
   { id: 'blog', label: 'Blog Posts', icon: FileText },
+  { id: 'post-test', label: 'Post Test', icon: Newspaper },
 ];
 
 interface AdminSidebarProps {
