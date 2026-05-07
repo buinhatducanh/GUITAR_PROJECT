@@ -1,3 +1,4 @@
+
 import { Router } from 'express';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireAdmin, type AuthRequest } from '../middleware/auth.js';
@@ -24,25 +25,28 @@ router.get('/', async (req, res) => {
         const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
         const skip = (pageNum - 1) * limitNum;
 
+        // CLEAN SEARCH
+        const keyword = search?.trim();
+
         // Build where clause
         const where: any = { isActive: true };
 
         if (category) {
-            // Support parent category → include children
             const cat = await prisma.category.findUnique({
                 where: { slug: category },
                 include: { children: true },
             });
+
             if (cat) {
                 const categoryIds = [cat.id, ...cat.children.map(c => c.id)];
                 where.categoryId = { in: categoryIds };
             }
         }
 
-        if (search) {
+        if (keyword) {
             where.OR = [
-                { name: { contains: search, mode: 'insensitive' } },
-                { description: { contains: search, mode: 'insensitive' } },
+                { name: { contains: keyword, mode: 'insensitive' } },
+                { description: { contains: keyword, mode: 'insensitive' } },
             ];
         }
 
@@ -56,8 +60,8 @@ router.get('/', async (req, res) => {
             if (maxPrice) where.price.lte = parseInt(maxPrice);
         }
 
-        // Build orderBy
-        const validSorts = ['price', 'name', 'createdAt', 'rating', 'discount'];
+        // SAFE SORTING
+        const validSorts = ['price', 'name', 'createdAt', 'rating', 'discount', 'stock'];
         const sortField = validSorts.includes(sort) ? sort : 'createdAt';
         const sortOrder = order === 'asc' ? 'asc' : 'desc';
 
@@ -75,13 +79,24 @@ router.get('/', async (req, res) => {
             prisma.product.count({ where }),
         ]);
 
+        // PAGINATION META
+        const totalPages = Math.ceil(total / limitNum);
+        const hasNextPage = pageNum < totalPages;
+        const hasPrevPage = pageNum > 1;
+
         res.json({
             products,
             pagination: {
                 page: pageNum,
                 limit: limitNum,
                 total,
-                totalPages: Math.ceil(total / limitNum),
+                totalPages,
+                hasNextPage,
+                hasPrevPage,
+            },
+            meta: {
+                countInPage: products.length,
+                isEmpty: products.length === 0,
             },
         });
     } catch (err) {
@@ -98,7 +113,9 @@ router.get('/:slug', async (req, res) => {
             include: {
                 category: { select: { id: true, name: true, slug: true } },
                 reviews: {
-                    include: { user: { select: { id: true, name: true, avatar: true } } },
+                    include: {
+                        user: { select: { id: true, name: true, avatar: true } },
+                    },
                     orderBy: { createdAt: 'desc' },
                 },
             },
@@ -119,9 +136,20 @@ router.get('/:slug', async (req, res) => {
 /** POST /api/products — create (admin only) */
 router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
-        const { name, price, oldPrice, discount, image, images, categoryId, description, specs, stock, isFeatured } = req.body;
+        const {
+            name,
+            price,
+            oldPrice,
+            discount,
+            image,
+            images,
+            categoryId,
+            description,
+            specs,
+            stock,
+            isFeatured,
+        } = req.body;
 
-        // Auto-generate slug
         const slug = name
             .toLowerCase()
             .normalize('NFD')
@@ -130,9 +158,9 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-|-$/g, '');
 
-        // Ensure unique slug
         let finalSlug = slug;
         let counter = 1;
+
         while (await prisma.product.findUnique({ where: { slug: finalSlug } })) {
             finalSlug = `${slug}-${counter++}`;
         }
@@ -152,7 +180,9 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
                 stock: stock || 0,
                 isFeatured: isFeatured || false,
             },
-            include: { category: { select: { id: true, name: true, slug: true } } },
+            include: {
+                category: { select: { id: true, name: true, slug: true } },
+            },
         });
 
         res.status(201).json(product);
@@ -165,9 +195,26 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
 /** PUT /api/products/:id — update (admin only) */
 router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
-        // Only allow safe fields to be updated
-        const { name, slug, price, oldPrice, discount, image, images, categoryId, brandId, description, specs, stock, isFeatured, isActive, lowStockAlert } = req.body;
+        const {
+            name,
+            slug,
+            price,
+            oldPrice,
+            discount,
+            image,
+            images,
+            categoryId,
+            brandId,
+            description,
+            specs,
+            stock,
+            isFeatured,
+            isActive,
+            lowStockAlert,
+        } = req.body;
+
         const data: Record<string, any> = {};
+
         if (name !== undefined) data.name = name;
         if (slug !== undefined) data.slug = slug;
         if (price !== undefined) data.price = price;
@@ -187,7 +234,9 @@ router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => 
         const product = await prisma.product.update({
             where: { id: req.params.id },
             data,
-            include: { category: { select: { id: true, name: true, slug: true } } },
+            include: {
+                category: { select: { id: true, name: true, slug: true } },
+            },
         });
 
         res.json(product);
@@ -200,18 +249,18 @@ router.put('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => 
 /** DELETE /api/products/:id — delete (admin only) */
 router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
     try {
-        // Fetch product to get image URLs before deleting
         const product = await prisma.product.findUnique({
             where: { id: req.params.id },
             select: { image: true, images: true },
         });
 
-        await prisma.product.delete({ where: { id: req.params.id } });
+        await prisma.product.delete({
+            where: { id: req.params.id },
+        });
 
-        // Clean up Cloudinary images (non-blocking)
         if (product) {
             const urls = collectImageUrls(product, ['image', 'images']);
-            deleteCloudinaryImages(urls).catch(() => {});
+            deleteCloudinaryImages(urls).catch(() => { });
         }
 
         res.json({ message: 'Đã xóa sản phẩm' });

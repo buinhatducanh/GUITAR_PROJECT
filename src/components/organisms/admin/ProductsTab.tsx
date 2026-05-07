@@ -6,9 +6,11 @@ import { productsApi, categoriesApi, brandsApi } from '@/app/lib/api';
 import { AdminModal } from '@/components/molecules/AdminModal';
 import { ImageUploadField } from '@/components/molecules/ImageUploadField';
 
+/** format price */
 const formatPrice = (price: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
 
+/** empty form */
 const emptyForm = {
   name: '',
   price: '',
@@ -23,50 +25,83 @@ const emptyForm = {
   isActive: true,
 };
 
+/** helper: unwrap API safely */
+const unwrap = (res: any, key?: string) => {
+  if (Array.isArray(res?.data)) return res.data;
+  if (Array.isArray(res)) return res;
+  if (key && Array.isArray(res?.data?.[key])) return res.data[key];
+  if (Array.isArray(res?.data?.data)) return res.data.data;
+  return [];
+};
+
 export const ProductsTab: React.FC = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState<any>(null);
+
+  const [loading, setLoading] = useState(false);
+
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('createdAt');
+  const [order, setOrder] = useState<'asc' | 'desc'>('desc');
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
+  /** LOAD DATA */
   const load = async () => {
     setLoading(true);
     try {
       const [prodRes, catRes, brRes] = await Promise.all([
-        productsApi.getAll({ limit: 100 }),
+        productsApi.getAll({
+          page,
+          limit,
+          search,
+          sort,
+          order,
+        }),
         categoriesApi.getAll(),
         brandsApi.getAll(),
       ]);
+
+      // ✅ FIX CHUẨN KHÔNG DÙNG .data
       setProducts(prodRes.products || []);
+      setPagination(prodRes.pagination || null);
+
       setCategories(catRes || []);
-      setBrands(brRes.data?.brands || (brRes as any).brands || []);
-    } catch {
+      setBrands(brRes?.brands || []);
+    } catch (err) {
+      console.error(err);
       toast.error('Không thể tải danh sách sản phẩm');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, [page, search, sort, order]);
 
+  /** OPEN MODAL */
   const openModal = (product?: any) => {
     if (product) {
       setEditing(product);
       setForm({
         name: product.name || '',
-        price: String(Number(product.price) || ''),
-        oldPrice: product.oldPrice ? String(Number(product.oldPrice)) : '',
-        discount: product.discount != null ? String(product.discount) : '',
+        price: String(product.price || ''),
+        oldPrice: String(product.oldPrice || ''),
+        discount: String(product.discount || ''),
         image: product.image || '',
-        categoryId: product.categoryId || product.category?.id || '',
-        brandId: product.brandId || product.brand?.id || '',
+        categoryId: product.category?.id || '',
+        brandId: product.brand?.id || '',
         description: product.description || '',
-        stock: String(product.stock ?? 0),
-        isFeatured: product.isFeatured ?? false,
+        stock: String(product.stock || 0),
+        isFeatured: product.isFeatured || false,
         isActive: product.isActive ?? true,
       });
     } else {
@@ -76,169 +111,228 @@ export const ProductsTab: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  /** SAVE */
   const handleSave = async () => {
-    if (!form.name.trim()) { toast.error('Vui lòng nhập tên sản phẩm'); return; }
-    if (!form.price || Number(form.price) <= 0) { toast.error('Vui lòng nhập giá hợp lệ'); return; }
-    if (!form.image.trim()) { toast.error('Vui lòng tải ảnh sản phẩm'); return; }
+    if (!form.name || !form.price) return toast.error('Thiếu dữ liệu');
 
     setSaving(true);
     try {
       const payload = {
-        name: form.name.trim(),
+        name: form.name,
         price: Number(form.price),
         oldPrice: form.oldPrice ? Number(form.oldPrice) : null,
         discount: form.discount ? Number(form.discount) : null,
         image: form.image,
-        categoryId: form.categoryId || undefined,
-        brandId: form.brandId || undefined,
-        description: form.description.trim(),
-        stock: Number(form.stock) || 0,
+        categoryId: form.categoryId || null,
+        brandId: form.brandId || null,
+        description: form.description,
+        stock: Number(form.stock),
         isFeatured: form.isFeatured,
         isActive: form.isActive,
       };
 
       if (editing) {
         await productsApi.update(editing.id, payload);
-        toast.success('Đã cập nhật sản phẩm');
+        toast.success('Cập nhật thành công');
       } else {
         await productsApi.create(payload);
-        toast.success('Đã thêm sản phẩm mới');
+        toast.success('Thêm thành công');
       }
+
       setIsModalOpen(false);
       load();
-    } catch (e: any) {
-      toast.error(e.message || 'Lỗi khi lưu sản phẩm');
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi lưu');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Xóa sản phẩm "${name}"? Hành động này không thể hoàn tác.`)) return;
+  /** DELETE */
+  const handleDelete = async (id: string) => {
+    if (!confirm('Xóa sản phẩm?')) return;
+
     try {
       await productsApi.delete(id);
-      toast.success('Đã xóa sản phẩm');
+      toast.success('Đã xóa');
       load();
-    } catch (e: any) {
-      toast.error(e.message || 'Không thể xóa sản phẩm');
+    } catch {
+      toast.error('Xóa thất bại');
     }
-  };
-
-  const getCategoryName = (product: any) => {
-    if (typeof product.category === 'object' && product.category) return product.category.name;
-    return '—';
   };
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-white">Quản lý sản phẩm</h2>
-          <p className="text-white/50 text-sm mt-1">{products.length} sản phẩm</p>
-        </div>
-        <div className="flex gap-3">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={load}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white/70 hover:text-white transition-all disabled:opacity-50"
+
+      {/* HEADER */}
+      <div className="flex justify-between mb-5">
+        <h2 className="text-white text-2xl font-bold">
+          Sản phẩm ({pagination?.total || 0})
+        </h2>
+
+        {/* <div className="flex gap-2">
+
+          <input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Tìm kiếm..."
+            className="px-3 py-2 bg-white/5 border border-white/10 text-white rounded-xl"
+          />
+
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            className="px-3 py-2 bg-white/5 border border-white/10 text-white rounded-xl"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            <option value="createdAt">Mới nhất</option>
+            <option value="name">Tên</option>
+            <option value="price">Giá</option>
+          </select>
+
+          <button
+            onClick={() => setOrder(order === 'asc' ? 'desc' : 'asc')}
+            className="px-3 py-2 bg-white/5 border border-white/10 text-white rounded-xl"
+          >
+            {order === 'asc' ? 'A-Z' : 'Z-A'}
+          </button>
+
+          <button
+            onClick={load}
+            className="px-3 py-2 bg-white/5 border border-white/10 text-white rounded-xl"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+
+          <button
             onClick={() => openModal()}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all"
+            className="px-4 py-2 bg-purple-600 text-white rounded-xl"
+          >
+            <Plus />
+          </button>
+
+        </div> */}
+        <div className="flex gap-3 items-center flex-wrap">
+
+          <input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Tìm kiếm sản phẩm..."
+            className="w-64 px-4 py-2.5 bg-zinc-900 border border-white/10 text-white rounded-xl focus:outline-none focus:border-purple-500/50"
+          />
+
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            className="w-40 px-4 py-2.5 bg-zinc-900 border border-white/10 text-white rounded-xl focus:outline-none"
+          >
+            <option value="createdAt" className="bg-zinc-900">Mới nhất</option>
+            <option value="name" className="bg-zinc-900">Tên</option>
+            <option value="price" className="bg-zinc-900">Giá</option>
+          </select>
+
+          <button
+            onClick={() => setOrder(order === 'asc' ? 'desc' : 'asc')}
+            className="px-4 py-2.5 bg-zinc-900 border border-white/10 text-white rounded-xl hover:bg-zinc-800 transition"
+          >
+            {order === 'asc' ? 'A → Z' : 'Z → A'}
+          </button>
+
+          <button
+            onClick={load}
+            className="px-4 py-2.5 bg-zinc-900 border border-white/10 text-white rounded-xl hover:bg-zinc-800 transition"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={() => openModal()}
+            className="px-5 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition"
           >
             <Plus className="w-5 h-5" />
-            Thêm sản phẩm
-          </motion.button>
+          </button>
+
         </div>
       </div>
 
-      {/* Products Table */}
+      {/* TABLE */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <RefreshCw className="w-8 h-8 text-purple-400 animate-spin" />
-        </div>
-      ) : products.length === 0 ? (
-        <div className="text-center py-16 text-white/40">
-          <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>Chưa có sản phẩm nào. Nhấn "Thêm sản phẩm" để bắt đầu.</p>
-        </div>
+        <div className="text-white">Loading...</div>
       ) : (
-        <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl border border-white/10 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-white/5">
-                <tr>
-                  <th className="px-6 py-4 text-left text-white/80 font-medium">Sản phẩm</th>
-                  <th className="px-6 py-4 text-left text-white/80 font-medium">Danh mục</th>
-                  <th className="px-6 py-4 text-left text-white/80 font-medium">Giá</th>
-                  <th className="px-6 py-4 text-center text-white/80 font-medium">Kho</th>
-                  <th className="px-6 py-4 text-center text-white/80 font-medium">Trạng thái</th>
-                  <th className="px-6 py-4 text-right text-white/80 font-medium">Hành động</th>
+        <div className="bg-zinc-900 border border-white/10 rounded-xl overflow-hidden">
+
+          <table className="w-full text-white">
+            <thead className="bg-white/5">
+              <tr>
+                <th className="p-3 text-left">Tên</th>
+                <th className="p-3">Danh mục</th>
+                <th className="p-3">Giá</th>
+                <th className="p-3">Kho</th>
+                <th className="p-3">Trạng thái</th>
+                <th className="p-3 text-right">Action</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {products.map((p) => (
+                <tr key={p.id} className="border-t border-white/10">
+                  <td className="p-3 flex gap-3 items-center">
+                    <img src={p.image} className="w-10 h-10 rounded" />
+                    {p.name}
+                  </td>
+
+                  <td className="p-3 text-center">{p.category?.name || '—'}</td>
+
+                  <td className="p-3 text-center">
+                    {formatPrice(Number(p.price))}
+                  </td>
+
+                  <td className="p-3 text-center">{p.stock}</td>
+
+                  <td className="p-3 text-center">
+                    {p.isActive ? 'Hiện' : 'Ẩn'}
+                  </td>
+
+                  <td className="p-3 text-right flex justify-end gap-2">
+                    <button onClick={() => openModal(p)}>
+                      <Edit />
+                    </button>
+                    <button onClick={() => handleDelete(p.id)}>
+                      <Trash2 />
+                    </button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {products.map((product) => (
-                  <tr key={product.id} className="hover:bg-white/[0.03] transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <img src={product.image} alt={product.name} className="w-12 h-12 object-cover rounded-lg bg-zinc-800" />
-                        <div>
-                          <p className="text-white font-medium line-clamp-1">{product.name}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            {product.isFeatured && (
-                              <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded font-medium">Nổi bật</span>
-                            )}
-                            {product.discount > 0 && (
-                              <span className="px-1.5 py-0.5 bg-red-500/20 text-red-400 text-xs rounded font-medium">-{product.discount}%</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-white/60">{getCategoryName(product)}</td>
-                    <td className="px-6 py-4">
-                      <p className="text-amber-500 font-medium">{formatPrice(Number(product.price))}</p>
-                      {product.oldPrice && (
-                        <p className="text-white/30 text-xs line-through">{formatPrice(Number(product.oldPrice))}</p>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`font-medium ${product.stock <= (product.lowStockAlert || 5) ? 'text-red-400' : 'text-white/70'}`}>
-                        {product.stock}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`inline-flex px-2 py-1 rounded-lg text-xs font-medium ${product.isActive ? 'bg-green-500/20 text-green-400' : 'bg-zinc-500/20 text-zinc-400'}`}>
-                        {product.isActive ? 'Hiển thị' : 'Ẩn'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => openModal(product)} className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors">
-                          <Edit className="w-4 h-4" />
-                        </motion.button>
-                        <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleDelete(product.id, product.name)} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </motion.button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+
+          </table>
         </div>
       )}
 
-      {/* Add/Edit Modal */}
+      {/* PAGINATION */}
+      {pagination && (
+        <div className="flex justify-center gap-3 mt-4 text-white">
+          <button disabled={page === 1} onClick={() => setPage(page - 1)}>
+            Prev
+          </button>
+
+          <span>{page} / {pagination.totalPages}</span>
+
+          <button
+            disabled={page === pagination.totalPages}
+            onClick={() => setPage(page + 1)}
+          >
+            Next
+          </button>
+        </div>
+      )}
+
+      {/* MODAL giữ nguyên */}
       <AdminModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editing ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'} maxWidth="max-w-2xl">
         <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
           {/* Image */}
@@ -329,6 +423,7 @@ export const ProductsTab: React.FC = () => {
           </div>
         </div>
       </AdminModal>
+
     </div>
   );
 };
