@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { useAuthStore } from '../../features/auth/store/authStore';
+import { cartApi } from '../lib/api';
 
 export interface Product {
   id: string;
@@ -218,6 +219,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const authStoreUser = useAuthStore((state) => state.user);
   useEffect(() => {
     setUser(authStoreUser as User | null);
+
+    if (authStoreUser) {
+      const syncCart = async () => {
+        try {
+          const savedCart = localStorage.getItem('cart');
+          const localItems = savedCart ? JSON.parse(savedCart) : [];
+          
+          if (localItems.length > 0) {
+            const syncItems = localItems.map((item: CartItem) => ({
+              productId: item.product.id,
+              quantity: item.quantity
+            }));
+            await cartApi.sync(syncItems);
+            localStorage.removeItem('cart');
+          }
+          
+          const dbCart = await cartApi.get();
+          if (dbCart && dbCart.items) {
+            const formattedCart: CartItem[] = dbCart.items.map((item: any) => ({
+              product: item.product,
+              quantity: item.quantity
+            }));
+            setCart(formattedCart);
+          }
+        } catch (error) {
+          console.error('Lỗi khi đồng bộ giỏ hàng:', error);
+        }
+      };
+      syncCart();
+    }
   }, [authStoreUser]);
 
   // Initialize login streak tracking
@@ -240,38 +271,87 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [user]);
 
-  const addToCart = (product: Product) => {
-    setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.product.id === product.id);
-      if (existingItem) {
-        return prevCart.map(item =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
+  const addToCart = async (product: Product) => {
+    if (user) {
+      try {
+        await cartApi.addItem(product.id, 1);
+        const dbCart = await cartApi.get();
+        if (dbCart && dbCart.items) {
+          setCart(dbCart.items.map((item: any) => ({ product: item.product, quantity: item.quantity })));
+        }
+      } catch (error) {
+        console.error('Lỗi khi thêm vào giỏ hàng:', error);
       }
-      return [...prevCart, { product, quantity: 1 }];
-    });
-  };
-
-  const removeFromCart = (productId: string) => {
-    setCart(prevCart => prevCart.filter(item => item.product.id !== productId));
-  };
-
-  const updateCartQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(productId);
-      return;
+    } else {
+      setCart(prevCart => {
+        const existingItem = prevCart.find(item => item.product.id === product.id);
+        if (existingItem) {
+          return prevCart.map(item =>
+            item.product.id === product.id
+              ? { ...item, quantity: item.quantity + 1 }
+              : item
+          );
+        }
+        return [...prevCart, { product, quantity: 1 }];
+      });
     }
-    setCart(prevCart =>
-      prevCart.map(item =>
-        item.product.id === productId ? { ...item, quantity } : item
-      )
-    );
   };
 
-  const clearCart = () => {
-    setCart([]);
+  const removeFromCart = async (productId: string) => {
+    if (user) {
+      try {
+        await cartApi.removeItem(productId);
+        const dbCart = await cartApi.get();
+        if (dbCart && dbCart.items) {
+          setCart(dbCart.items.map((item: any) => ({ product: item.product, quantity: item.quantity })));
+        } else {
+          setCart([]);
+        }
+      } catch (error) {
+        console.error('Lỗi khi xoá khỏi giỏ hàng:', error);
+      }
+    } else {
+      setCart(prevCart => prevCart.filter(item => item.product.id !== productId));
+    }
+  };
+
+  const updateCartQuantity = async (productId: string, quantity: number) => {
+    if (user) {
+      try {
+        await cartApi.updateItem(productId, quantity);
+        const dbCart = await cartApi.get();
+        if (dbCart && dbCart.items) {
+          setCart(dbCart.items.map((item: any) => ({ product: item.product, quantity: item.quantity })));
+        } else {
+          setCart([]);
+        }
+      } catch (error) {
+         console.error('Lỗi khi cập nhật giỏ hàng:', error);
+      }
+    } else {
+      if (quantity <= 0) {
+        removeFromCart(productId);
+        return;
+      }
+      setCart(prevCart =>
+        prevCart.map(item =>
+          item.product.id === productId ? { ...item, quantity } : item
+        )
+      );
+    }
+  };
+
+  const clearCart = async () => {
+    if (user) {
+      try {
+        await cartApi.clear();
+        setCart([]);
+      } catch (error) {
+         console.error('Lỗi khi xoá sạch giỏ hàng:', error);
+      }
+    } else {
+      setCart([]);
+    }
   };
 
   const redeemVoucher = (voucherId: string) => {
