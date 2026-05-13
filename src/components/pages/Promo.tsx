@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Percent, Tag, TrendingDown, Zap, Clock, Gift, Sparkles } from 'lucide-react';
@@ -41,6 +42,12 @@ export const Promo: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black pt-24 pb-16">
+      <Helmet>
+        <title>Khuyến Mãi - Flash Sale | Guitar NOVA</title>
+        <meta name="description" content={`Flash Sale Guitar NOVA - Giảm giá đến ${maxDiscount}% cho các dòng guitar chính hãng. Nhanh tay sở hữu guitar mơ ước!`} />
+        <meta property="og:title" content="Khuyến Mãi Guitar | Guitar NOVA" />
+        <meta property="og:description" content={`Giảm giá đến ${maxDiscount}% - ${promoProducts.length} sản phẩm khuyến mãi`} />
+      </Helmet>
       {/* Hero Header */}
       <div className="relative bg-gradient-to-br from-red-950/40 via-black to-orange-950/40 border-b border-red-500/20 mb-8 overflow-hidden">
         <div className="absolute inset-0">

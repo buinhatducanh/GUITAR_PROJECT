@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Package } from 'lucide-react';
@@ -55,6 +56,11 @@ export const Categories: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black pt-24 pb-16">
+      <Helmet>
+        <title>Danh Mục Sản Phẩm | Guitar NOVA</title>
+        <meta name="description" content="Khám phá guitar và thiết bị âm nhạc theo từng danh mục tại Guitar NOVA. Acoustic, Classic, Electric và nhiều hơn." />
+        <meta property="og:title" content="Danh Mục Sản Phẩm | Guitar NOVA" />
+      </Helmet>
       {/* Header */}
       <div className="bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border-b border-indigo-500/20 mb-8">
         <div className="container mx-auto px-4 py-8">

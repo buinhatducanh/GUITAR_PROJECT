@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Star, Gift, Calendar, CheckCircle, X, Sparkles, Award } from 'lucide-react';
 import { useApp, Voucher } from '@/app/context/AppContext';
@@ -104,6 +105,11 @@ export const Rewards: React.FC<RewardsProps> = ({ onBack }) => {
 
   return (
     <div className="min-h-screen bg-black pt-24 pb-16">
+      <Helmet>
+        <title>Đổi Quà Thưởng - Voucher | Guitar NOVA</title>
+        <meta name="description" content="Sử dụng điểm thưởng để đổi voucher giảm giá hấp dẫn tại Guitar NOVA. Nhiều ưu đãi đặc biệt!" />
+        <meta property="og:title" content="Đổi Quà Thưởng | Guitar NOVA" />
+      </Helmet>
       {/* Header */}
       <div className="bg-gradient-to-r from-amber-900/30 to-orange-900/30 border-b border-amber-500/20 mb-8">
         <div className="container mx-auto px-4 py-8">

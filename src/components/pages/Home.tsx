@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'motion/react';
 import { ChevronLeft, ChevronRight, Star, ShoppingCart, Trophy, Zap, Tag, Gift, Sparkles, ArrowRight, Calendar, TrendingUp, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -66,7 +67,12 @@ export const Home: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <main className="min-h-screen bg-black">
+      <Helmet>
+        <title>{settings?.metaTitle || 'Guitar NOVA - Mua Đàn Guitar Chính Hãng | Acoustic, Classic, Electric'}</title>
+        <meta name="description" content={settings?.metaDescription || 'Guitar NOVA - Cửa hàng đàn guitar chính hãng uy tín nhất. Cung cấp các dòng đàn guitar acoustic, classic, electric với giá tốt nhất thị trường.'} />
+      </Helmet>
+
       {/* Hero Banner */}
       <HeroBanner />
 
@@ -379,6 +385,7 @@ export const Home: React.FC = () => {
                     <img
                       src={voucher.image}
                       alt={voucher.title}
+                      loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
@@ -512,6 +519,7 @@ export const Home: React.FC = () => {
                     <img
                       src={blog.coverImage}
                       alt={blog.title}
+                      loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
@@ -547,6 +555,7 @@ export const Home: React.FC = () => {
                           <img
                             src={blog.authorAvatar}
                             alt={blog.authorName}
+                            loading="lazy"
                             className="w-8 h-8 rounded-full"
                           />
                         )}
@@ -579,6 +588,6 @@ export const Home: React.FC = () => {
           </div>
         </section>
       )}
-    </div>
+    </main>
   );
 };

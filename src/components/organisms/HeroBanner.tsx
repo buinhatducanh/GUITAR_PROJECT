@@ -31,9 +31,9 @@ export const HeroBanner: React.FC = () => {
     return (
       <div className="relative h-[600px] lg:h-[700px] overflow-hidden bg-gradient-to-br from-zinc-900 to-black flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-5xl lg:text-7xl font-bold mb-6 text-white leading-tight">
+          <h1 className="text-5xl lg:text-7xl font-bold mb-6 text-white leading-tight">
             Guitar NOVA
-          </h2>
+          </h1>
           <p className="text-xl lg:text-2xl text-white/60">
             Khám phá thế giới âm nhạc
           </p>
@@ -72,14 +72,14 @@ export const HeroBanner: React.FC = () => {
           {/* Content */}
           <div className="relative h-full container mx-auto px-4 flex items-center">
             <div className="max-w-3xl">
-              <motion.h2
+              <motion.h1
                 initial={{ y: 50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.2, duration: 0.6 }}
                 className="text-5xl lg:text-7xl font-bold mb-6 text-white leading-tight"
               >
                 {activeBanners[currentSlide].title}
-              </motion.h2>
+              </motion.h1>
 
               <motion.p
                 initial={{ y: 50, opacity: 0 }}
@@ -125,6 +125,7 @@ export const HeroBanner: React.FC = () => {
           whileHover={{ scale: 1.1, x: -5 }}
           whileTap={{ scale: 0.9 }}
           onClick={prevSlide}
+          aria-label="Ảnh trước đó"
           className="p-3 bg-black/30 backdrop-blur-sm text-white rounded-full hover:bg-black/50 transition-colors pointer-events-auto"
         >
           <ChevronLeft className="w-6 h-6" />
@@ -134,6 +135,7 @@ export const HeroBanner: React.FC = () => {
           whileHover={{ scale: 1.1, x: 5 }}
           whileTap={{ scale: 0.9 }}
           onClick={nextSlide}
+          aria-label="Ảnh tiếp theo"
           className="p-3 bg-black/30 backdrop-blur-sm text-white rounded-full hover:bg-black/50 transition-colors pointer-events-auto"
         >
           <ChevronRight className="w-6 h-6" />
@@ -147,6 +149,7 @@ export const HeroBanner: React.FC = () => {
             key={index}
             onClick={() => setCurrentSlide(index)}
             whileHover={{ scale: 1.2 }}
+            aria-label={`Đi đến ảnh slide ${index + 1}`}
             className={`h-1 rounded-full transition-all ${index === currentSlide
               ? 'w-12 bg-gradient-to-r from-amber-500 to-orange-600'
               : 'w-8 bg-white/30 hover:bg-white/50'
