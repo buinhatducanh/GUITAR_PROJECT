@@ -306,6 +306,17 @@ export const uploadApi = {
         const data = await res.json();
         return data.secure_url;
     },
+
+    getOrphans: () => request<{ total: number; inUse: number; orphanCount: number; orphanSizeMB: number; orphans: any[] }>('/upload/orphans'),
+
+    cleanupOrphans: (publicIds: string[]) =>
+        request<{ deleted: number; requested: number }>('/upload/orphans/cleanup', {
+            method: 'POST',
+            body: JSON.stringify({ publicIds }),
+        }),
+
+    delete: (publicId: string) =>
+        request<any>(`/upload/${encodeURIComponent(publicId)}`, { method: 'DELETE' }),
 };
 
 // ─── Brands API ──────────────────────────────────
