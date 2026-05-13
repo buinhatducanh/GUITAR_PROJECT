@@ -213,6 +213,26 @@ export const landingPagesApi = {
         request<any>(`/landing-pages/${id}`, { method: 'DELETE' }),
 };
 
+// ─── Cart API ───────────────────────────────────
+
+export const cartApi = {
+    get: () => request<any>('/cart'),
+
+    addItem: (productId: string, quantity: number) =>
+        request<any>('/cart/items', { method: 'POST', body: JSON.stringify({ productId, quantity }) }),
+
+    updateItem: (productId: string, quantity: number) =>
+        request<any>(`/cart/items/${productId}`, { method: 'PUT', body: JSON.stringify({ quantity }) }),
+
+    removeItem: (productId: string) =>
+        request<any>(`/cart/items/${productId}`, { method: 'DELETE' }),
+
+    clear: () => request<any>('/cart', { method: 'DELETE' }),
+
+    sync: (items: { productId: string; quantity: number }[]) =>
+        request<any>('/cart/sync', { method: 'POST', body: JSON.stringify({ items }) }),
+};
+
 // ─── Orders API ─────────────────────────────────
 
 export const ordersApi = {
@@ -286,6 +306,17 @@ export const uploadApi = {
         const data = await res.json();
         return data.secure_url;
     },
+
+    getOrphans: () => request<{ total: number; inUse: number; orphanCount: number; orphanSizeMB: number; orphans: any[] }>('/upload/orphans'),
+
+    cleanupOrphans: (publicIds: string[]) =>
+        request<{ deleted: number; requested: number }>('/upload/orphans/cleanup', {
+            method: 'POST',
+            body: JSON.stringify({ publicIds }),
+        }),
+
+    delete: (publicId: string) =>
+        request<any>(`/upload/${encodeURIComponent(publicId)}`, { method: 'DELETE' }),
 };
 
 // ─── Brands API ──────────────────────────────────
