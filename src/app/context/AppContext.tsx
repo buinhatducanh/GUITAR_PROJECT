@@ -73,6 +73,7 @@ export interface Voucher {
   image: string;
   usageLimit: number;
   usedCount: number;
+  isUsed?: boolean;
 }
 
 export interface Event {
