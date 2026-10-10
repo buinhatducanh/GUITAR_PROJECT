@@ -1,4 +1,5 @@
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'motion/react';
 import { ArrowLeft, Clock, Eye, Calendar, Tag, Share2, Heart, Loader2 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -39,6 +40,39 @@ export const BlogDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black pt-24 pb-16">
+      <Helmet>
+        <title>{post.title} | Blog Guitar NOVA</title>
+        <meta name="description" content={post.excerpt?.slice(0, 160)} />
+        <meta property="og:title" content={post.title} />
+        <meta property="og:description" content={post.excerpt?.slice(0, 160)} />
+        <meta property="og:type" content="article" />
+        {post.coverImage && <meta property="og:image" content={post.coverImage} />}
+        <meta property="twitter:title" content={post.title} />
+        <meta property="twitter:description" content={post.excerpt?.slice(0, 160)} />
+        {post.coverImage && <meta property="twitter:image" content={post.coverImage} />}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Article",
+            "headline": post.title,
+            "image": post.coverImage ? [post.coverImage] : [],
+            "datePublished": post.publishedDate ? new Date(post.publishedDate).toISOString() : undefined,
+            "author": {
+              "@type": "Person",
+              "name": post.authorName
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": settings?.siteName || 'Guitar NOVA',
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://guitarnova.vn/favicon.png"
+              }
+            },
+            "description": post.excerpt
+          })}
+        </script>
+      </Helmet>
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Back Button */}
         <motion.button
@@ -77,6 +111,7 @@ export const BlogDetail: React.FC = () => {
                 <img
                   src={post.authorAvatar}
                   alt={post.authorName}
+                  loading="lazy"
                   className="w-10 h-10 rounded-full"
                 />
               )}
@@ -202,6 +237,7 @@ export const BlogDetail: React.FC = () => {
               <img
                 src={post.authorAvatar}
                 alt={post.authorName}
+                loading="lazy"
                 className="w-20 h-20 rounded-full"
               />
             )}
