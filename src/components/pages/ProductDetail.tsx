@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, ShoppingCart, Zap, Star, X, ZoomIn } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -90,8 +91,42 @@ export const ProductDetail: React.FC = () => {
     navigate('/checkout');
   };
 
+  const formatPriceSEO = (price: number) => new Intl.NumberFormat('vi-VN').format(price);
+
   return (
     <div className="min-h-screen bg-black pt-24 pb-16">
+      <Helmet>
+        <title>{product.name} | Guitar NOVA</title>
+        <meta name="description" content={`${product.name} - ${product.description?.slice(0, 150)}... Giá chỉ ${formatPriceSEO(product.price)}₫. Mua ngay tại Guitar NOVA!`} />
+        <meta property="og:title" content={`${product.name} | Guitar NOVA`} />
+        <meta property="og:description" content={`${product.name} - Giá ${formatPriceSEO(product.price)}₫${product.discount ? ` (Giảm ${product.discount}%)` : ''}`} />
+        {product.image && <meta property="og:image" content={product.image} />}
+        <meta property="og:type" content="product" />
+        <meta property="twitter:title" content={`${product.name} | Guitar NOVA`} />
+        <meta property="twitter:description" content={`${product.name} - Giá ${formatPriceSEO(product.price)}₫`} />
+        {product.image && <meta property="twitter:image" content={product.image} />}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Product",
+            "name": product.name,
+            "image": product.image ? [product.image] : [],
+            "description": product.description,
+            "offers": {
+              "@type": "Offer",
+              "url": `https://guitarnova.vn/products/${product.slug}`,
+              "priceCurrency": "VND",
+              "price": product.price,
+              "availability": "https://schema.org/InStock"
+            },
+            "aggregateRating": product.reviews && product.reviews.length > 0 ? {
+              "@type": "AggregateRating",
+              "ratingValue": product.rating,
+              "reviewCount": product.reviews.length
+            } : undefined
+          })}
+        </script>
+      </Helmet>
       {/* Back Button */}
       <div className="container mx-auto px-4 mb-8">
         <motion.button
@@ -144,7 +179,7 @@ export const ProductDetail: React.FC = () => {
                     : 'border-white/10 hover:border-white/30'
                     }`}
                 >
-                  <img src={img} alt={`View ${idx + 1}`} className="w-full h-full object-cover" />
+                  <img src={img} alt={`View ${idx + 1}`} loading="lazy" className="w-full h-full object-cover" />
                 </motion.button>
               ))}
             </div>
